@@ -9,8 +9,8 @@
 // @author       PigeonBar (original creator)
 // @match        https://flowr.fun
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=tampermonkey.net
-// @downloadURL  https://raw.githubusercontent.com/PigeonBar/flowr-cinderscript/refs/heads/main/cinderscript.js
-// @updateURL    https://raw.githubusercontent.com/PigeonBar/flowr-cinderscript/refs/heads/main/cinderscript.js
+// @downloadURL  https://raw.githubusercontent.com/PigeonBar/flowr-cinderscript/refs/heads/main/cinderscript.user.js
+// @updateURL    https://raw.githubusercontent.com/PigeonBar/flowr-cinderscript/refs/heads/main/cinderscript.user.js
 // @grant        none
 // ==/UserScript==
 
