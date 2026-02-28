@@ -1,0 +1,119 @@
+/// <reference types="vite/client" />
+/// <reference types="vite-plugin-monkey/client" />
+//// <reference types="vite-plugin-monkey/global" />
+/// <reference types="vite-plugin-monkey/style" />
+
+
+/**
+ * We declare the `Type`s of objects from flowr's client code here,
+ * so that our other ts files can use them.
+ */
+declare global {
+  type PetalType = string; // TODO: List of actually existing petal types?
+
+  class CraftingMenu {
+    w: number;
+    h: number;
+    lastOpenTime: number;
+    lastCloseTime: number;
+    petalContainerSize: number;
+    craftingPetalContainers: PetalContainer[];
+    previewPetalContainer: PetalContainer | undefined;
+    
+    previewPetalSlot: {
+      x: number;
+      y: number;
+      w: number;
+      h: number;
+    };
+
+    drawInventory(alpha: number = 1);
+
+    getSlotColor();
+
+    addCraftingPetalContainers(
+      type: PetalType,
+      rarity: number,
+      amount: number,
+      attempt: number
+    );
+
+    removeCraftingPetalContainers();
+
+    enterGame();
+  }
+
+  const craftingMenu: CraftingMenu;
+
+  class Enemy {
+  }
+
+  class Petal {
+    constructor(data: any);
+  }
+
+  class PetalContainer {
+    type: PetalType;
+    rarity: number;
+    w: number;
+    h: number;
+    isHovered: boolean;
+    render: {
+      x: number;
+      y: number;
+      w: number;
+    }
+
+    constructor(
+      petals: Petal[],
+      args: any,
+      id: number,
+      amount: number,
+      attempt?: number,
+    )
+
+    draw();
+
+    drawStatsBox(
+      drawBelow: boolean = false,
+      mob?: Enemy,
+      x: number = this.render.x,
+      y: number = this.render.y
+    );
+  }
+
+  class MouseData {
+    x: number;
+    y: number;
+    canvasX: number;
+    canvasY: number;
+    clickPosition: "up" | "down";
+    lastDownData: {
+      time: number;
+      x: number;
+      y: number;
+    };
+  }
+
+  const mouse: MouseData;
+  
+  function mouseInBox(
+    {x: number, y: number},
+    box: {x: number, y: number, w: number, h: number}
+  );
+
+  const ctx: CanvasRenderingContext2D;
+
+  const canvas: HTMLCanvasElement & {
+    // New fields added by flowr devs
+    h: number;
+    w: number;
+    zoom: number;
+  };
+
+  let time: number; // Used for tracking how long each frame is?
+
+  function easeOutCubic(x: number);
+}
+
+export {};
