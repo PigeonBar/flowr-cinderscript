@@ -10,9 +10,11 @@ Finally, this project is not associated with Flamescript in any way. I just thou
 
 # Installation steps
 
+The userscript is stored at [dist/cinderscript.user.js](https://github.com/PigeonBar/flowr-cinderscript/tree/dist/cinderscript.user.js).
+
 This script is meant to be installed using a userscript manager, such as Tampermonkey. If needed, you can install Tampermonkey itself through their [official website](https://www.tampermonkey.net/). Afterward, you can install individual scripts by following these steps:
 
-1. Navigate to the file on Github, then click on the "Copy raw file" button, which copies the file's contents to your clipboard. (It will be the button *adjacent* to the button that says "Raw".)
+1. Navigate to the file (e.g., [dist/cinderscript.user.js](https://github.com/PigeonBar/flowr-cinderscript/tree/dist/cinderscript.user.js)) on Github, then click on the "Copy raw file" button, which copies the file's contents to your clipboard. (It will be the button *adjacent* to the button that says "Raw".)
 
 ![alt text](docs/installStep1.png)
 

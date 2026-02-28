@@ -1,19 +1,14 @@
-// Disclaimer: All usage of scripts is at your own risk. (Though if you find
-// any severe bugs, do feel free to let me know.)
-
 // ==UserScript==
 // @name         Flowr - Cinderscript
 // @namespace    npm/vite-plugin-monkey
 // @version      1.0.0
-// @description  A free, publicly available collection of QoL features for flowr.fun players.
 // @author       PigeonBar (original creator)
-// @match        https://flowr.fun
-// @icon         https://www.google.com/s2/favicons?sz=64&domain=tampermonkey.net
-// @downloadURL  https://raw.githubusercontent.com/PigeonBar/flowr-cinderscript/refs/heads/main/cinderscript.user.js
-// @updateURL    https://raw.githubusercontent.com/PigeonBar/flowr-cinderscript/refs/heads/main/cinderscript.user.js
-// @grant        none
+// @description  A free, publicly available collection of QoL features for flowr.fun players.
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=flowr.fun
+// @downloadURL  https://raw.githubusercontent.com/PigeonBar/flowr-cinderscript/refs/heads/main/dist/cinderscript.user.js
+// @updateURL    https://raw.githubusercontent.com/PigeonBar/flowr-cinderscript/refs/heads/main/dist/cinderscript.user.js
+// @match        https://flowr.fun/
 // ==/UserScript==
-
 
 (function () {
   'use strict';
