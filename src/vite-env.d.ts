@@ -114,6 +114,18 @@ declare global {
   let time: number; // Used for tracking how long each frame is?
 
   function easeOutCubic(x: number);
+
+  const chatDiv: HTMLDivElement;
+
+  function appendChatAnnouncement(msg: string, color: string);
+
+  function sendRoomRequest(msg: {
+    findPublic?: true,
+    newSquad?: true,
+    findPrivate?: true,
+    biome: number,
+    squadCode?: string,
+  });
 }
 
 export {};

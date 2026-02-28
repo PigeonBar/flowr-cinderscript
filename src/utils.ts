@@ -3,6 +3,9 @@ const statsBoxQueue = [] as {
   args: Parameters<PetalContainer["drawStatsBox"]>;
 }[];
 
+// Cinderleaf petal's colour
+const CINDER_COLOUR = "#fc9547"
+
 export type nil = null | undefined;
 
 /**
@@ -21,14 +24,14 @@ export function isNil(arg: any): arg is nil {
 export function queueDrawStatsBox(
   container: PetalContainer,
   args: Parameters<PetalContainer["drawStatsBox"]>
-) {
+): void {
   statsBoxQueue.push({container, args});
 }
 
 /**
  * Draws all of the queued stats boxes, then removes them from the queue.
  */
-export function drawQueuedStatsBoxes() {
+export function drawQueuedStatsBoxes(): void {
   let queueEmpty = false;
   while (!queueEmpty) {
     const item = statsBoxQueue.shift();
@@ -39,4 +42,14 @@ export function drawQueuedStatsBoxes() {
       container.drawStatsBox(...args);
     }
   }
+}
+
+/**
+ * Sends an announcement to the player through the chat.
+ * @param msg The message to be announced.
+ * @param color The text colour to use (default "#fc9547" - light brown).
+ */
+export function chatAnnounce(msg: string, color: string = CINDER_COLOUR): void {
+  chatDiv.classList.remove("hidden");
+  appendChatAnnouncement("[Cinder]: " + msg, color);
 }

@@ -3,20 +3,24 @@
 
 type CinderSettings = {
   petalCraftPreview: boolean
+  autoCopyCodes: boolean
 };
 type SettingsKey = keyof CinderSettings;
 
-const settingsKeys = [
+const settingsKeys = Object.freeze([
   "petalCraftPreview",
-] as SettingsKey[];
+  "autoCopyCodes",
+]) as SettingsKey[];
 
-const defaultSettings = {
+const defaultSettings = Object.freeze({
   petalCraftPreview: true,
-} as CinderSettings;
+  autoCopyCodes: true,
+}) as CinderSettings;
 
 class SettingsManager {
   petalCraftPreview: boolean = true;
-  savedSettings: CinderSettings = defaultSettings;
+  autoCopyCodes: boolean = true;
+  savedSettings: CinderSettings = {...defaultSettings};
 
   constructor() {
     const loadedSettings = JSON.parse(
@@ -35,7 +39,7 @@ class SettingsManager {
     }
   }
 
-  setSetting(key: SettingsKey, value: any) {
+  setSetting(key: SettingsKey, value: any): void {
     this[key] = value;
     this.savedSettings[key] = value;
     localStorage.setItem("cinderSettings", JSON.stringify(this.savedSettings));
