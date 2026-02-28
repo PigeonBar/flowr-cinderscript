@@ -1,6 +1,4 @@
-// @ts-ignore isolatedModules
-console.log('hello world');
+import { addPetalCraftPreview } from "./petalCraftPreview";
 
-for (let i = 0; i < 10; i++) {
-  console.log(i);
-}
+// Run the full list of features here.
+addPetalCraftPreview();
