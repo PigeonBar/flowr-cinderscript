@@ -13,34 +13,18 @@
 (function () {
   'use strict';
 
-  const statsBoxQueue = [];
-  function isNil(arg) {
-    return arg === void 0 || arg === null;
-  }
-  function queueDrawStatsBox(container, args) {
-    statsBoxQueue.push({ container, args });
-  }
-  function drawQueuedStatsBoxes() {
-    let queueEmpty = false;
-    while (!queueEmpty) {
-      const item = statsBoxQueue.shift();
-      if (isNil(item)) {
-        queueEmpty = true;
-      } else {
-        const { container, args } = item;
-        container.drawStatsBox(...args);
-      }
-    }
-  }
-  const settingsKeys = [
-    "petalCraftPreview"
-  ];
-  const defaultSettings = {
-    petalCraftPreview: true
-  };
+  const settingsKeys = Object.freeze([
+    "petalCraftPreview",
+    "autoCopyCodes"
+  ]);
+  const defaultSettings = Object.freeze({
+    petalCraftPreview: true,
+    autoCopyCodes: true
+  });
   class SettingsManager {
     petalCraftPreview = true;
-    savedSettings = defaultSettings;
+    autoCopyCodes = true;
+    savedSettings = { ...defaultSettings };
     constructor() {
       const loadedSettings = JSON.parse(
         localStorage.getItem("cinderSettings") ?? "{}"
@@ -60,6 +44,30 @@
     }
   }
   const settings = new SettingsManager();
+  const statsBoxQueue = [];
+  const CINDER_COLOUR = "#fc9547";
+  function isNil(arg) {
+    return arg === void 0 || arg === null;
+  }
+  function queueDrawStatsBox(container, args) {
+    statsBoxQueue.push({ container, args });
+  }
+  function drawQueuedStatsBoxes() {
+    let queueEmpty = false;
+    while (!queueEmpty) {
+      const item = statsBoxQueue.shift();
+      if (isNil(item)) {
+        queueEmpty = true;
+      } else {
+        const { container, args } = item;
+        container.drawStatsBox(...args);
+      }
+    }
+  }
+  function chatAnnounce(msg, color = CINDER_COLOUR) {
+    chatDiv.classList.remove("hidden");
+    appendChatAnnouncement("[Cinder]: " + msg, color);
+  }
   function addPetalCraftPreview() {
     craftingMenu.previewPetalSlot = {
       x: craftingMenu.w * 0.83,
@@ -164,6 +172,44 @@
       this.previewPetalContainer = void 0;
     };
   }
+  function addRandomizedSquadCodes() {
+    const oldSendRoomRequest = sendRoomRequest;
+    globalThis.sendRoomRequest = function(msg) {
+      if (msg.findPrivate === true && msg.squadCode === "") {
+        const newCode = randomSquadCode();
+        msg.squadCode = newCode;
+        if (settings.autoCopyCodes) {
+          navigator.clipboard.writeText(newCode);
+          chatAnnounce("Code copied to clipboard! (" + newCode + ")");
+        } else {
+          chatAnnounce("Random code generated! (" + newCode + ")");
+        }
+      }
+      oldSendRoomRequest(msg);
+    };
+    const oldPrompt = prompt;
+    globalThis.prompt = function(msg, _default) {
+      if (msg === "Enter Private Squad Code") {
+        msg = "Enter a private squad code (or leave empty to generate a randomized code):";
+      }
+      return oldPrompt(msg, _default);
+    };
+  }
+  function randomSquadCode() {
+    let squadCode = "";
+    let hasLetter = false;
+    for (let i = 0; i < 6; i++) {
+      const roll = Math.floor(Math.random() * 16);
+      if (roll < 10) {
+        squadCode += String.fromCharCode("0".charCodeAt(0) + roll);
+      } else {
+        squadCode += String.fromCharCode("a".charCodeAt(0) + roll - 10);
+        hasLetter = true;
+      }
+    }
+    return hasLetter ? squadCode : randomSquadCode();
+  }
   addPetalCraftPreview();
+  addRandomizedSquadCodes();
 
 })();

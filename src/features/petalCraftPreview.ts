@@ -1,5 +1,5 @@
-import { queueDrawStatsBox, drawQueuedStatsBoxes } from "./utils";
-import { settings } from "./settings";
+import { settings } from "../settings";
+import { queueDrawStatsBox, drawQueuedStatsBoxes } from "../utils";
 
 /**
  * This feature adds a preview of the petal that you are attempting to craft in
@@ -12,7 +12,7 @@ import { settings } from "./settings";
  * 
  * Thank you to 4Yud for coming up with this idea!
  */
-export function addPetalCraftPreview() {
+export function addPetalCraftPreview(): void {
   // Set position for the crafting preview above the craft button
   craftingMenu.previewPetalSlot = {
     x: craftingMenu.w * .83,
@@ -22,7 +22,7 @@ export function addPetalCraftPreview() {
   };
 
   const oldDrawCrafting = craftingMenu.drawInventory;
-  craftingMenu.drawInventory = function(alpha = 1) {
+  craftingMenu.drawInventory = function(alpha = 1): void {
     // If feature is turned off in settings, just draw the crafting menu as usual
     if (settings.petalCraftPreview !== true) {
       oldDrawCrafting.apply(this, [alpha]);
@@ -32,7 +32,7 @@ export function addPetalCraftPreview() {
     // Make sure stats boxes get queued instead of drawn immediately,
     // so that they are not covered up by the craft preview.
     const oldDrawStatsBox = PetalContainer.prototype.drawStatsBox;
-    PetalContainer.prototype.drawStatsBox = function(...args) {
+    PetalContainer.prototype.drawStatsBox = function(...args): void {
       queueDrawStatsBox(this, args);
     }
 
@@ -136,14 +136,14 @@ export function addPetalCraftPreview() {
   }
 
   const oldRemovePetal = craftingMenu.removeCraftingPetalContainers;
-  craftingMenu.removeCraftingPetalContainers = function() {
+  craftingMenu.removeCraftingPetalContainers = function(): void {
     // When the player removes petals from the crafting slots, also remove the preview.
     oldRemovePetal.apply(this);
     this.previewPetalContainer = undefined;
   }
 
   const oldEnterGame = craftingMenu.enterGame;
-  craftingMenu.enterGame = function() {
+  craftingMenu.enterGame = function(): void {
     // When the player starts a run, also remove the preview.
     oldEnterGame.apply(this);
     this.previewPetalContainer = undefined;
