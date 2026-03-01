@@ -24,7 +24,7 @@ export function addPetalCraftPreview(): void {
   const oldDrawCrafting = craftingMenu.drawInventory;
   craftingMenu.drawInventory = function(alpha = 1): void {
     // If feature is turned off in settings, just draw the crafting menu as usual
-    if (settings.petalCraftPreview !== true) {
+    if (!settings.get("petalCraftPreview")) {
       oldDrawCrafting.apply(this, [alpha]);
       return;
     }

@@ -13,7 +13,7 @@ export function displayMissilesAboveEnemies() {
   const oldRenderGame = renderGame;
 
   renderGame = (dt: number) => {
-    if (!settings.missileDrawPriority) {
+    if (!settings.get("missileDrawPriority")) {
       oldRenderGame(dt);
       return;
     }

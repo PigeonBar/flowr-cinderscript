@@ -112,6 +112,14 @@ declare global {
     box: {x: number, y: number, w: number, h: number}
   );
 
+  class InputHandler {
+    chatOpen: boolean;
+
+    handleKey(e: KeyboardEvent);
+  }
+
+  const inputHandler: InputHandler;
+
   const ctx: CanvasRenderingContext2D;
 
   const canvas: HTMLCanvasElement & {
@@ -122,6 +130,8 @@ declare global {
   };
 
   let time: number; // Used for tracking how long each frame is?
+
+  let fov: number;
 
   function easeOutCubic(x: number);
 
@@ -138,9 +148,13 @@ declare global {
     biome: number,
     squadCode?: string,
   }) => void;
-  
-  // A temporary dev backdoor before a proper settings menu is created.
-  var cinderSetting: (key: SettingsKey, value: any) => void;
+
+  class SettingsMenu {
+    // A temporary dev backdoor before a proper settings menu is created.
+    cinderSetting(key: SettingsKey, value: any): void;
+  }
+
+  const settingsMenu: SettingsMenu;
 }
 
 export {};

@@ -1,3 +1,4 @@
+import { unsafeWindow } from "$";
 import { settings } from "../settings";
 import { chatAnnounce } from "../utils";
 
@@ -12,7 +13,7 @@ export function addRandomizedSquadCodes() {
     if (msg.findPrivate === true && msg.squadCode === "") {
       const newCode = randomSquadCode();
       msg.squadCode = newCode;
-      if (settings.autoCopyCodes) {
+      if (settings.get("autoCopyCodes")) {
         navigator.clipboard.writeText(newCode);
         chatAnnounce("Code copied to clipboard! (" + newCode + ")");
       } else {
@@ -24,7 +25,7 @@ export function addRandomizedSquadCodes() {
   }
 
   const oldPrompt = prompt;
-  globalThis.prompt = function(msg?: string, _default?: string): string | null {
+  unsafeWindow.prompt = function(msg?: string, _default?: string): string | null {
     // Change msg to tell user that they can generate a randomized code
     if (msg === "Enter Private Squad Code") {
       msg = "Enter private squad code" +
