@@ -4,22 +4,26 @@
 type CinderSettings = {
   petalCraftPreview: boolean
   autoCopyCodes: boolean
+  missileDrawPriority: boolean
 };
 type SettingsKey = keyof CinderSettings;
 
 const settingsKeys = Object.freeze([
   "petalCraftPreview",
   "autoCopyCodes",
+  "missileDrawPriority",
 ]) as SettingsKey[];
 
 const defaultSettings = Object.freeze({
   petalCraftPreview: true,
   autoCopyCodes: true,
+  missileDrawPriority: true,
 }) as CinderSettings;
 
 class SettingsManager {
   petalCraftPreview: boolean = true;
   autoCopyCodes: boolean = true;
+  missileDrawPriority: boolean = true;
   savedSettings: CinderSettings = {...defaultSettings};
 
   constructor() {
@@ -33,8 +37,7 @@ class SettingsManager {
     }
 
     // A temporary dev backdoor before a proper settings menu is created.
-    // @ts-ignore
-    window.cinderSetting = (key: SettingsKey, value: any) => {
+    globalThis.cinderSetting = (key: SettingsKey, value: any) => {
       this.setSetting(key, value);
     }
   }

@@ -15,15 +15,18 @@
 
   const settingsKeys = Object.freeze([
     "petalCraftPreview",
-    "autoCopyCodes"
+    "autoCopyCodes",
+    "missileDrawPriority"
   ]);
   const defaultSettings = Object.freeze({
     petalCraftPreview: true,
-    autoCopyCodes: true
+    autoCopyCodes: true,
+    missileDrawPriority: true
   });
   class SettingsManager {
     petalCraftPreview = true;
     autoCopyCodes = true;
+    missileDrawPriority = true;
     savedSettings = { ...defaultSettings };
     constructor() {
       const loadedSettings = JSON.parse(
@@ -33,7 +36,7 @@
         this[key] = loadedSettings[key] ?? defaultSettings[key];
         this.savedSettings[key] = loadedSettings[key] ?? defaultSettings[key];
       }
-      window.cinderSetting = (key, value) => {
+      globalThis.cinderSetting = (key, value) => {
         this.setSetting(key, value);
       };
     }
@@ -44,6 +47,37 @@
     }
   }
   const settings = new SettingsManager();
+  function displayMissilesAboveEnemies() {
+    const oldRenderGame = renderGame;
+    renderGame = (dt) => {
+      if (!settings.missileDrawPriority) {
+        oldRenderGame(dt);
+        return;
+      }
+      const queuedMissiles = [];
+      const maxId = Math.max(...Object.keys(room.enemies).map((k) => Number(k)));
+      for (let id in room.enemies) {
+        const enemy = room.enemies[id];
+        if (enemy.type.includes("Missile")) {
+          enemy.draw = function() {
+            queuedMissiles.push(this);
+          };
+        }
+        if (Number(id) === maxId) {
+          enemy.draw = function() {
+            Enemy.prototype.draw.apply(this);
+            for (let missile of queuedMissiles) {
+              Enemy.prototype.draw.apply(missile);
+            }
+          };
+        }
+      }
+      oldRenderGame(dt);
+      for (let enemy of Object.values(room.enemies)) {
+        enemy.draw = Enemy.prototype.draw;
+      }
+    };
+  }
   const statsBoxQueue = [];
   const CINDER_COLOUR = "#fc9547";
   function isNil(arg) {
@@ -174,7 +208,7 @@
   }
   function addRandomizedSquadCodes() {
     const oldSendRoomRequest = sendRoomRequest;
-    globalThis.sendRoomRequest = function(msg) {
+    sendRoomRequest = function(msg) {
       if (msg.findPrivate === true && msg.squadCode === "") {
         const newCode = randomSquadCode();
         msg.squadCode = newCode;
@@ -190,7 +224,7 @@
     const oldPrompt = prompt;
     globalThis.prompt = function(msg, _default) {
       if (msg === "Enter Private Squad Code") {
-        msg = "Enter a private squad code (or leave empty to generate a randomized code):";
+        msg = "Enter private squad code (leave empty to generate a random code):";
       }
       return oldPrompt(msg, _default);
     };
@@ -211,5 +245,6 @@
   }
   addPetalCraftPreview();
   addRandomizedSquadCodes();
+  displayMissilesAboveEnemies();
 
 })();
