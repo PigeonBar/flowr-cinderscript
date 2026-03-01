@@ -1,4 +1,5 @@
 import { displayMissilesAboveEnemies } from "./features/displayMissilesAboveEnemies";
+import { modifyBaseFOV } from "./features/modifyBaseFov";
 import { addPetalCraftPreview } from "./features/petalCraftPreview";
 import { addRandomizedSquadCodes } from "./features/randomizedSquadCode";
 
@@ -6,3 +7,4 @@ import { addRandomizedSquadCodes } from "./features/randomizedSquadCode";
 addPetalCraftPreview();
 addRandomizedSquadCodes();
 displayMissilesAboveEnemies();
+modifyBaseFOV();

@@ -8,40 +8,33 @@
 // @downloadURL  https://raw.githubusercontent.com/PigeonBar/flowr-cinderscript/refs/heads/main/dist/cinderscript.user.js
 // @updateURL    https://raw.githubusercontent.com/PigeonBar/flowr-cinderscript/refs/heads/main/dist/cinderscript.user.js
 // @match        https://flowr.fun/
+// @grant        unsafeWindow
 // ==/UserScript==
 
 (function () {
   'use strict';
 
-  const settingsKeys = Object.freeze([
-    "petalCraftPreview",
-    "autoCopyCodes",
-    "missileDrawPriority"
-  ]);
   const defaultSettings = Object.freeze({
     petalCraftPreview: true,
     autoCopyCodes: true,
-    missileDrawPriority: true
+    missileDrawPriority: true,
+    baseFOV: 0.33
   });
   class SettingsManager {
-    petalCraftPreview = true;
-    autoCopyCodes = true;
-    missileDrawPriority = true;
     savedSettings = { ...defaultSettings };
     constructor() {
       const loadedSettings = JSON.parse(
         localStorage.getItem("cinderSettings") ?? "{}"
       );
-      for (let key of settingsKeys) {
-        this[key] = loadedSettings[key] ?? defaultSettings[key];
-        this.savedSettings[key] = loadedSettings[key] ?? defaultSettings[key];
-      }
-      globalThis.cinderSetting = (key, value) => {
-        this.setSetting(key, value);
+      this.savedSettings = { ...this.savedSettings, ...loadedSettings };
+      settingsMenu.cinderSetting = (key, value) => {
+        this.set(key, value);
       };
     }
-    setSetting(key, value) {
-      this[key] = value;
+    get(key) {
+      return this.savedSettings[key];
+    }
+    set(key, value) {
       this.savedSettings[key] = value;
       localStorage.setItem("cinderSettings", JSON.stringify(this.savedSettings));
     }
@@ -50,7 +43,7 @@
   function displayMissilesAboveEnemies() {
     const oldRenderGame = renderGame;
     renderGame = (dt) => {
-      if (!settings.missileDrawPriority) {
+      if (!settings.get("missileDrawPriority")) {
         oldRenderGame(dt);
         return;
       }
@@ -75,6 +68,18 @@
       oldRenderGame(dt);
       for (let enemy of Object.values(room.enemies)) {
         enemy.draw = Enemy.prototype.draw;
+      }
+    };
+  }
+  function modifyBaseFOV() {
+    fov = settings.get("baseFOV");
+    const oldHandleKey = inputHandler.handleKey;
+    inputHandler.handleKey = function(e) {
+      oldHandleKey.apply(inputHandler, [e]);
+      if (e.repeat && this.chatOpen === false) return e.preventDefault();
+      if (this.chatOpen === true) return;
+      if (e.code === "BracketLeft" && e.type === "keydown") {
+        fov = settings.get("baseFOV");
       }
     };
   }
@@ -111,7 +116,7 @@
     };
     const oldDrawCrafting = craftingMenu.drawInventory;
     craftingMenu.drawInventory = function(alpha = 1) {
-      if (settings.petalCraftPreview !== true) {
+      if (!settings.get("petalCraftPreview")) {
         oldDrawCrafting.apply(this, [alpha]);
         return;
       }
@@ -206,13 +211,14 @@
       this.previewPetalContainer = void 0;
     };
   }
+  var _unsafeWindow = /* @__PURE__ */ (() => typeof unsafeWindow != "undefined" ? unsafeWindow : void 0)();
   function addRandomizedSquadCodes() {
     const oldSendRoomRequest = sendRoomRequest;
     sendRoomRequest = function(msg) {
       if (msg.findPrivate === true && msg.squadCode === "") {
         const newCode = randomSquadCode();
         msg.squadCode = newCode;
-        if (settings.autoCopyCodes) {
+        if (settings.get("autoCopyCodes")) {
           navigator.clipboard.writeText(newCode);
           chatAnnounce("Code copied to clipboard! (" + newCode + ")");
         } else {
@@ -222,7 +228,7 @@
       oldSendRoomRequest(msg);
     };
     const oldPrompt = prompt;
-    globalThis.prompt = function(msg, _default) {
+    _unsafeWindow.prompt = function(msg, _default) {
       if (msg === "Enter Private Squad Code") {
         msg = "Enter private squad code (leave empty to generate a random code):";
       }
@@ -246,5 +252,6 @@
   addPetalCraftPreview();
   addRandomizedSquadCodes();
   displayMissilesAboveEnemies();
+  modifyBaseFOV();
 
 })();
