@@ -7,7 +7,7 @@ import { chatAnnounce } from "../utils";
  */
 export function addRandomizedSquadCodes() {
   const oldSendRoomRequest = sendRoomRequest;
-  globalThis.sendRoomRequest = function(msg) {
+  sendRoomRequest = function(msg) {
     // If user is starting a private squad without entering a squad code
     if (msg.findPrivate === true && msg.squadCode === "") {
       const newCode = randomSquadCode();
@@ -27,8 +27,8 @@ export function addRandomizedSquadCodes() {
   globalThis.prompt = function(msg?: string, _default?: string): string | null {
     // Change msg to tell user that they can generate a randomized code
     if (msg === "Enter Private Squad Code") {
-      msg = "Enter a private squad code" +
-        " (or leave empty to generate a randomized code):";
+      msg = "Enter private squad code" +
+        " (leave empty to generate a random code):";
     }
     return oldPrompt(msg, _default);
   }

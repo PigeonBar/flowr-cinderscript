@@ -10,6 +10,7 @@
  */
 declare global {
   type PetalType = string; // TODO: List of actually existing petal types?
+  type EnemyType = string; // TODO: List of actually existing enemy types?
 
   class CraftingMenu {
     w: number;
@@ -46,6 +47,9 @@ declare global {
   const craftingMenu: CraftingMenu;
 
   class Enemy {
+    type: EnemyType;
+
+    draw();
   }
 
   class Petal {
@@ -76,11 +80,17 @@ declare global {
 
     drawStatsBox(
       drawBelow: boolean = false,
-      mob?: Enemy,
+      mob?: boolean,
       x: number = this.render.x,
       y: number = this.render.y
     );
   }
+
+  class Room {
+    enemies: Record<number, Enemy>;
+  }
+
+  const room: Room;
 
   class MouseData {
     x: number;
@@ -115,17 +125,22 @@ declare global {
 
   function easeOutCubic(x: number);
 
+  let renderGame: (dt: number) => void;
+
   const chatDiv: HTMLDivElement;
 
   function appendChatAnnouncement(msg: string, color: string);
 
-  function sendRoomRequest(msg: {
+  let sendRoomRequest: (msg: {
     findPublic?: true,
     newSquad?: true,
     findPrivate?: true,
     biome: number,
     squadCode?: string,
-  });
+  }) => void;
+  
+  // A temporary dev backdoor before a proper settings menu is created.
+  var cinderSetting: (key: SettingsKey, value: any) => void;
 }
 
 export {};
