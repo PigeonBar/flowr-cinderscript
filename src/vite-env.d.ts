@@ -12,6 +12,12 @@ declare global {
   type PetalType = string; // TODO: List of actually existing petal types?
   type EnemyType = string; // TODO: List of actually existing enemy types?
 
+  /**
+   * Calculates the success chance of crafting a (`rarity + 1`) petal on
+   * attempt number (`attempt + 1`).
+   */
+  function calculateChance(attempt: number, rarity: Rarity);
+
   class CraftingMenu {
     w: number;
     h: number;
