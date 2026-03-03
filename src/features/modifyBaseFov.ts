@@ -5,7 +5,10 @@ import { settings } from "../settings";
  * enters a game for the first time or presses "[" to reset the FOV.
  */
 export function modifyBaseFOV(): void {
-  fov = settings.get("baseFOV"); // Initialize the FOV to desired starting value
+  // Initialize the FOV to desired starting value.
+  // Note that the other scaling settings give more visibility when the setting
+  // is *larger*, so we need to do reciprocal of FOV for consistency.
+  fov = 1 / settings.get("baseReciprocalOfFOV");
 
   // Overwrite the fov reset when handling "[" inputs
   const originalHandleKey = inputHandler.handleKey;
@@ -16,7 +19,7 @@ export function modifyBaseFOV(): void {
     if (this.chatOpen === true) return;
 
     if (e.code === "BracketLeft" && e.type === "keydown") {
-      fov = settings.get("baseFOV");
+      fov = 1 / settings.get("baseReciprocalOfFOV");
     }
   }
 }

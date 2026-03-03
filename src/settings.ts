@@ -1,16 +1,25 @@
 // Lots TBD. This file is currently just a bare-bones list of what settings I
 // want to be available later.
 
+import { Rarity } from "./enums";
+
 type BooleanSettingsKey = 
   "petalCraftPreview" |
   "autoCopyCodes" |
   "missileDrawPriority";
 
 type NumberSettingsKey =
-  "baseFOV"; // Between 0.2 and 3. Base game default is 1.
+  "baseReciprocalOfFOV" | // Between 0.33 and 5. Base game default is 1.
+  "playerHpBarScale" | // Between 0.5 and 5
+  "specialDropsScale" | // Between 1 and 5
+  "specialDropsQuantity"; // Between 0.1 and 999
+
+type RaritySettingsKey =
+  "specialDropsRarity";
 
 type CinderSettings = Record<BooleanSettingsKey, boolean> &
-  Record<NumberSettingsKey, number>;
+  Record<NumberSettingsKey, number> &
+  Record<RaritySettingsKey, Rarity>;
 
 type SettingsKey = keyof CinderSettings;
 
@@ -18,7 +27,11 @@ const defaultSettings = Object.freeze({
   petalCraftPreview: true,
   autoCopyCodes: true,
   missileDrawPriority: true,
-  baseFOV: 0.33,
+  baseReciprocalOfFOV: 3,
+  playerHpBarScale: 2.5,
+  specialDropsScale: 2.5,
+  specialDropsQuantity: 1,
+  specialDropsRarity: Rarity.TRANSCENDENT,
 }) as CinderSettings;
 
 class SettingsManager {
@@ -44,6 +57,7 @@ class SettingsManager {
    */
   get(key: BooleanSettingsKey): boolean;
   get(key: NumberSettingsKey): number;
+  get(key: RaritySettingsKey): Rarity;
   get(key: SettingsKey): any {
     return this.savedSettings[key];
   }
@@ -54,11 +68,17 @@ class SettingsManager {
    */
   set(key: BooleanSettingsKey, value: boolean): void;
   set(key: NumberSettingsKey, value: number): void;
+  set(key: RaritySettingsKey, value: Rarity): void;
   set<K extends SettingsKey>(key: K, value: any): void {
     // Note: The "<K extends SettingsKey>" is mandatory, or else
     // `this.savedSettings[key]` has type `never`. I have no idea why.
     this.savedSettings[key] = value;
     localStorage.setItem("cinderSettings", JSON.stringify(this.savedSettings));
+    
+    // Some more code to make new settings apply immediately
+    if (key === "baseReciprocalOfFOV") {
+      fov = 1 / value;
+    }
   }
 }
 
