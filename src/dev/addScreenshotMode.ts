@@ -36,6 +36,8 @@ export function addScreenshotMode() {
         // Queue messages to be handled after rendering is done
         ws.onmessage = (data) => {queuedMessages.push(data)};
 
+        chatDiv.classList.add("hidden");
+
         room = screenshotRoom;
 
         originalRenderGame(dt);
@@ -67,6 +69,7 @@ export function addScreenshotMode() {
       // Turn off screenshot mode by restoring everything
       room = runningRoom;
 
+      chatDiv.classList.remove("hidden");
       deadMenu.draw = originalDeadMenuDraw;
       renderGame = originalRenderGame;
 

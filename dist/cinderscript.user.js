@@ -124,6 +124,7 @@
           ws.onmessage = (data2) => {
             queuedMessages.push(data2);
           };
+          chatDiv.classList.add("hidden");
           room = screenshotRoom;
           originalRenderGame(dt);
           ctx.save();
@@ -147,6 +148,7 @@
         };
       } else {
         room = runningRoom;
+        chatDiv.classList.remove("hidden");
         deadMenu.draw = originalDeadMenuDraw;
         renderGame = originalRenderGame;
         let data = queuedMessages.shift();
