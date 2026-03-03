@@ -10,11 +10,11 @@ import { settings } from "../settings";
  * through the list of enemies in increasing order of ID.
  */
 export function displayMissilesAboveEnemies() {
-  const oldRenderGame = renderGame;
+  const originalRenderGame = renderGame;
 
   renderGame = (dt: number) => {
     if (!settings.get("missileDrawPriority")) {
-      oldRenderGame(dt);
+      originalRenderGame(dt);
       return;
     }
 
@@ -42,7 +42,7 @@ export function displayMissilesAboveEnemies() {
       }
     }
 
-    oldRenderGame(dt); // Now render everything as usual.
+    originalRenderGame(dt); // Now render everything as usual.
 
     // Restore all draw functions
     for (let enemy of Object.values(room.enemies)) {

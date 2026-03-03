@@ -9,8 +9,19 @@
  * so that our other ts files can use them.
  */
 declare global {
+  interface Window {
+    selfId?: number;
+    state?: string;
+  }
+
   type PetalType = string; // TODO: List of actually existing petal types?
   type EnemyType = string; // TODO: List of actually existing enemy types?
+
+  /**
+   * Calculates the success chance of crafting a (`rarity + 1`) petal on
+   * attempt number (`attempt + 1`).
+   */
+  function calculateChance(attempt: number, rarity: Rarity);
 
   class CraftingMenu {
     w: number;
@@ -45,6 +56,12 @@ declare global {
   }
 
   const craftingMenu: CraftingMenu;
+
+  class DeadMenu {
+    draw();
+  }
+  
+  const deadMenu: DeadMenu;
 
   class Enemy {
     type: EnemyType;
@@ -90,7 +107,7 @@ declare global {
     enemies: Record<number, Enemy>;
   }
 
-  const room: Room;
+  let room: Room;
 
   class MouseData {
     x: number;
@@ -137,6 +154,30 @@ declare global {
 
   let renderGame: (dt: number) => void;
 
+  type HpBarData = {
+    x: number;
+    y: number;
+    radius: number;
+    hp: number;
+    maxHp: number;
+    beforeStreakHp: number;
+    givenAlpha?: number;
+    flowerName?: string;
+    flowerUsername?: string;
+    shield?: number;
+    team?: string;
+  }
+
+  type HpEntityData = {
+    fadeState: string;
+    fadeTime: number;
+    lastHp: number;
+    hp?: number;
+    id?: number;
+  }
+
+  let renderHpBar: (data: HpBarData, entity?: HpEntityData) => void;
+
   const chatDiv: HTMLDivElement;
 
   function appendChatAnnouncement(msg: string, color: string);
@@ -155,6 +196,8 @@ declare global {
   }
 
   const settingsMenu: SettingsMenu;
+
+  const ws: WebSocket;
 }
 
 export {};

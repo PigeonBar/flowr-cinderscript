@@ -7,7 +7,7 @@ import { chatAnnounce } from "../utils";
  * (0-9, a-f) by starting a private squad without entering a squad code.
  */
 export function addRandomizedSquadCodes() {
-  const oldSendRoomRequest = sendRoomRequest;
+  const originalSendRoomRequest = sendRoomRequest;
   sendRoomRequest = function(msg) {
     // If user is starting a private squad without entering a squad code
     if (msg.findPrivate === true && msg.squadCode === "") {
@@ -21,17 +21,17 @@ export function addRandomizedSquadCodes() {
       }
     }
     // Now send the room request as usual
-    oldSendRoomRequest(msg);
+    originalSendRoomRequest(msg);
   }
 
-  const oldPrompt = prompt;
-  unsafeWindow.prompt = function(msg?: string, _default?: string): string | null {
+  const originalPrompt = prompt;
+  unsafeWindow.prompt = function(msg?: string, _def?: string): string | null {
     // Change msg to tell user that they can generate a randomized code
     if (msg === "Enter Private Squad Code") {
       msg = "Enter private squad code" +
         " (leave empty to generate a random code):";
     }
-    return oldPrompt(msg, _default);
+    return originalPrompt(msg, _def);
   }
 }
 

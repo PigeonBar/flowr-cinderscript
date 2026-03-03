@@ -8,10 +8,10 @@ export function modifyBaseFOV(): void {
   fov = settings.get("baseFOV"); // Initialize the FOV to desired starting value
 
   // Overwrite the fov reset when handling "[" inputs
-  const oldHandleKey = inputHandler.handleKey;
+  const originalHandleKey = inputHandler.handleKey;
   inputHandler.handleKey = function(e) {
     // First, run all the usual code for handling inputs
-    oldHandleKey.apply(inputHandler, [e]);
+    originalHandleKey.apply(inputHandler, [e]);
     if (e.repeat && this.chatOpen === false) return e.preventDefault();
     if (this.chatOpen === true) return;
 

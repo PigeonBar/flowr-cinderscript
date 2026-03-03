@@ -21,22 +21,22 @@ export function addPetalCraftPreview(): void {
     h: 65,
   };
 
-  const oldDrawCrafting = craftingMenu.drawInventory;
+  const originalDrawCrafting = craftingMenu.drawInventory;
   craftingMenu.drawInventory = function(alpha = 1): void {
-    // If feature is turned off in settings, just draw the crafting menu as usual
+    // If feature is turned off in settings, just draw crafting menu as usual
     if (!settings.get("petalCraftPreview")) {
-      oldDrawCrafting.apply(this, [alpha]);
+      originalDrawCrafting.apply(this, [alpha]);
       return;
     }
 
     // Make sure stats boxes get queued instead of drawn immediately,
     // so that they are not covered up by the craft preview.
-    const oldDrawStatsBox = PetalContainer.prototype.drawStatsBox;
+    const originalDrawStatsBox = PetalContainer.prototype.drawStatsBox;
     PetalContainer.prototype.drawStatsBox = function(...args): void {
       queueDrawStatsBox(this, args);
     }
 
-    oldDrawCrafting.apply(this, [alpha]); // Draw everything else as usual
+    originalDrawCrafting.apply(this, [alpha]); // Draw everything else as usual
 
     // Redo translation
     let translation = 0;
@@ -44,7 +44,8 @@ export function addPetalCraftPreview(): void {
       translation += this.h * easeOutCubic((time - this.lastCloseTime) / 160);
     }
     if (time - this.lastOpenTime < 160) {
-      translation += (this.h + 40) - (this.h + 40) * easeOutCubic((time - this.lastOpenTime) / 160);
+      translation += (this.h + 40)
+        - (this.h + 40) * easeOutCubic((time - this.lastOpenTime) / 160);
     }
     if (translation !== 0) {
       ctx.translate(0, translation);
@@ -111,15 +112,15 @@ export function addPetalCraftPreview(): void {
     
     // Draw all queued stats boxes.
     // For some reason, this can only be done after undoing the translation.
-    PetalContainer.prototype.drawStatsBox = oldDrawStatsBox;
+    PetalContainer.prototype.drawStatsBox = originalDrawStatsBox;
     drawQueuedStatsBoxes();
   }
 
-  const oldAddPetal = craftingMenu.addCraftingPetalContainers;
+  const originalAddPetal = craftingMenu.addCraftingPetalContainers;
   craftingMenu.addCraftingPetalContainers = function(type, rarity, amount, attempt) {
-    oldAddPetal.apply(this, [type, rarity, amount, attempt]);
+    originalAddPetal.apply(this, [type, rarity, amount, attempt]);
 
-    // When the player adds *new* petals to the crafting slots, also add a new preview.
+    // When player adds *new* petals to crafting slots, also add a new preview.
     const currentPetal = this.craftingPetalContainers[0];
     if (currentPetal !== undefined && (
       this.previewPetalContainer?.type !== currentPetal.type ||
@@ -135,17 +136,17 @@ export function addPetalCraftPreview(): void {
     }
   }
 
-  const oldRemovePetal = craftingMenu.removeCraftingPetalContainers;
+  const originalRemovePetal = craftingMenu.removeCraftingPetalContainers;
   craftingMenu.removeCraftingPetalContainers = function(): void {
-    // When the player removes petals from the crafting slots, also remove the preview.
-    oldRemovePetal.apply(this);
+    // When player removes petals from crafting slots, also remove preview.
+    originalRemovePetal.apply(this);
     this.previewPetalContainer = undefined;
   }
 
-  const oldEnterGame = craftingMenu.enterGame;
+  const originalEnterGame = craftingMenu.enterGame;
   craftingMenu.enterGame = function(): void {
-    // When the player starts a run, also remove the preview.
-    oldEnterGame.apply(this);
+    // When player starts a run, also remove the preview.
+    originalEnterGame.apply(this);
     this.previewPetalContainer = undefined;
   }
 }
