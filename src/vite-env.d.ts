@@ -76,6 +76,7 @@ declare global {
   class PetalContainer {
     type: PetalType;
     rarity: number;
+    amount: number;
     w: number;
     h: number;
     isHovered: boolean;
@@ -198,6 +199,10 @@ declare global {
   const settingsMenu: SettingsMenu;
 
   const ws: WebSocket;
+
+  let processGameMessageMap: {
+    newPetalContainer: (data: any, _me?: any, _advanced?: any) => void;
+  };
 }
 
 export {};

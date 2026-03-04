@@ -79,6 +79,23 @@
     appendChatAnnouncement("[Cinder]: " + msg, color);
   }
   const theoryCraft = [];
+  function convertPetalValue(amount, oldRarity, newRarity) {
+    if (oldRarity > MAX_PETAL_RARITY) {
+      return Infinity;
+    }
+    if (newRarity > MAX_PETAL_RARITY) {
+      return 0;
+    }
+    while (oldRarity < newRarity) {
+      amount /= theoryCraft[oldRarity];
+      oldRarity++;
+    }
+    while (oldRarity > newRarity) {
+      amount *= theoryCraft[oldRarity - 1];
+      oldRarity--;
+    }
+    return amount;
+  }
   function deepCopy(obj, depth = 5) {
     if (depth === 0) {
       return obj;
@@ -165,7 +182,7 @@
       if (e.repeat && this.chatOpen === false) return e.preventDefault();
       if (this.chatOpen === true) return;
       if (_unsafeWindow.state !== "game") return;
-      if (e.code === localStorage.getItem("cinderDevScreenshotMode") && e.type === "keydown") {
+      if (e.code === localStorage.getItem("cinderDevScreenshotMode") && e.code.length > 0 && e.type === "keydown") {
         toggleScreenshotMode();
       }
     };
@@ -174,8 +191,11 @@
     petalCraftPreview: true,
     autoCopyCodes: true,
     missileDrawPriority: true,
-    baseFOV: 0.33,
-    playerHpBarScale: 2
+    baseReciprocalOfFOV: 3,
+    playerHpBarScale: 2.5,
+    specialDropsScale: 2.5,
+    specialDropsQuantity: 1,
+    specialDropsRarity: Rarity.TRANSCENDENT
   });
   class SettingsManager {
     savedSettings = { ...defaultSettings };
@@ -194,6 +214,9 @@
     set(key, value) {
       this.savedSettings[key] = value;
       localStorage.setItem("cinderSettings", JSON.stringify(this.savedSettings));
+      if (key === "baseReciprocalOfFOV") {
+        fov = 1 / value;
+      }
     }
   }
   const settings = new SettingsManager();
@@ -228,15 +251,43 @@
       }
     };
   }
+  function enlargeZoomedOutItems() {
+    const originalRenderHpBar = renderHpBar;
+    renderHpBar = function(data, entity) {
+      if (data.flowerName !== void 0 && entity?.id === _unsafeWindow.selfId) {
+        const scale = settings.get("playerHpBarScale");
+        const rScale = scale ** (1 / 1.2);
+        data.y -= (scale - 1) * data.radius;
+        data.radius *= rScale;
+      }
+      originalRenderHpBar(data, entity);
+    };
+    const originalNewPetalContainer = processGameMessageMap.newPetalContainer;
+    processGameMessageMap.newPetalContainer = function(data, _me, _advanced) {
+      const scale = settings.get("specialDropsScale");
+      const desiredRarity = settings.get("specialDropsRarity");
+      const desiredQuantity = settings.get("specialDropsQuantity");
+      const effectiveQuantity = convertPetalValue(
+        data.amount ?? 1,
+        data.rarity,
+        desiredRarity
+      );
+      if (effectiveQuantity >= desiredQuantity) {
+        data.w *= scale;
+        data.h *= scale;
+      }
+      originalNewPetalContainer(data, _me, _advanced);
+    };
+  }
   function modifyBaseFOV() {
-    fov = settings.get("baseFOV");
+    fov = 1 / settings.get("baseReciprocalOfFOV");
     const originalHandleKey = inputHandler.handleKey;
     inputHandler.handleKey = function(e) {
       originalHandleKey.apply(inputHandler, [e]);
       if (e.repeat && this.chatOpen === false) return e.preventDefault();
       if (this.chatOpen === true) return;
       if (e.code === "BracketLeft" && e.type === "keydown") {
-        fov = settings.get("baseFOV");
+        fov = 1 / settings.get("baseReciprocalOfFOV");
       }
     };
   }
@@ -397,11 +448,20 @@
       }
     }
   }
+  function unfreezeObjects() {
+    processGameMessageMap = { ...processGameMessageMap };
+  }
+  function refreezeObjects() {
+    processGameMessageMap = Object.freeze(processGameMessageMap);
+  }
+  unfreezeObjects();
   initTheoryCraft();
   addPetalCraftPreview();
   addRandomizedSquadCodes();
   displayMissilesAboveEnemies();
   modifyBaseFOV();
+  enlargeZoomedOutItems();
   addScreenshotMode();
+  refreezeObjects();
 
 })();

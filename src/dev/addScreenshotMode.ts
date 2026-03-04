@@ -93,7 +93,9 @@ export function addScreenshotMode() {
     if (unsafeWindow.state !== "game") return;
 
     if (e.code === localStorage.getItem("cinderDevScreenshotMode") &&
-        e.type === "keydown") {
+        e.code.length > 0 &&
+        e.type === "keydown"
+    ) {
       toggleScreenshotMode();
     }
   }
