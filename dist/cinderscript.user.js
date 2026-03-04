@@ -279,6 +279,14 @@
       originalNewPetalContainer(data, _me, _advanced);
     };
   }
+  function fixNegativeRadiusFreeze() {
+    const originalArc = ctx.arc;
+    ctx.arc = function(...args) {
+      if (args[2] > 0) {
+        originalArc.apply(this, args);
+      }
+    };
+  }
   function modifyBaseFOV() {
     fov = 1 / settings.get("baseReciprocalOfFOV");
     const originalHandleKey = inputHandler.handleKey;
@@ -461,6 +469,7 @@
   displayMissilesAboveEnemies();
   modifyBaseFOV();
   enlargeZoomedOutItems();
+  fixNegativeRadiusFreeze();
   addScreenshotMode();
   refreezeObjects();
 
