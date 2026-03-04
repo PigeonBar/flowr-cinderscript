@@ -1,6 +1,7 @@
 import { addScreenshotMode } from "./dev/addScreenshotMode";
 import { displayMissilesAboveEnemies } from "./features/displayMissilesAboveEnemies";
 import { enlargeZoomedOutItems } from "./features/enlargeZoomedOutItems";
+import { fixNegativeRadiusFreeze } from "./features/fixNegativeRadiusFreeze";
 import { modifyBaseFOV } from "./features/modifyBaseFov";
 import { addPetalCraftPreview } from "./features/petalCraftPreview";
 import { addRandomizedSquadCodes } from "./features/randomizedSquadCode";
@@ -16,6 +17,7 @@ addRandomizedSquadCodes();
 displayMissilesAboveEnemies();
 modifyBaseFOV();
 enlargeZoomedOutItems();
+fixNegativeRadiusFreeze();
 
 // #region Dev tools
 addScreenshotMode();
