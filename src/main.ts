@@ -4,6 +4,7 @@ import { enlargeZoomedOutItems } from "./features/enlargeZoomedOutItems";
 import { fixNegativeRadiusFreeze } from "./features/fixNegativeRadiusFreeze";
 import { modifyBaseFOV } from "./features/modifyBaseFov";
 import { addPetalCraftPreview } from "./features/petalCraftPreview";
+import { addQuickStatsBoxHotkey } from "./features/quickStatsBoxHotkey";
 import { addRandomizedSquadCodes } from "./features/randomizedSquadCode";
 import { initTheoryCraft, refreezeObjects, unfreezeObjects } from "./inits";
 
@@ -18,6 +19,7 @@ displayMissilesAboveEnemies();
 modifyBaseFOV();
 enlargeZoomedOutItems();
 fixNegativeRadiusFreeze();
+addQuickStatsBoxHotkey();
 
 // #region Dev tools
 addScreenshotMode();

@@ -195,7 +195,8 @@
     playerHpBarScale: 2.5,
     specialDropsScale: 2.5,
     specialDropsQuantity: 1,
-    specialDropsRarity: Rarity.TRANSCENDENT
+    specialDropsRarity: Rarity.TRANSCENDENT,
+    keybindStatsBox: "KeyG"
   });
   class SettingsManager {
     savedSettings = { ...defaultSettings };
@@ -273,8 +274,16 @@
         desiredRarity
       );
       if (effectiveQuantity >= desiredQuantity) {
+        const originalSize = data.w;
         data.w *= scale;
         data.h *= scale;
+        const dx = data.x - data.originalX;
+        const dy = data.y - data.originalY;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        if (d > 0) {
+          data.x = data.originalX + dx * (d + originalSize * (scale - 1)) / d;
+          data.y = data.originalY + dy * (d + originalSize * (scale - 1)) / d;
+        }
       }
       originalNewPetalContainer(data, _me, _advanced);
     };
@@ -294,6 +303,7 @@
       originalHandleKey.apply(inputHandler, [e]);
       if (e.repeat && this.chatOpen === false) return e.preventDefault();
       if (this.chatOpen === true) return;
+      if (_unsafeWindow.state !== "game") return;
       if (e.code === "BracketLeft" && e.type === "keydown") {
         fov = 1 / settings.get("baseReciprocalOfFOV");
       }
@@ -403,6 +413,67 @@
       this.previewPetalContainer = void 0;
     };
   }
+  function addQuickStatsBoxHotkey() {
+    let showQuickStatsBox = false;
+    const originalHandleKey = inputHandler.handleKey;
+    inputHandler.handleKey = function(e) {
+      originalHandleKey.apply(inputHandler, [e]);
+      if (e.repeat && this.chatOpen === false) return e.preventDefault();
+      if (this.chatOpen === true) return;
+      if (_unsafeWindow.state !== "game") return;
+      if (e.code === settings.get("keybindStatsBox") && e.type === "keydown") {
+        showQuickStatsBox = !showQuickStatsBox;
+      }
+    };
+    const originalRenderGame = renderGame;
+    const originalDrawStatsBox = PetalContainer.prototype.drawStatsBox;
+    renderGame = (dt) => {
+      if (showQuickStatsBox) {
+        PetalContainer.prototype.drawStatsBox = function() {
+          if (this.petals[0]?.constructor === Petal) {
+            originalDrawStatsBox.apply(this);
+          }
+        };
+      }
+      originalRenderGame(dt);
+      PetalContainer.prototype.drawStatsBox = originalDrawStatsBox;
+      if (showQuickStatsBox) {
+        const totalCount = {};
+        for (let enemyBox of Object.values(room.enemyBoxes)) {
+          totalCount[enemyBox.type] ??= 0;
+          totalCount[enemyBox.type] += enemyBox.amount;
+        }
+        let highestBox = void 0;
+        for (let enemyBox of Object.values(room.enemyBoxes)) {
+          if (isNil(highestBox) || enemyBox.rarity > highestBox.rarity || enemyBox.rarity === highestBox.rarity && totalCount[enemyBox.type] <= totalCount[highestBox.type]) {
+            if (!enemyBox.isBoss) {
+              highestBox = enemyBox;
+            }
+          }
+        }
+        if (!isNil(highestBox)) {
+          if (isNil(highestBox.ec)) {
+            highestBox.ec = mobGallery.generateEnemyPc(
+              highestBox.type,
+              highestBox.rarity,
+              1
+            );
+          }
+          if (!Stats.enemies[highestBox.type]) {
+            calculateStats();
+          } else {
+            highestBox.ec.isHovered = true;
+            highestBox.ec.drawStatsBox(
+              true,
+              true,
+              canvas.w / 2 + highestBox.x,
+              highestBox.y + highestBox.w / 2 + 3 * highestBox.w / 5
+            );
+          }
+        }
+      }
+    };
+  }
   function addRandomizedSquadCodes() {
     const originalSendRoomRequest = sendRoomRequest;
     sendRoomRequest = function(msg) {
@@ -470,6 +541,7 @@
   modifyBaseFOV();
   enlargeZoomedOutItems();
   fixNegativeRadiusFreeze();
+  addQuickStatsBoxHotkey();
   addScreenshotMode();
   refreezeObjects();
 
