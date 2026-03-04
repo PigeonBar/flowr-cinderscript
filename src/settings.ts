@@ -17,9 +17,13 @@ type NumberSettingsKey =
 type RaritySettingsKey =
   "specialDropsRarity";
 
+type KeybindSettingsKey =
+  "keybindStatsBox";
+
 type CinderSettings = Record<BooleanSettingsKey, boolean> &
   Record<NumberSettingsKey, number> &
-  Record<RaritySettingsKey, Rarity>;
+  Record<RaritySettingsKey, Rarity> &
+  Record<KeybindSettingsKey, string>;
 
 type SettingsKey = keyof CinderSettings;
 
@@ -32,6 +36,7 @@ const defaultSettings = Object.freeze({
   specialDropsScale: 2.5,
   specialDropsQuantity: 1,
   specialDropsRarity: Rarity.TRANSCENDENT,
+  keybindStatsBox: "KeyG",
 }) as CinderSettings;
 
 class SettingsManager {
@@ -58,6 +63,7 @@ class SettingsManager {
   get(key: BooleanSettingsKey): boolean;
   get(key: NumberSettingsKey): number;
   get(key: RaritySettingsKey): Rarity;
+  get(key: KeybindSettingsKey): string;
   get(key: SettingsKey): any {
     return this.savedSettings[key];
   }
@@ -69,6 +75,7 @@ class SettingsManager {
   set(key: BooleanSettingsKey, value: boolean): void;
   set(key: NumberSettingsKey, value: number): void;
   set(key: RaritySettingsKey, value: Rarity): void;
+  set(key: KeybindSettingsKey, value: string): void;
   set<K extends SettingsKey>(key: K, value: any): void {
     // Note: The "<K extends SettingsKey>" is mandatory, or else
     // `this.savedSettings[key]` has type `never`. I have no idea why.

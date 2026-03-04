@@ -1,5 +1,8 @@
 /// <reference types="vite/client" />
 /// <reference types="vite-plugin-monkey/client" />
+
+import type { Rarity } from "./enums";
+
 //// <reference types="vite-plugin-monkey/global" />
 /// <reference types="vite-plugin-monkey/style" />
 
@@ -23,6 +26,12 @@ declare global {
    */
   function calculateChance(attempt: number, rarity: Rarity);
 
+  function calculateStats(pvp?: boolean, tanksmith?: boolean);
+
+  const Stats: {
+    enemies: Record<EnemyType, any>;
+  };
+
   class CraftingMenu {
     w: number;
     h: number;
@@ -45,7 +54,7 @@ declare global {
 
     addCraftingPetalContainers(
       type: PetalType,
-      rarity: number,
+      rarity: Rarity,
       amount: number,
       attempt: number
     );
@@ -56,6 +65,16 @@ declare global {
   }
 
   const craftingMenu: CraftingMenu;
+
+  class MobGallery {
+    generateEnemyPc(
+      type: EnemyType,
+      rarity: Rarity,
+      dimensions: number,
+    ): PetalContainer;
+  }
+
+  const mobGallery: MobGallery;
 
   class DeadMenu {
     draw();
@@ -74,12 +93,15 @@ declare global {
   }
 
   class PetalContainer {
+    // Yes, PetalContainer is also used to display enemies
+    petals: Petal[] | Enemy[];
     type: PetalType;
-    rarity: number;
+    rarity: Rarity;
     amount: number;
     w: number;
     h: number;
     isHovered: boolean;
+    statsBoxAlpha: number;
     render: {
       x: number;
       y: number;
@@ -104,8 +126,22 @@ declare global {
     );
   }
 
+  // Yeah the Flowr devs actually skissued and forgot to capitalize 1st letter
+  class enemyBox {
+    type: EnemyType;
+    amount: number;
+    rarity: Rarity;
+    isBoss: boolean;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    ec?: PetalContainer;
+  }
+
   class Room {
     enemies: Record<number, Enemy>;
+    enemyBoxes: enemyBox[];
   }
 
   let room: Room;

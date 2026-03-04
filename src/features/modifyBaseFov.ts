@@ -1,3 +1,4 @@
+import { unsafeWindow } from "$";
 import { settings } from "../settings";
 
 /**
@@ -17,6 +18,7 @@ export function modifyBaseFOV(): void {
     originalHandleKey.apply(inputHandler, [e]);
     if (e.repeat && this.chatOpen === false) return e.preventDefault();
     if (this.chatOpen === true) return;
+    if (unsafeWindow.state !== "game") return;
 
     if (e.code === "BracketLeft" && e.type === "keydown") {
       fov = 1 / settings.get("baseReciprocalOfFOV");

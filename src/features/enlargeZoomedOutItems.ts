@@ -49,8 +49,19 @@ export function enlargeZoomedOutItems(): void {
     );
     if (effectiveQuantity >= desiredQuantity) {
       // Multiply the container's size by the desired scale
+      const originalSize = data.w;
       data.w *= scale;
       data.h *= scale;
+
+      // Also drop the petal further away from the mob's centre, so that it
+      // doesn't cover up other petals
+      const dx = data.x - data.originalX;
+      const dy = data.y - data.originalY;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      if (d > 0) {
+        data.x = data.originalX + dx * (d + originalSize * (scale - 1)) / d;
+        data.y = data.originalY + dy * (d + originalSize * (scale - 1)) / d;
+      }
     }
 
     // Now add the petal container as usual
