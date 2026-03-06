@@ -6,7 +6,9 @@ import { Rarity } from "./enums";
 type BooleanSettingsKey = 
   "petalCraftPreview" |
   "autoCopyCodes" |
-  "missileDrawPriority";
+  "missileDrawPriority" |
+  "invertAttack" |
+  "invertDefend";
 
 type NumberSettingsKey =
   "baseReciprocalOfFOV" | // Between 0.33 and 5. Base game default is 1.
@@ -18,7 +20,9 @@ type RaritySettingsKey =
   "specialDropsRarity";
 
 type KeybindSettingsKey =
-  "keybindStatsBox";
+  "keybindStatsBox" |
+  "keybindInvertAttack" |
+  "keybindInvertDefend";
 
 type CinderSettings = Record<BooleanSettingsKey, boolean> &
   Record<NumberSettingsKey, number> &
@@ -31,12 +35,16 @@ const defaultSettings = Object.freeze({
   petalCraftPreview: true,
   autoCopyCodes: true,
   missileDrawPriority: true,
+  invertAttack: false,
+  invertDefend: false,
   baseReciprocalOfFOV: 3,
   playerHpBarScale: 2.5,
   specialDropsScale: 2.5,
   specialDropsQuantity: 1,
   specialDropsRarity: Rarity.TRANSCENDENT,
   keybindStatsBox: "KeyG",
+  keybindInvertAttack: "Comma",
+  keybindInvertDefend: "Period",
 }) as CinderSettings;
 
 class SettingsManager {
@@ -81,11 +89,9 @@ class SettingsManager {
     // `this.savedSettings[key]` has type `never`. I have no idea why.
     this.savedSettings[key] = value;
     localStorage.setItem("cinderSettings", JSON.stringify(this.savedSettings));
-    
-    // Some more code to make new settings apply immediately
-    if (key === "baseReciprocalOfFOV") {
-      fov = 1 / value;
-    }
+
+    // TODO: When the player uses the invert attack/defend hotkeys, it should
+    // also toggle the buttons in the settings menu.
   }
 }
 

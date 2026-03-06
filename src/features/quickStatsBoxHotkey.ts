@@ -1,6 +1,5 @@
-import { unsafeWindow } from "$";
 import { settings } from "../settings";
-import { isNil } from "../utils";
+import { isInGameInput, isNil } from "../utils";
 
 /**
  * This feature adds a hotkey to toggle displaying the stats box of the highest
@@ -14,9 +13,9 @@ export function addQuickStatsBoxHotkey() {
   inputHandler.handleKey = function(e) {
     // First, run all the usual code for handling inputs
     originalHandleKey.apply(inputHandler, [e]);
-    if (e.repeat && this.chatOpen === false) return e.preventDefault();
-    if (this.chatOpen === true) return;
-    if (unsafeWindow.state !== "game") return;
+    if (!isInGameInput(e)) {
+      return;
+    }
 
     // Handle user pressing down the stats box key
     if (e.code === settings.get("keybindStatsBox") && e.type === "keydown") {
@@ -50,7 +49,9 @@ export function addQuickStatsBoxHotkey() {
         totalCount[enemyBox.type] += enemyBox.amount;
       }
 
-      // Find the highest-rarity box belonging to a non-boss enemy
+      // Find the highest-rarity box belonging to a non-boss enemy.
+      // TODO: Optimize this. It seems wasteful to linear search for the
+      // highest-rarity box every frame that we render the game.
       let highestBox: enemyBox | undefined = undefined;
       for (let enemyBox of Object.values(room.enemyBoxes)) {
         if (

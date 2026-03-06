@@ -14,7 +14,6 @@
 (function () {
   'use strict';
 
-  var _unsafeWindow = /* @__PURE__ */ (() => typeof unsafeWindow != "undefined" ? unsafeWindow : void 0)();
   var Rarity = /* @__PURE__ */ ((Rarity2) => {
     Rarity2[Rarity2["COMMON"] = 0] = "COMMON";
     Rarity2[Rarity2["UNUSUAL"] = 1] = "UNUSUAL";
@@ -55,6 +54,7 @@
   })(Rarity || {});
   const CINDER_COLOUR = "#fc9547";
   const MAX_PETAL_RARITY = Rarity.APOTHEOTIC;
+  var _unsafeWindow = /* @__PURE__ */ (() => typeof unsafeWindow != "undefined" ? unsafeWindow : void 0)();
   const statsBoxQueue = [];
   function isNil(arg) {
     return arg === void 0 || arg === null;
@@ -95,6 +95,12 @@
       oldRarity--;
     }
     return amount;
+  }
+  function isInGameInput(e) {
+    if (e.repeat) {
+      e.preventDefault();
+    }
+    return _unsafeWindow.state === "game" && !inputHandler.chatOpen && !e.repeat;
   }
   function deepCopy(obj, depth = 5) {
     if (depth === 0) {
@@ -179,9 +185,9 @@
     const originalHandleKey = inputHandler.handleKey;
     inputHandler.handleKey = function(e) {
       originalHandleKey.apply(inputHandler, [e]);
-      if (e.repeat && this.chatOpen === false) return e.preventDefault();
-      if (this.chatOpen === true) return;
-      if (_unsafeWindow.state !== "game") return;
+      if (!isInGameInput(e)) {
+        return;
+      }
       if (e.code === localStorage.getItem("cinderDevScreenshotMode") && e.code.length > 0 && e.type === "keydown") {
         toggleScreenshotMode();
       }
@@ -191,12 +197,16 @@
     petalCraftPreview: true,
     autoCopyCodes: true,
     missileDrawPriority: true,
+    invertAttack: false,
+    invertDefend: false,
     baseReciprocalOfFOV: 3,
     playerHpBarScale: 2.5,
     specialDropsScale: 2.5,
     specialDropsQuantity: 1,
     specialDropsRarity: Rarity.TRANSCENDENT,
-    keybindStatsBox: "KeyG"
+    keybindStatsBox: "KeyG",
+    keybindInvertAttack: "Comma",
+    keybindInvertDefend: "Period"
   });
   class SettingsManager {
     savedSettings = { ...defaultSettings };
@@ -215,9 +225,6 @@
     set(key, value) {
       this.savedSettings[key] = value;
       localStorage.setItem("cinderSettings", JSON.stringify(this.savedSettings));
-      if (key === "baseReciprocalOfFOV") {
-        fov = 1 / value;
-      }
     }
   }
   const settings = new SettingsManager();
@@ -296,17 +303,141 @@
       }
     };
   }
+  const wsDataProcessing = [];
+  function initTheoryCraft() {
+    if (theoryCraft.length > 0) {
+      console.warn("theoryCraft already initialized!");
+      return;
+    }
+    for (let rarity = 0; rarity <= MAX_PETAL_RARITY; rarity++) {
+      theoryCraft.push(5);
+      let probFailedSoFar = 1;
+      let attempt = 0;
+      while (probFailedSoFar > 0) {
+        probFailedSoFar *= 1 - calculateChance(attempt, rarity) / 100;
+        theoryCraft[rarity] += probFailedSoFar * 2.5;
+        attempt++;
+      }
+    }
+  }
+  function allowWsDataProcessing() {
+    function injectWsSend() {
+      const originalSend = ws.send;
+      ws.send = function(data) {
+        const rawData = msgpackr.unpack(data);
+        for (let fn of wsDataProcessing) {
+          fn(rawData);
+        }
+        originalSend.apply(ws, [msgpackr.pack(rawData)]);
+      };
+    }
+    const originalInitWS = initWS;
+    initWS = function() {
+      originalInitWS();
+      injectWsSend();
+    };
+    if (!isNil(ws)) {
+      injectWsSend();
+    }
+  }
+  function addWsDataProcessing(fn) {
+    wsDataProcessing.push(fn);
+  }
+  function unfreezeObjects() {
+    processGameMessageMap = { ...processGameMessageMap };
+  }
+  function refreezeObjects() {
+    processGameMessageMap = Object.freeze(processGameMessageMap);
+  }
+  function enableInvertAttackAndDefend() {
+    let rawAttacking = false;
+    let rawDefending = false;
+    function updateClientAttack() {
+      const newAttacking = rawAttacking !== settings.get("invertAttack");
+      if (!isNil(_unsafeWindow.selfId)) {
+        const player = room.flowers[_unsafeWindow.selfId];
+        if (!isNil(player)) {
+          player.attacking = newAttacking;
+        }
+      }
+      return newAttacking;
+    }
+    function updateClientDefend() {
+      const newDefending = rawDefending !== settings.get("invertDefend");
+      if (!isNil(_unsafeWindow.selfId)) {
+        const player = room.flowers[_unsafeWindow.selfId];
+        if (!isNil(player)) {
+          player.defending = newDefending;
+        }
+      }
+      return newDefending;
+    }
+    addWsDataProcessing((data) => {
+      if (!isNil(data.attack)) {
+        rawAttacking = data.attack;
+        data.attack = updateClientAttack();
+      } else if (data[0] === "a") {
+        rawAttacking = data[1];
+        data[1] = updateClientAttack();
+      } else if (!isNil(data.defend)) {
+        rawDefending = data.defend;
+        data.defend = updateClientDefend();
+      } else if (data[0] === "d") {
+        rawDefending = data[1];
+        data[1] = updateClientDefend();
+      }
+    });
+    const originalHandleKey = inputHandler.handleKey;
+    inputHandler.handleKey = function(e) {
+      originalHandleKey.apply(this, [e]);
+      if (!isInGameInput(e)) {
+        return;
+      }
+      if (e.type === "keydown") {
+        if (e.code === settings.get("keybindInvertAttack")) {
+          const newInvertAttack = !settings.get("invertAttack");
+          settings.set("invertAttack", newInvertAttack);
+          chatAnnounce(
+            "Invert Attack set to " + (newInvertAttack ? "ON" : "OFF") + "!",
+            "#ffbfbf"
+            // Pink
+          );
+          send({ attack: rawAttacking });
+        }
+        if (e.code === settings.get("keybindInvertDefend")) {
+          const newInvertDefend = !settings.get("invertDefend");
+          settings.set("invertDefend", newInvertDefend);
+          chatAnnounce(
+            "Invert Defend set to " + (newInvertDefend ? "ON" : "OFF") + "!",
+            "#bfbfff"
+            // Light blue
+          );
+          send({ defend: rawDefending });
+        }
+      }
+    };
+    const originalEnterGame = enterGame;
+    enterGame = function() {
+      originalEnterGame();
+      send({ attack: false });
+      send({ attack: false });
+    };
+  }
   function modifyBaseFOV() {
-    fov = 1 / settings.get("baseReciprocalOfFOV");
     const originalHandleKey = inputHandler.handleKey;
     inputHandler.handleKey = function(e) {
       originalHandleKey.apply(inputHandler, [e]);
-      if (e.repeat && this.chatOpen === false) return e.preventDefault();
-      if (this.chatOpen === true) return;
-      if (_unsafeWindow.state !== "game") return;
+      if (!isInGameInput(e)) {
+        return;
+      }
       if (e.code === "BracketLeft" && e.type === "keydown") {
         fov = 1 / settings.get("baseReciprocalOfFOV");
       }
+    };
+    const originalEnterGame = enterGame;
+    enterGame = function() {
+      originalEnterGame();
+      fov = 1 / settings.get("baseReciprocalOfFOV");
     };
   }
   function addPetalCraftPreview() {
@@ -418,9 +549,9 @@
     const originalHandleKey = inputHandler.handleKey;
     inputHandler.handleKey = function(e) {
       originalHandleKey.apply(inputHandler, [e]);
-      if (e.repeat && this.chatOpen === false) return e.preventDefault();
-      if (this.chatOpen === true) return;
-      if (_unsafeWindow.state !== "game") return;
+      if (!isInGameInput(e)) {
+        return;
+      }
       if (e.code === settings.get("keybindStatsBox") && e.type === "keydown") {
         showQuickStatsBox = !showQuickStatsBox;
       }
@@ -511,30 +642,9 @@
     }
     return hasLetter ? squadCode : randomSquadCode();
   }
-  function initTheoryCraft() {
-    if (theoryCraft.length > 0) {
-      console.warn("theoryCraft already initialized!");
-      return;
-    }
-    for (let rarity = 0; rarity <= MAX_PETAL_RARITY; rarity++) {
-      theoryCraft.push(5);
-      let probFailedSoFar = 1;
-      let attempt = 0;
-      while (probFailedSoFar > 0) {
-        probFailedSoFar *= 1 - calculateChance(attempt, rarity) / 100;
-        theoryCraft[rarity] += probFailedSoFar * 2.5;
-        attempt++;
-      }
-    }
-  }
-  function unfreezeObjects() {
-    processGameMessageMap = { ...processGameMessageMap };
-  }
-  function refreezeObjects() {
-    processGameMessageMap = Object.freeze(processGameMessageMap);
-  }
   unfreezeObjects();
   initTheoryCraft();
+  allowWsDataProcessing();
   addPetalCraftPreview();
   addRandomizedSquadCodes();
   displayMissilesAboveEnemies();
@@ -542,6 +652,7 @@
   enlargeZoomedOutItems();
   fixNegativeRadiusFreeze();
   addQuickStatsBoxHotkey();
+  enableInvertAttackAndDefend();
   addScreenshotMode();
   refreezeObjects();
 

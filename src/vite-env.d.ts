@@ -88,6 +88,11 @@ declare global {
     draw();
   }
 
+  class Flower {
+    attacking: boolean;
+    defending: boolean;
+  }
+
   class Petal {
     constructor(data: any);
   }
@@ -142,6 +147,7 @@ declare global {
   class Room {
     enemies: Record<number, Enemy>;
     enemyBoxes: enemyBox[];
+    flowers: Record<number, Flower>;
   }
 
   let room: Room;
@@ -236,9 +242,21 @@ declare global {
 
   const ws: WebSocket;
 
-  let processGameMessageMap: {
-    newPetalContainer: (data: any, _me?: any, _advanced?: any) => void;
-  };
+  let initWS: () => void;
+
+  const msgpackr: {
+    pack(msg: any): any;
+    unpack(msg: any): any;
+  }
+
+  function send(data: any, forceSend?: boolean);
+
+  let processGameMessageMap: Record<
+    "newPetalContainer",
+    (data: any, _me?: any, _advanced?: any) => void
+  >;
+
+  let enterGame: () => void;
 }
 
 export {};
