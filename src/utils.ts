@@ -1,3 +1,4 @@
+import { unsafeWindow } from "$";
 import { CINDER_COLOUR, MAX_PETAL_RARITY } from "./constants";
 import type { Rarity } from "./enums";
 
@@ -85,6 +86,19 @@ export function convertPetalValue(
     oldRarity--;
   }
   return amount;
+}
+
+/**
+ * Determines whether or not the user is making an in-game input (i.e., the
+ * player is currently in-game and is not typing in the chat).
+ */
+export function isInGameInput(
+  e: KeyboardEvent
+): boolean {
+  if (e.repeat) {
+    e.preventDefault();
+  }
+  return unsafeWindow.state === "game" && !inputHandler.chatOpen && !e.repeat;
 }
 
 /**

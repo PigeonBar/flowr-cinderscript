@@ -1,6 +1,5 @@
-import { unsafeWindow } from "$";
 import { CINDER_COLOUR } from "../constants";
-import { deepCopy, isNil } from "../utils";
+import { deepCopy, isInGameInput, isNil } from "../utils";
 
 /**
  * This feature lets the script developer enter Screenshot Mode. This works by
@@ -88,9 +87,9 @@ export function addScreenshotMode() {
   inputHandler.handleKey = function(e) {
     // First, run all the usual code for handling inputs
     originalHandleKey.apply(inputHandler, [e]);
-    if (e.repeat && this.chatOpen === false) return e.preventDefault();
-    if (this.chatOpen === true) return;
-    if (unsafeWindow.state !== "game") return;
+    if (!isInGameInput(e)) {
+      return;
+    }
 
     if (e.code === localStorage.getItem("cinderDevScreenshotMode") &&
         e.code.length > 0 &&
