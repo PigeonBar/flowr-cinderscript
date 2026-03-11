@@ -1,6 +1,6 @@
 import { unsafeWindow } from "$";
 import { addWsDataProcessing } from "../inits";
-import { settings } from "../settings";
+import { settings } from "../settings/settingsManager";
 import { chatAnnounce, isInGameInput, isNil } from "../utils";
 
 /**
@@ -105,6 +105,6 @@ export function enableInvertAttackAndDefend() {
     originalEnterGame();
 
     send({attack: false});
-    send({attack: false});
+    send({defend: false});
   }
 }

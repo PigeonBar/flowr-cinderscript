@@ -8,11 +8,17 @@ import { addPetalCraftPreview } from "./features/petalCraftPreview";
 import { addQuickStatsBoxHotkey } from "./features/quickStatsBoxHotkey";
 import { addRandomizedSquadCodes } from "./features/randomizedSquadCode";
 import { allowWsDataProcessing, initTheoryCraft, refreezeObjects, unfreezeObjects } from "./inits";
+import { allowEditingKeybinds } from "./inits/allowEditingKeybinds";
+import { addNewMenuButtons } from "./inits/newMenuButtons";
+import { preventMenuOverlap } from "./inits/preventMenuOverlap";
 
 // #region Inits
 unfreezeObjects();
 initTheoryCraft();
 allowWsDataProcessing();
+preventMenuOverlap();
+allowEditingKeybinds();
+addNewMenuButtons();
 
 // #region Features
 addPetalCraftPreview();

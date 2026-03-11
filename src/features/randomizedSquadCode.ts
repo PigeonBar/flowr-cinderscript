@@ -1,5 +1,5 @@
 import { unsafeWindow } from "$";
-import { settings } from "../settings";
+import { settings } from "../settings/settingsManager";
 import { chatAnnounce } from "../utils";
 
 /**

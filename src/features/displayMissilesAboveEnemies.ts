@@ -1,4 +1,4 @@
-import { settings } from "../settings";
+import { settings } from "../settings/settingsManager";
 
 /**
  * This script ensures that enemy missiles are always drawn above the enemies

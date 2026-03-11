@@ -1,6 +1,6 @@
 import { unsafeWindow } from "$";
 import { CINDER_COLOUR, MAX_PETAL_RARITY } from "./constants";
-import type { Rarity } from "./enums";
+import { Rarity } from "./enums";
 
 const statsBoxQueue = [] as {
   container: PetalContainer;
@@ -86,6 +86,13 @@ export function convertPetalValue(
     oldRarity--;
   }
   return amount;
+}
+
+/**
+ * Determines the rarity index corresponding to the given rarity name.
+ */
+export function rarityToIndex(rarity: string): Rarity {
+  return Rarity[rarity.toUpperCase() as keyof typeof Rarity];
 }
 
 /**
