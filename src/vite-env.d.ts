@@ -2,6 +2,7 @@
 /// <reference types="vite-plugin-monkey/client" />
 
 import type { Rarity } from "./enums";
+import type { BooleanOption, SettingsOption, SettingsSectionHeading } from "./settings/settingsOptions";
 
 //// <reference types="vite-plugin-monkey/global" />
 /// <reference types="vite-plugin-monkey/style" />
@@ -13,6 +14,7 @@ import type { Rarity } from "./enums";
  */
 declare global {
   interface Window {
+    connected?: boolean;
     selfId?: number;
     state?: string;
   }
@@ -32,9 +34,14 @@ declare global {
     enemies: Record<EnemyType, any>;
   };
 
+  const Colors: {
+    rarities: {name: string, color: string, border: string}[];
+  }
+
   class CraftingMenu {
     w: number;
     h: number;
+    menuActive: boolean;
     lastOpenTime: number;
     lastCloseTime: number;
     petalContainerSize: number;
@@ -47,6 +54,8 @@ declare global {
       w: number;
       h: number;
     };
+    
+    toggleMenu();
 
     drawInventory(alpha: number = 1);
 
@@ -66,7 +75,19 @@ declare global {
 
   const craftingMenu: CraftingMenu;
 
+  class GlobalInventory {
+    menuActive: boolean;
+
+    toggleMenu();
+  }
+
+  const globalInventory: GlobalInventory;
+
   class MobGallery {
+    menuActive: boolean;
+
+    toggleMenu();
+
     generateEnemyPc(
       type: EnemyType,
       rarity: Rarity,
@@ -152,7 +173,7 @@ declare global {
 
   let room: Room;
 
-  class MouseData {
+  type MouseData = {
     x: number;
     y: number;
     canvasX: number;
@@ -165,10 +186,12 @@ declare global {
     };
   }
 
+  type CanvasMouseData = {x: number, y: number};
+
   const mouse: MouseData;
   
   function mouseInBox(
-    {x: number, y: number},
+    mouse: {x: number, y: number},
     box: {x: number, y: number, w: number, h: number}
   );
 
@@ -176,6 +199,8 @@ declare global {
     chatOpen: boolean;
 
     handleKey(e: KeyboardEvent);
+
+    handleMouse(e: MouseEvent);
   }
 
   const inputHandler: InputHandler;
@@ -189,11 +214,13 @@ declare global {
     zoom: number;
   };
 
-  let time: number; // Used for tracking how long each frame is?
+  let time: number; // How many milliseconds have passed since loading the game
 
   let fov: number;
 
   function easeOutCubic(x: number);
+
+  function blendColor(color1: string, color2: string, ratio: number);
 
   let renderGame: (dt: number) => void;
 
@@ -233,12 +260,61 @@ declare global {
     squadCode?: string,
   }) => void;
 
+  /**
+   * The menus at the top of the screen (settings, changelog)
+   */
+  type TopMenu = {
+    active: boolean;
+
+    toggle();
+  }
+
+  /**
+   * The menus at the bottom of the screen (inventory, crafting, gallery)
+   */
+  type BottomMenu = {
+    menuActive: boolean;
+
+    toggleMenu();
+  }
+
+  type Menu = TopMenu | BottomMenu;
+
   class SettingsMenu {
-    // A temporary dev backdoor before a proper settings menu is created.
-    cinderSetting(key: SettingsKey, value: any): void;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    currentHeight: number;
+    active: boolean;
+    options: readonly (SettingsOption | SettingsSectionHeading)[];
+
+    draw();
+    
+    renderOption(option: SettingsOption);
+
+    renderToggle(option: BooleanOption);
+
+    toggle();
+
+    mouseDown(e: CanvasMouseData);
+
+    mouseMove(e: CanvasMouseData);
+
+    processToggle(t: BooleanOption, e: CanvasMouseData);
   }
 
   const settingsMenu: SettingsMenu;
+
+  class Changelog {
+    active: boolean;
+
+    toggle();
+  }
+
+  const changelog: Changelog;
+
+  const changelogButton: HTMLDivElement;
 
   const ws: WebSocket;
 
@@ -257,6 +333,11 @@ declare global {
   >;
 
   let enterGame: () => void;
+
+  /**
+   * The current version of Flowr's client code.
+   */
+  let ver: string;
 }
 
 export {};

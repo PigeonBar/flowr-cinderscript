@@ -1,8 +1,8 @@
 # About
 
-Welcome! This is a free, publicly available script containing a collection of QoL features that I have written for flowr.fun players. This is a very new project right now, so you can look forward to many additional features being added in the future.
+Welcome! This is a free, publicly available script containing a collection of QoL features that I have written for flowr.fun players. This is a very new project right now, so you can look forward to many additional features being added in the future. If you have any features/ideas that you want to be added, please feel free to message me on Discord (username: pigeonbar)  or submit a feature request on this GitHub repository!
 
-I intend to comply with all guidelines and conditions set by the flowr developers. Please report any compliance-related issues to me, and I will fix them asap.
+I intend to comply with all guidelines and conditions set by the flowr developers. Please report any compliance-related issues to me as needed, and I will fix them asap.
 
 This project exists to support up-and-coming players who have trouble gaining access to QoL scripts because they have not gotten into Elocord (a private community of elite flowr players.) If you are in Elocord, then you'll likely want to use Elocord's private scripts instead, since they are an *extremely* good upgrade compared to my scripts. Additionally, <sub>I may have completely screwed over my relations with some Elocord members</sub>, so if you are applying to get into Elocord, you are advised to uninstall my scripts in order to avoid social ridicule from Elocord members.
 
@@ -24,11 +24,9 @@ This script is meant to be installed using a userscript manager, such as Tamperm
 
 3. Paste the script contents (Ctrl+V) into the editor, then save the script (Ctrl+S).
 
+After this initial installation, Tampermonkey should automatically take care of finding detecting and applying updates to your installed script.
+
 (In the future, I may also look into other script hosting sites, such as Greasy Fork, to help simplify these installation steps for you.)
-
-# Configuration
-
-I plan for this script to be configurable via a settings menu. Stay tuned!
 
 # Security notice
 

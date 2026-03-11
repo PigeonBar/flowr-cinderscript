@@ -1,4 +1,4 @@
-import { settings } from "../settings";
+import { settings } from "../settings/settingsManager";
 import { queueDrawStatsBox, drawQueuedStatsBoxes } from "../utils";
 
 /**
@@ -77,8 +77,8 @@ export function addPetalCraftPreview(): void {
     ctx.fillText("Preview", slot.x, slot.y - 55);
 
     // Draw the petal being previewed and queue its stats box, if applicable
-    const mouseX = mouse.x * canvas.w / window.innerWidth;
-    const mouseY = mouse.y * canvas.h / window.innerHeight;
+    const mouseX = mouse.canvasX;
+    const mouseY = mouse.canvasY;
     const container = this.previewPetalContainer;
     if (container !== undefined) {
       container.draw();

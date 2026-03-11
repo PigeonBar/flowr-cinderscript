@@ -1,6 +1,8 @@
 import { MAX_PETAL_RARITY } from "./constants";
 import { isNil, theoryCraft } from "./utils";
 
+// TODO: Move all this code to the "inits" folder
+
 /**
  * List of functions to edit data that the websocket is sending to the server.
  */
