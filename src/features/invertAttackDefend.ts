@@ -1,7 +1,8 @@
 import { unsafeWindow } from "$";
 import { addWsDataProcessing } from "../inits";
+import { addKeybindInstruction } from "../inits/keybindHandling";
 import { settings } from "../settings/settingsManager";
-import { chatAnnounce, isInGameInput, isNil } from "../utils";
+import { chatAnnounce, isNil } from "../utils";
 
 /**
  * This feature lets the player invert attack and defend inputs. When attack or
@@ -68,36 +69,29 @@ export function enableInvertAttackAndDefend() {
     }
   });
 
-  const originalHandleKey = inputHandler.handleKey;
-  inputHandler.handleKey = function(e: KeyboardEvent) {
-    // First, run all the usual code for handling inputs
-    originalHandleKey.apply(this, [e]);
-    if (!isInGameInput(e)) {
-      return;
-    }
-
-    // Handle user pressing down the invert attack/defend key
-    if (e.type === "keydown") {
-      if (e.code === settings.get("keybindInvertAttack")) {
-        const newInvertAttack = !settings.get("invertAttack");
-        settings.set("invertAttack", newInvertAttack);
-        chatAnnounce(
-          "Invert Attack set to " + (newInvertAttack ? "ON" : "OFF") + "!",
-          "#ffbfbf", // Pink
-        );
-        send({attack: rawAttacking});
-      }
-      if (e.code === settings.get("keybindInvertDefend")) {
-        const newInvertDefend = !settings.get("invertDefend");
-        settings.set("invertDefend", newInvertDefend);
-        chatAnnounce(
-          "Invert Defend set to " + (newInvertDefend ? "ON" : "OFF") + "!",
-          "#bfbfff", // Light blue
-        );
-        send({defend: rawDefending});
-      }
-    }
-  }
+  // Add keybind instructions for invert attack/defend inputs in-game
+  addKeybindInstruction(
+    {type: "settings", key: "keybindInvertAttack", fn: () => {
+      const newInvertAttack = !settings.get("invertAttack");
+      settings.set("invertAttack", newInvertAttack);
+      chatAnnounce(
+        "Invert Attack set to " + (newInvertAttack ? "ON" : "OFF") + "!",
+        "#ffbfbf", // Pink
+      );
+      send({attack: rawAttacking});
+    }}
+  );
+  addKeybindInstruction(
+    {type: "settings", key: "keybindInvertDefend", fn: () => {
+      const newInvertDefend = !settings.get("invertDefend");
+      settings.set("invertDefend", newInvertDefend);
+      chatAnnounce(
+        "Invert Defend set to " + (newInvertDefend ? "ON" : "OFF") + "!",
+        "#bfbfff", // Light blue
+      );
+      send({defend: rawDefending});
+    }}
+  );
 
   // Also reset inputs and process input inversion when entering a game
   const originalEnterGame = enterGame;

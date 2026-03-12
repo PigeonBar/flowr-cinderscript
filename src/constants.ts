@@ -71,3 +71,8 @@ export const TOOLTIP_WIDTH_CAP = 400;
  * The height of each line of text in a tooltip (including spacing).
  */
 export const TOOLTIP_TEXT_HEIGHT = 22.5;
+
+/**
+ * A special key to indicate that a keybind setting was deleted by the user.
+ */
+export const KEYBIND_DELETED = "<None>";

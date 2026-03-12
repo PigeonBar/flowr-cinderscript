@@ -111,39 +111,43 @@ export class TooltipBox {
     this.h = 20 - (TOOLTIP_TEXT_HEIGHT - 15);
     this.alpha = 0;
 
-    // Split the given text into lines, making sure that each line does not
-    // become too long.
+    // Prepare to measure the text
     ctx.save();
     ctx.font = "900 15px Ubuntu"; // Set font for measuring text width
     const text = (typeof this.text === "string") ? this.text : this.text();
     const splitText = text.split(" ").map(token => token + " ");
     this.lines = [];
-    let currentLine = [];
+    let currentLine: string[] = [];
     let currentWidth = 0;
+
+    const addLine = () => {
+      this.lines.push(currentLine);
+      this.w = Math.max(this.w, currentWidth + 20);
+      this.h += TOOLTIP_TEXT_HEIGHT;
+      currentLine = [];
+      currentWidth = 0;
+    }
+
+    // Split the given text into lines, making sure that each line does not
+    // become too long.
     for (let i = 0; i < splitText.length; i++) {
       const newText = splitText[i];
+      // Special token for moving to the next line
+      if (newText.trim() === "$n") {
+        addLine();
+        continue;
+      }
       // Only non-special tokens (no $) will contribute to the width
       const newWidth = newText[0] === "$" ? 0 : ctx.measureText(newText).width;
       if (currentWidth + newWidth > TOOLTIP_WIDTH_CAP) {
-        this.addLine(currentLine, currentWidth);
-        currentLine = [];
-        currentWidth = 0;
+        addLine();
       }
       currentLine.push(newText);
       currentWidth += newWidth;
     }
-    // Also add the final line before concluding
-    this.addLine(currentLine, currentWidth);
-    ctx.restore();
-  }
 
-  /**
-   * Adds another line of text to this tooltip box. Also updates this box's
-   * dimensions based on the dimensions of the text.
-   */
-  addLine(currentLine: string[], currentWidth: number): void {
-    this.lines.push(currentLine);
-    this.w = Math.max(this.w, currentWidth + 20);
-    this.h += TOOLTIP_TEXT_HEIGHT;
+    // Also add the final line before concluding
+    addLine();
+    ctx.restore();
   }
 }

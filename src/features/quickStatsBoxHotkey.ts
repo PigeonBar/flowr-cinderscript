@@ -1,5 +1,5 @@
-import { settings } from "../settings/settingsManager";
-import { isInGameInput, isNil } from "../utils";
+import { addKeybindInstruction } from "../inits/keybindHandling";
+import { isNil } from "../utils";
 
 /**
  * This feature adds a hotkey to toggle displaying the stats box of the highest
@@ -9,19 +9,9 @@ export function addQuickStatsBoxHotkey() {
   // The stats box is always off by default when reloading the page
   let showQuickStatsBox = false;
 
-  const originalHandleKey = inputHandler.handleKey;
-  inputHandler.handleKey = function(e) {
-    // First, run all the usual code for handling inputs
-    originalHandleKey.apply(inputHandler, [e]);
-    if (!isInGameInput(e)) {
-      return;
-    }
-
-    // Handle user pressing down the stats box key
-    if (e.code === settings.get("keybindStatsBox") && e.type === "keydown") {
-      showQuickStatsBox = !showQuickStatsBox;
-    }
-  }
+  addKeybindInstruction({type: "settings", key: "keybindStatsBox", fn: () => {
+    showQuickStatsBox = !showQuickStatsBox;
+  }});
 
   const originalRenderGame = renderGame;
   const originalDrawStatsBox = PetalContainer.prototype.drawStatsBox;
