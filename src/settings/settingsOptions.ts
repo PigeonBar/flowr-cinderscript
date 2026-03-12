@@ -1,8 +1,9 @@
-import { CINDER_COLOUR, EDIT_ICON_SIZE, SETTINGS_BUTTON_SIZE, SETTINGS_OPTION_HEIGHT } from "../constants";
+import { CINDER_COLOUR, EDIT_ICON_SIZE, SETTINGS_BUTTON_PADDING, SETTINGS_BUTTON_SIZE, SETTINGS_GREEN, SETTINGS_OPTION_HEIGHT, TOOLTIP_BLUE, TOOLTIP_BORDER_BLUE, TOOLTIP_ICON_SIZE } from "../constants";
 import type { Rarity } from "../enums";
 import { isNil, rarityToIndex } from "../utils";
 import { settings, type BooleanSettingsKey, type KeybindSettingsKey, type NumberSettingsKey, type RaritySettingsKey } from "./settingsManager";
-import { cinderSettingsMenu, type CinderSettingsMenu } from "./settingsMenu";
+import { type CinderSettingsMenu } from "./settingsMenu";
+import { TooltipBox, type Tooltip } from "./tooltipBox";
 
 // icons/settings-edit.svg
 const editIcon = new Image();
@@ -18,6 +19,7 @@ export abstract class SettingsOption {
   state: any;
   changeTime: number;
   screenPosition: {x: number, y: number, w: number, h: number};
+  _tooltipBox?: TooltipBox;
 
   /**
    * A legacy field that is used for the settings menu to handle
@@ -25,8 +27,11 @@ export abstract class SettingsOption {
    */
   toggleFn: (state?: any) => void;
 
-  constructor(name: string) {
+  constructor(name: string, tooltip?: Tooltip) {
     this.name = name;
+    if (!isNil(tooltip)) {
+      this._tooltipBox = new TooltipBox(tooltip);
+    }
     this.changeTime = 0;
     this.screenPosition = {x: 0, y: 0, w: 0, h: 0};
 
@@ -34,6 +39,23 @@ export abstract class SettingsOption {
     // settings states with proper typings.
     this.state = undefined;
     this.toggleFn = () => {};
+  }
+
+  get tooltipBox(): TooltipBox | undefined {
+    // Tooltips only exist if the setting for displaying tooltips is turned on.
+    return settings.get("settingsTooltips") ? this._tooltipBox : undefined;
+  }
+
+  /**
+   * The position of the centre of the ? tooltip icon for this option.
+   */
+  get tooltipPos(): {x: number, y: number} {
+    return {
+      x: this.screenPosition.x + SETTINGS_BUTTON_SIZE +
+        SETTINGS_BUTTON_PADDING * 2 + ctx.measureText(this.name).width +
+        TOOLTIP_ICON_SIZE / 2,
+      y: this.screenPosition.y + SETTINGS_BUTTON_SIZE / 2,
+    };
   }
 
   /**
@@ -71,6 +93,22 @@ export abstract class SettingsOption {
   mouseInButton(e: CanvasMouseData): boolean {
     return mouseInBox(e, this.screenPosition);
   }
+
+  /**
+   * Draws this option's tooltip icon and tooltip.
+   */
+  drawTooltip(): void {
+    if (!isNil(this.tooltipBox)) {
+      drawTooltipIcon(this.tooltipPos, this.tooltipBox);
+    }
+  }
+
+  /**
+   * Updates the text for this setting's tooltip.
+   */
+  updateTooltip(): void {
+    this._tooltipBox?.generateDesc();
+  }
 };
 
 /**
@@ -79,8 +117,8 @@ export abstract class SettingsOption {
 export class BooleanOption extends SettingsOption {
   state: boolean;
 
-  constructor(name: string, settingsKey: BooleanSettingsKey) {
-    super(name);
+  constructor(name: string, settingsKey: BooleanSettingsKey, tooltip?: Tooltip) {
+    super(name, tooltip);
 
     this.state = settings.get(settingsKey);
     this.toggleFn = (state: boolean) => {
@@ -101,42 +139,55 @@ export class BooleanOption extends SettingsOption {
  * they already convey their current state via their toggle button colour.
  */
 export abstract class DisplayValueOption extends SettingsOption {
+  constructor(name: string, tooltip?: Tooltip) {
+    super(name + ": ", tooltip);
+  }
+
+  get tooltipPos(): { x: number; y: number; } {
+    let {x, y} = super.tooltipPos;
+    for (let text of this.getDisplayedValues()) {
+      x += ctx.measureText(text).width;
+    }
+
+    return {x, y};
+  }
+
   isDisplayValueOption(): this is this {
     return true;
   }
 
   /**
-   * Determines the colour that the value should be displayed in.
+   * Determines the colours that the values should be displayed in.
    */
-  getValueFillStyle(): string {
+  getValueFillStyles(): string[] {
     // By default, the value is displayed as green, and it flashes white over
     // 1.5s when the player edits it.
     if (this.changeTime > 0 && time - this.changeTime < 1500) {
       const ratio = (time - this.changeTime) / 1500;
-      return blendColor("#ffffff", "#3fff3f", ratio);
+      return [blendColor("#ffffff", SETTINGS_GREEN, ratio)];
     } else {
-      return "#3fff3f";
+      return [SETTINGS_GREEN];
     }
   }
 
   /**
-   * Determines the displayed value, with formatting if necessary.
+   * Determines the displayed values, with formatting if necessary.
    */
-  getDisplayedValue(): string {
+  getDisplayedValues(): string[] {
     // By default, just display the option's raw value.
-    return "" + this.state;
+    return ["" + this.state];
   }
 
   /**
    * Draws this option inside the given settings menu.
    * 
-   * Large amounts of this code is adapted from Flowr's base code.
+   * This code is largely adapted from Flowr's base code.
    */
   draw(menu: CinderSettingsMenu) {
     // Display the edit button
     this.screenPosition = {
       x: 15 + menu.x,
-      y: menu.currentHeight + SETTINGS_OPTION_HEIGHT / 2 - SETTINGS_BUTTON_SIZE / 2 + menu.y,
+      y: menu.midHeight - SETTINGS_BUTTON_SIZE / 2 + menu.y,
       w: SETTINGS_BUTTON_SIZE,
       h: SETTINGS_BUTTON_SIZE,
     }
@@ -159,7 +210,7 @@ export abstract class DisplayValueOption extends SettingsOption {
     ctx.drawImage(
       editIcon,
       15 + SETTINGS_BUTTON_SIZE / 2 - EDIT_ICON_SIZE / 2,
-      menu.currentHeight + SETTINGS_OPTION_HEIGHT / 2 - EDIT_ICON_SIZE / 2,
+      menu.midHeight - EDIT_ICON_SIZE / 2,
       EDIT_ICON_SIZE,
       EDIT_ICON_SIZE,
     );
@@ -174,29 +225,27 @@ export abstract class DisplayValueOption extends SettingsOption {
     ctx.strokeStyle = "black";
     ctx.lineWidth = 2;
     ctx.strokeText(
-      this.name + ": ",
-      15 + SETTINGS_BUTTON_SIZE + 13,
-      menu.currentHeight + SETTINGS_OPTION_HEIGHT / 2,
+      this.name,
+      15 + SETTINGS_BUTTON_SIZE + SETTINGS_BUTTON_PADDING,
+      menu.midHeight,
     );
     ctx.fillText(
-      this.name + ": ",
-      15 + SETTINGS_BUTTON_SIZE + 13,
-      menu.currentHeight + SETTINGS_OPTION_HEIGHT / 2,
+      this.name,
+      15 + SETTINGS_BUTTON_SIZE + SETTINGS_BUTTON_PADDING,
+      menu.midHeight,
     );
     
     // Display the option's current value
-    ctx.fillStyle = this.getValueFillStyle();
-    const prevTextWidth = ctx.measureText(this.name + ": ").width;
-    ctx.strokeText(
-      this.getDisplayedValue(),
-      15 + SETTINGS_BUTTON_SIZE + 13 + prevTextWidth,
-      menu.currentHeight + SETTINGS_OPTION_HEIGHT / 2,
-    );
-    ctx.fillText(
-      this.getDisplayedValue(),
-      15 + SETTINGS_BUTTON_SIZE + 13 + prevTextWidth,
-      menu.currentHeight + SETTINGS_OPTION_HEIGHT / 2,
-    );
+    const prevTextWidth = ctx.measureText(this.name).width;
+    let currentX = 15 + SETTINGS_BUTTON_SIZE + 
+      SETTINGS_BUTTON_PADDING + prevTextWidth;
+    for (let i = 0; i < this.getDisplayedValues().length; i++) {
+      const text = this.getDisplayedValues()[i];
+      ctx.fillStyle = this.getValueFillStyles()[i];
+      ctx.strokeText(text, currentX, menu.midHeight);
+      ctx.fillText(text, currentX, menu.midHeight);
+      currentX += ctx.measureText(text).width;
+    }
 
     menu.currentHeight += SETTINGS_OPTION_HEIGHT;
   }
@@ -205,7 +254,7 @@ export abstract class DisplayValueOption extends SettingsOption {
    * Handles letting the player edit this setting when the player clicks the
    * edit button.
    */
-  abstract onClick(): void;
+  abstract onClick(menu: CinderSettingsMenu): void;
 }
 
 export class NumberOption extends DisplayValueOption {
@@ -225,8 +274,9 @@ export class NumberOption extends DisplayValueOption {
     minValue: number,
     maxValue: number,
     decimalDigits: number,
+    tooltip?: Tooltip,
   ) {
-    super(name);
+    super(name, tooltip);
 
     this.minValue = minValue;
     this.maxValue = maxValue;
@@ -263,8 +313,9 @@ export class RarityOption extends DisplayValueOption {
   constructor(
     name: string,
     settingsKey: RaritySettingsKey,
+    tooltip?: Tooltip,
   ) {
-    super(name);
+    super(name, tooltip);
 
     this.state = settings.get(settingsKey);
     this.settingsKey = settingsKey;
@@ -274,20 +325,20 @@ export class RarityOption extends DisplayValueOption {
     return true;
   }
 
-  getValueFillStyle(): string {
+  getValueFillStyles(): string[] {
     // The value is now displayed using the rarity's colour, and it still
     // flashes white over 1.5s when the player edits it.
     if (this.changeTime > 0 && time - this.changeTime < 1500) {
       const ratio = (time - this.changeTime) / 1500;
-      return blendColor("#ffffff", Colors.rarities[this.state].color, ratio);
+      return [blendColor("#ffffff", Colors.rarities[this.state].color, ratio)];
     } else {
-      return Colors.rarities[this.state].color;
+      return [Colors.rarities[this.state].color];
     }
   }
 
-  getDisplayedValue(): string {
+  getDisplayedValues(): string[] {
     // Display the name of the rarity
-    return Colors.rarities[this.state].name;
+    return [Colors.rarities[this.state].name];
   }
 
   onClick(): void {
@@ -326,30 +377,45 @@ export class KeybindOption extends DisplayValueOption {
   constructor(
     name: string,
     settingsKey: KeybindSettingsKey,
+    tooltip?: Tooltip,
   ) {
-    super(name);
+    super(name, tooltip);
 
     this.state = settings.get(settingsKey);
     this.settingsKey = settingsKey;
     this.editingState = false;
   }
 
-  getValueFillStyle(): string {
-    // Display it as orange if it is currently being edited
-    return this.editingState ? CINDER_COLOUR : super.getValueFillStyle();
+  getDisplayedValues(): string[] {
+    // Also display an "Editing..." status if this is being edited
+    if (this.editingState) {
+      return [this.state, " (Editing...)"];
+    } else {
+      return [this.state];
+    }
   }
 
-  getDisplayedValue(): string {
-    return this.editingState ? "Editing..." : this.state;
+  getValueFillStyles(): string[] {
+    // Also display an "Editing..." status if this is being edited
+    if (this.editingState) {
+      return super.getValueFillStyles().concat(CINDER_COLOUR);
+    } else {
+      return super.getValueFillStyles();
+    }
   }
 
-  onClick(): void {
-    cinderSettingsMenu.setCurrentKeybindOption(this);
-    this.editingState = true;
-    // Automatically cancel the edit after 3 seconds
-    this.editingStateTimeout = setTimeout(() => {
-      cinderSettingsMenu.setCurrentKeybindOption(undefined);
-    }, 3000);
+  onClick(menu: CinderSettingsMenu): void {
+    if (!this.editingState) {
+      menu.setCurrentKeybindOption(this);
+      this.editingState = true;
+      // Automatically cancel the edit after 3 seconds
+      this.editingStateTimeout = setTimeout(() => {
+        menu.cancelKeybind();
+      }, 3000);
+    } else {
+      // Also let the user manually cancel editing
+      menu.cancelKeybind();
+    }
   }
 
   /**
@@ -374,9 +440,20 @@ export class KeybindOption extends DisplayValueOption {
  */
 export class SettingsSectionHeading {
   text: string;
+  tooltipPos: {x: number, y: number};
+  _tooltipBox?: TooltipBox;
 
-  constructor(text: string) {
+  constructor(text: string, tooltip?: Tooltip) {
     this.text = text;
+    if (!isNil(tooltip)) {
+      this._tooltipBox = new TooltipBox(tooltip);
+    }
+    this.tooltipPos = {x: 0, y: 0};
+  }
+
+  get tooltipBox(): TooltipBox | undefined {
+    // Tooltips only exist if the setting for displaying tooltips is turned on.
+    return settings.get("settingsTooltips") ? this._tooltipBox : undefined;
   }
 
   /**
@@ -392,50 +469,104 @@ export class SettingsSectionHeading {
    * This code is adapted from the Flowr changelog's horizontal dividers.
    */
   draw(menu: CinderSettingsMenu) {
-    // Display the header text
+    // Determine the locations to draw each item
     ctx.font = "900 17px Ubuntu";
-    ctx.textAlign = "center";
+    const textWidth = ctx.measureText(this.text).width;
+    let textLeftPos = menu.w / 2 - textWidth / 2;
+    let textRightPos = menu.w / 2 + textWidth / 2;
+    if (!isNil(this.tooltipBox)) {
+      // Make space for the tooltip icon
+      const extraSpace = TOOLTIP_ICON_SIZE + SETTINGS_BUTTON_PADDING;
+      textLeftPos -= extraSpace / 2;
+      textRightPos += extraSpace / 2;
+
+      this.tooltipPos = {
+        x: menu.x + textRightPos - TOOLTIP_ICON_SIZE / 2,
+        y: menu.y + menu.midHeight,
+      };
+    }
+
+    // Display the header text
+    ctx.textAlign = "left";
     ctx.textBaseline = "middle";
     ctx.fillStyle = "white";
     ctx.strokeStyle = "black";
     ctx.lineWidth = 2;
-    ctx.strokeText(
-      this.text, menu.w / 2, menu.currentHeight + SETTINGS_OPTION_HEIGHT / 2,
-    );
-    ctx.fillText(
-      this.text, menu.w / 2, menu.currentHeight + SETTINGS_OPTION_HEIGHT / 2,
-    );
+    ctx.strokeText(this.text, textLeftPos, menu.midHeight);
+    ctx.fillText(this.text, textLeftPos, menu.midHeight);
     
     // Display the separator line (with a space in between for the header text)
-    const halfTextWidth = ctx.measureText(this.text).width / 2;
     ctx.strokeStyle = "#7f7f7f";
     ctx.lineWidth = 8;
     ctx.lineCap = "round";
 
     ctx.beginPath();
-    ctx.moveTo(
-      20,
-      menu.currentHeight + SETTINGS_OPTION_HEIGHT / 2,
-    );
-    ctx.lineTo(
-      menu.w / 2 - halfTextWidth - 20,
-      menu.currentHeight + SETTINGS_OPTION_HEIGHT / 2,
-    );
+    ctx.moveTo(SETTINGS_BUTTON_PADDING, menu.midHeight);
+    ctx.lineTo(textLeftPos - SETTINGS_BUTTON_PADDING, menu.midHeight);
     ctx.stroke();
     ctx.closePath();
 
     ctx.beginPath();
-    ctx.moveTo(
-      menu.w / 2 + halfTextWidth + 20,
-      menu.currentHeight + SETTINGS_OPTION_HEIGHT / 2,
-    );
-    ctx.lineTo(
-      menu.w - 20 - 16,
-      menu.currentHeight + SETTINGS_OPTION_HEIGHT / 2,
-    );
+    ctx.moveTo(textRightPos + SETTINGS_BUTTON_PADDING, menu.midHeight);
+    // The extra -16 is to make room for the scrollbar
+    ctx.lineTo(menu.w - SETTINGS_BUTTON_PADDING - 16, menu.midHeight);
     ctx.stroke();
     ctx.closePath();
 
     menu.currentHeight += SETTINGS_OPTION_HEIGHT;
   }
+
+  /**
+   * Draws this option's tooltip icon and tooltip.
+   */
+  drawTooltip(): void {
+    if (!isNil(this.tooltipBox)) {
+      drawTooltipIcon(this.tooltipPos, this.tooltipBox);
+    }
+  }
+}
+
+/**
+ * A helper function to draw a ? tooltip icon centred at the given coordinates,
+ * and also draw the tooltip box if the mouse is hovering over the icon.
+ */
+function drawTooltipIcon(
+  pos: {x: number, y: number},
+  tooltipBox: TooltipBox
+): void {
+  // Draw the blue circle containing the ? symbol
+  const {x, y} = pos;
+  ctx.strokeStyle = TOOLTIP_BORDER_BLUE;
+  ctx.fillStyle = TOOLTIP_BLUE;
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.arc(x, y, TOOLTIP_ICON_SIZE / 2, 0, 2 * Math.PI);
+  ctx.stroke();
+  ctx.fill();
+  ctx.closePath();
+
+  // Draw the ? symbol
+  ctx.font = "900 17px Ubuntu";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "white";
+  ctx.strokeStyle = "black";
+  ctx.lineWidth = 2;
+  ctx.strokeText("?", x, y + 1);
+  ctx.fillText("?", x, y + 1);
+  
+  // Check whether the mouse is hovering over this icon
+  const isHovered = mouseInBox(
+    {x: mouse.canvasX, y: mouse.canvasY},
+    // We intentionally make the tooltip icon's "hitbox" larger
+    {
+      x: x - SETTINGS_BUTTON_SIZE / 2,
+      y: y - SETTINGS_BUTTON_SIZE / 2,
+      w: SETTINGS_BUTTON_SIZE,
+      h: SETTINGS_BUTTON_SIZE,
+    }
+  );
+  
+  // Draw the tooltip box
+  tooltipBox.draw(x, y + TOOLTIP_ICON_SIZE / 2 + 10, isHovered);
 }

@@ -1,12 +1,13 @@
 import { Rarity } from "../enums";
-import { invertAttackToggle, invertDefendToggle } from "./settingsObjects";
+import { settingsMap } from "./settingsObjects";
 
 export type BooleanSettingsKey = 
   "petalCraftPreview" |
   "autoCopyCodes" |
   "missileDrawPriority" |
   "invertAttack" |
-  "invertDefend";
+  "invertDefend" |
+  "settingsTooltips";
 
 export type NumberSettingsKey =
   "baseReciprocalOfFOV" |
@@ -22,7 +23,8 @@ export type KeybindSettingsKey =
   "keybindInvertAttack" |
   "keybindInvertDefend";
 
-type CinderSettings = Record<BooleanSettingsKey, boolean> &
+type CinderSettings =
+  Record<BooleanSettingsKey, boolean> &
   Record<NumberSettingsKey, number> &
   Record<RaritySettingsKey, Rarity> &
   Record<KeybindSettingsKey, string>;
@@ -35,6 +37,7 @@ const defaultSettings = Object.freeze({
   missileDrawPriority: true,
   invertAttack: false,
   invertDefend: false,
+  settingsTooltips: true,
   baseReciprocalOfFOV: 3,
   playerHpBarScale: 2.5,
   specialDropsScale: 2.5,
@@ -83,9 +86,13 @@ export class SettingsManager {
     localStorage.setItem("cinderSettings", JSON.stringify(this.savedSettings));
 
     if (key === "invertAttack") {
-      invertAttackToggle.state = value;
+      settingsMap.invertAttack.state = value;
     } else if (key === "invertDefend") {
-      invertDefendToggle.state = value;
+      settingsMap.invertDefend.state = value;
+    }
+
+    if (key === "specialDropsQuantity" || key === "specialDropsRarity") {
+      settingsMap.specialDropsScale.updateTooltip();
     }
   }
 }

@@ -55,10 +55,17 @@
   const LIGHT_CINDER_COLOUR = "#ffaf60";
   const CINDER_COLOUR = "#fc9547";
   const CINDER_BORDER_COLOUR = "#cc7b3d";
+  const SETTINGS_GREEN = "#3fff3f";
+  const TOOLTIP_BLUE = "#7f7fff";
+  const TOOLTIP_BORDER_BLUE = "#3f3fff";
   const MAX_PETAL_RARITY = Rarity.CHAOS;
   const SETTINGS_OPTION_HEIGHT = 50;
   const SETTINGS_BUTTON_SIZE = 28;
+  const SETTINGS_BUTTON_PADDING = 13;
   const EDIT_ICON_SIZE = 20;
+  const TOOLTIP_ICON_SIZE = 20;
+  const TOOLTIP_WIDTH_CAP = 400;
+  const TOOLTIP_TEXT_HEIGHT = 22.5;
   var _unsafeWindow = /* @__PURE__ */ (() => typeof unsafeWindow != "undefined" ? unsafeWindow : void 0)();
   const statsBoxQueue = [];
   function isNil(arg) {
@@ -151,13 +158,13 @@
         };
         screenshotRoom = deepCopy(room);
         runningRoom = room;
-        renderGame = (dt) => {
+        renderGame = (dt2) => {
           ws.onmessage = (data2) => {
             queuedMessages.push(data2);
           };
           chatDiv.classList.add("hidden");
           room = screenshotRoom;
-          originalRenderGame(dt);
+          originalRenderGame(dt2);
           ctx.save();
           ctx.lineWidth = 6;
           ctx.font = "900 32px 'Ubuntu'";
@@ -201,11 +208,9 @@
       }
     };
   }
-  let invertAttackToggle;
-  let invertDefendToggle;
-  function initInvertToggles(atkToggle, defToggle) {
-    invertAttackToggle = atkToggle;
-    invertDefendToggle = defToggle;
+  let settingsMap;
+  function initOptions(options) {
+    settingsMap = Object.freeze(options);
   }
   const defaultSettings = Object.freeze({
     petalCraftPreview: true,
@@ -213,6 +218,7 @@
     missileDrawPriority: true,
     invertAttack: false,
     invertDefend: false,
+    settingsTooltips: true,
     baseReciprocalOfFOV: 3,
     playerHpBarScale: 2.5,
     specialDropsScale: 2.5,
@@ -237,18 +243,21 @@
       this.savedSettings[key] = value;
       localStorage.setItem("cinderSettings", JSON.stringify(this.savedSettings));
       if (key === "invertAttack") {
-        invertAttackToggle.state = value;
+        settingsMap.invertAttack.state = value;
       } else if (key === "invertDefend") {
-        invertDefendToggle.state = value;
+        settingsMap.invertDefend.state = value;
+      }
+      if (key === "specialDropsQuantity" || key === "specialDropsRarity") {
+        settingsMap.specialDropsScale.updateTooltip();
       }
     }
   }
   const settings = new SettingsManager();
   function displayMissilesAboveEnemies() {
     const originalRenderGame = renderGame;
-    renderGame = (dt) => {
+    renderGame = (dt2) => {
       if (!settings.get("missileDrawPriority")) {
-        originalRenderGame(dt);
+        originalRenderGame(dt2);
         return;
       }
       const queuedMissiles = [];
@@ -269,7 +278,7 @@
           };
         }
       }
-      originalRenderGame(dt);
+      originalRenderGame(dt2);
       for (let enemy of Object.values(room.enemies)) {
         enemy.draw = Enemy.prototype.draw;
       }
@@ -574,7 +583,7 @@
     };
     const originalRenderGame = renderGame;
     const originalDrawStatsBox = PetalContainer.prototype.drawStatsBox;
-    renderGame = (dt) => {
+    renderGame = (dt2) => {
       if (showQuickStatsBox) {
         PetalContainer.prototype.drawStatsBox = function() {
           if (this.petals[0]?.constructor === Petal) {
@@ -582,7 +591,7 @@
           }
         };
       }
-      originalRenderGame(dt);
+      originalRenderGame(dt2);
       PetalContainer.prototype.drawStatsBox = originalDrawStatsBox;
       if (showQuickStatsBox) {
         const totalCount = {};
@@ -658,6 +667,122 @@
     }
     return hasLetter ? squadCode : randomSquadCode();
   }
+  class TooltipBox {
+    w;
+    h;
+    text;
+    /**
+     * The alpha-value (i.e., opacity) of the drawn tooltip box.
+     */
+    alpha;
+    /**
+     * The full text for this tooltip is split into an array of lines, and each
+     * line is split further into an array of words/tokens.
+     */
+    lines;
+    constructor(text) {
+      this.w = 20;
+      this.h = 20 - (TOOLTIP_TEXT_HEIGHT - 15);
+      this.alpha = 0;
+      this.lines = [];
+      this.text = text;
+      this.generateDesc();
+    }
+    /**
+     * Draws this tooltip at the given location.
+     * @param x The horizontal position for the *middle* of this tooltip box.
+     * @param y The vertical position for the *top* of this tooltip box.
+     * @param isHovered Whether or not the mouse is hovering over this setting's
+     * tooltip icon.
+     */
+    draw(x, y, isHovered) {
+      if (!isHovered && this.alpha < 0.1) {
+        return;
+      }
+      if (isHovered) {
+        this.alpha += dt / 150;
+        if (this.alpha > 1) {
+          this.alpha = 1;
+        }
+      } else {
+        this.alpha -= dt / 150;
+        if (this.alpha < 0) {
+          this.alpha = 0;
+        }
+      }
+      ctx.save();
+      ctx.globalAlpha = this.alpha;
+      ctx.globalAlpha *= 0.8;
+      ctx.fillStyle = TOOLTIP_BLUE;
+      ctx.lineWidth = 10;
+      ctx.beginPath();
+      ctx.rect(x - this.w / 2, y, this.w, this.h);
+      ctx.fill();
+      ctx.closePath();
+      ctx.globalAlpha /= 0.8;
+      ctx.font = "900 15px Ubuntu";
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "black";
+      ctx.fillStyle = "white";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      let currentHeight = y + 10;
+      for (let line of this.lines) {
+        let currentX = x - this.w / 2 + 10;
+        for (let token of line) {
+          if (token[0] === "$") {
+            if (token[1] === "c") {
+              ctx.fillStyle = token.substring(2).trim();
+            }
+          } else {
+            ctx.strokeText(token, currentX, currentHeight);
+            ctx.fillText(token, currentX, currentHeight);
+            currentX += ctx.measureText(token).width;
+          }
+        }
+        currentHeight += TOOLTIP_TEXT_HEIGHT;
+      }
+      ctx.restore();
+    }
+    /**
+     * Regenerates this tooltip's entire description. Also updates this box's
+     * dimensions based on the dimensions of the text.
+     */
+    generateDesc() {
+      this.w = 20;
+      this.h = 20 - (TOOLTIP_TEXT_HEIGHT - 15);
+      this.alpha = 0;
+      ctx.save();
+      ctx.font = "900 15px Ubuntu";
+      const text = typeof this.text === "string" ? this.text : this.text();
+      const splitText = text.split(" ").map((token) => token + " ");
+      this.lines = [];
+      let currentLine = [];
+      let currentWidth = 0;
+      for (let i = 0; i < splitText.length; i++) {
+        const newText = splitText[i];
+        const newWidth = newText[0] === "$" ? 0 : ctx.measureText(newText).width;
+        if (currentWidth + newWidth > TOOLTIP_WIDTH_CAP) {
+          this.addLine(currentLine, currentWidth);
+          currentLine = [];
+          currentWidth = 0;
+        }
+        currentLine.push(newText);
+        currentWidth += newWidth;
+      }
+      this.addLine(currentLine, currentWidth);
+      ctx.restore();
+    }
+    /**
+     * Adds another line of text to this tooltip box. Also updates this box's
+     * dimensions based on the dimensions of the text.
+     */
+    addLine(currentLine, currentWidth) {
+      this.lines.push(currentLine);
+      this.w = Math.max(this.w, currentWidth + 20);
+      this.h += TOOLTIP_TEXT_HEIGHT;
+    }
+  }
   const editIcon = new Image();
   editIcon.src = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgoKPHN2ZwogICB3aWR0aD0iMTAwLjAwMDA1bW0iCiAgIGhlaWdodD0iMTAwLjAwMDA2bW0iCiAgIHZpZXdCb3g9IjAgMCAxMDAuMDAwMDUgMTAwLjAwMDA2IgogICB2ZXJzaW9uPSIxLjEiCiAgIGlkPSJzdmcxIgogICB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciCiAgIHhtbG5zOnN2Zz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxkZWZzCiAgICAgaWQ9ImRlZnMxIiAvPgogIDxnCiAgICAgaWQ9ImxheWVyMSIKICAgICB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtODkuNTI0OTc3LC0zNS42MzI2MDUpIj4KICAgIDxyZWN0CiAgICAgICBzdHlsZT0iZmlsbDojZmZmZmZmO2ZpbGwtb3BhY2l0eToxO3N0cm9rZTojZmZmZmZmO3N0cm9rZS13aWR0aDowLjI4MjEzNztzdHJva2UtZGFzaGFycmF5Om5vbmU7c3Ryb2tlLW9wYWNpdHk6MSIKICAgICAgIGlkPSJyZWN0MS04IgogICAgICAgd2lkdGg9IjMxLjEyMTQyOSIKICAgICAgIGhlaWdodD0iMTguNTYwMDA3IgogICAgICAgeD0iLTE3NC43NzIyMyIKICAgICAgIHk9Ijc0LjQxNzAyMyIKICAgICAgIHRyYW5zZm9ybT0ibWF0cml4KC0wLjcwNzEwMDA4LC0wLjcwNzExMzQ5LDAuNzA3MTAwMDgsLTAuNzA3MTEzNDksMCwwKSIgLz4KICAgIDxyZWN0CiAgICAgICBzdHlsZT0iZmlsbDojZmZmZmZmO2ZpbGwtb3BhY2l0eToxO3N0cm9rZTojZmZmZmZmO3N0cm9rZS13aWR0aDowLjUxNDk0NTtzdHJva2UtZGFzaGFycmF5Om5vbmU7c3Ryb2tlLW9wYWNpdHk6MSIKICAgICAgIGlkPSJyZWN0MS04LTEiCiAgICAgICB3aWR0aD0iMzAuODg4NjI4IgogICAgICAgaGVpZ2h0PSI2Mi4yOTIxOTQiCiAgICAgICB4PSItMTc0LjY1NTg3IgogICAgICAgeT0iNS40NDUxNTA0IgogICAgICAgdHJhbnNmb3JtPSJtYXRyaXgoLTAuNzA3MTAwMDgsLTAuNzA3MTEzNDksMC43MDcxMDAwOCwtMC43MDcxMTM0OSwwLDApIiAvPgogICAgPHBhdGgKICAgICAgIHN0eWxlPSJmaWxsOiNmZmZmZmY7ZmlsbC1vcGFjaXR5OjE7c3Ryb2tlOiNmZmZmZmY7c3Ryb2tlLXdpZHRoOjAuMDE7c3Ryb2tlLWxpbmVjYXA6c3F1YXJlO3N0cm9rZS1taXRlcmxpbWl0OjA7c3Ryb2tlLWRhc2hhcnJheTpub25lO3N0cm9rZS1vcGFjaXR5OjE7cGFpbnQtb3JkZXI6bWFya2VycyBzdHJva2UgZmlsbCIKICAgICAgIGlkPSJwYXRoNCIKICAgICAgIGQ9Im0gNzQuMzU4OTk5LDEzMy44ODE1OSAtMS4yNzY3NzUsMCAwLjYzODM4OCwtMS4xMDU3MiB6IgogICAgICAgdHJhbnNmb3JtPSJtYXRyaXgoLTE3LjI0NDI0MiwtMTcuMjQ0NTcsMTkuODY3Mjg2LC0xOS44Njc2NjMsLTEyNzYuOTkwOCw0MDQ0LjczNDgpIiAvPgogIDwvZz4KPC9zdmc+Cg==";
   class SettingsOption {
@@ -665,17 +790,33 @@
     state;
     changeTime;
     screenPosition;
+    _tooltipBox;
     /**
      * A legacy field that is used for the settings menu to handle
      * {@linkcode BooleanOption BooleanOptions}.
      */
     toggleFn;
-    constructor(name) {
+    constructor(name, tooltip) {
       this.name = name;
+      if (!isNil(tooltip)) {
+        this._tooltipBox = new TooltipBox(tooltip);
+      }
       this.changeTime = 0;
       this.screenPosition = { x: 0, y: 0, w: 0, h: 0 };
       this.state = void 0;
       this.toggleFn = () => {
+      };
+    }
+    get tooltipBox() {
+      return settings.get("settingsTooltips") ? this._tooltipBox : void 0;
+    }
+    /**
+     * The position of the centre of the ? tooltip icon for this option.
+     */
+    get tooltipPos() {
+      return {
+        x: this.screenPosition.x + SETTINGS_BUTTON_SIZE + SETTINGS_BUTTON_PADDING * 2 + ctx.measureText(this.name).width + TOOLTIP_ICON_SIZE / 2,
+        y: this.screenPosition.y + SETTINGS_BUTTON_SIZE / 2
       };
     }
     /**
@@ -709,11 +850,25 @@
     mouseInButton(e) {
       return mouseInBox(e, this.screenPosition);
     }
+    /**
+     * Draws this option's tooltip icon and tooltip.
+     */
+    drawTooltip() {
+      if (!isNil(this.tooltipBox)) {
+        drawTooltipIcon(this.tooltipPos, this.tooltipBox);
+      }
+    }
+    /**
+     * Updates the text for this setting's tooltip.
+     */
+    updateTooltip() {
+      this._tooltipBox?.generateDesc();
+    }
   }
   class BooleanOption extends SettingsOption {
     state;
-    constructor(name, settingsKey) {
-      super(name);
+    constructor(name, settingsKey, tooltip) {
+      super(name, tooltip);
       this.state = settings.get(settingsKey);
       this.toggleFn = (state) => {
         settings.set(settingsKey, state);
@@ -724,35 +879,45 @@
     }
   }
   class DisplayValueOption extends SettingsOption {
+    constructor(name, tooltip) {
+      super(name + ": ", tooltip);
+    }
+    get tooltipPos() {
+      let { x, y } = super.tooltipPos;
+      for (let text of this.getDisplayedValues()) {
+        x += ctx.measureText(text).width;
+      }
+      return { x, y };
+    }
     isDisplayValueOption() {
       return true;
     }
     /**
-     * Determines the colour that the value should be displayed in.
+     * Determines the colours that the values should be displayed in.
      */
-    getValueFillStyle() {
+    getValueFillStyles() {
       if (this.changeTime > 0 && time - this.changeTime < 1500) {
         const ratio = (time - this.changeTime) / 1500;
-        return blendColor("#ffffff", "#3fff3f", ratio);
+        return [blendColor("#ffffff", SETTINGS_GREEN, ratio)];
       } else {
-        return "#3fff3f";
+        return [SETTINGS_GREEN];
       }
     }
     /**
-     * Determines the displayed value, with formatting if necessary.
+     * Determines the displayed values, with formatting if necessary.
      */
-    getDisplayedValue() {
-      return "" + this.state;
+    getDisplayedValues() {
+      return ["" + this.state];
     }
     /**
      * Draws this option inside the given settings menu.
      * 
-     * Large amounts of this code is adapted from Flowr's base code.
+     * This code is largely adapted from Flowr's base code.
      */
     draw(menu) {
       this.screenPosition = {
         x: 15 + menu.x,
-        y: menu.currentHeight + SETTINGS_OPTION_HEIGHT / 2 - SETTINGS_BUTTON_SIZE / 2 + menu.y,
+        y: menu.midHeight - SETTINGS_BUTTON_SIZE / 2 + menu.y,
         w: SETTINGS_BUTTON_SIZE,
         h: SETTINGS_BUTTON_SIZE
       };
@@ -772,7 +937,7 @@
       ctx.drawImage(
         editIcon,
         15 + SETTINGS_BUTTON_SIZE / 2 - EDIT_ICON_SIZE / 2,
-        menu.currentHeight + SETTINGS_OPTION_HEIGHT / 2 - EDIT_ICON_SIZE / 2,
+        menu.midHeight - EDIT_ICON_SIZE / 2,
         EDIT_ICON_SIZE,
         EDIT_ICON_SIZE
       );
@@ -783,27 +948,24 @@
       ctx.strokeStyle = "black";
       ctx.lineWidth = 2;
       ctx.strokeText(
-        this.name + ": ",
-        15 + SETTINGS_BUTTON_SIZE + 13,
-        menu.currentHeight + SETTINGS_OPTION_HEIGHT / 2
+        this.name,
+        15 + SETTINGS_BUTTON_SIZE + SETTINGS_BUTTON_PADDING,
+        menu.midHeight
       );
       ctx.fillText(
-        this.name + ": ",
-        15 + SETTINGS_BUTTON_SIZE + 13,
-        menu.currentHeight + SETTINGS_OPTION_HEIGHT / 2
+        this.name,
+        15 + SETTINGS_BUTTON_SIZE + SETTINGS_BUTTON_PADDING,
+        menu.midHeight
       );
-      ctx.fillStyle = this.getValueFillStyle();
-      const prevTextWidth = ctx.measureText(this.name + ": ").width;
-      ctx.strokeText(
-        this.getDisplayedValue(),
-        15 + SETTINGS_BUTTON_SIZE + 13 + prevTextWidth,
-        menu.currentHeight + SETTINGS_OPTION_HEIGHT / 2
-      );
-      ctx.fillText(
-        this.getDisplayedValue(),
-        15 + SETTINGS_BUTTON_SIZE + 13 + prevTextWidth,
-        menu.currentHeight + SETTINGS_OPTION_HEIGHT / 2
-      );
+      const prevTextWidth = ctx.measureText(this.name).width;
+      let currentX = 15 + SETTINGS_BUTTON_SIZE + SETTINGS_BUTTON_PADDING + prevTextWidth;
+      for (let i = 0; i < this.getDisplayedValues().length; i++) {
+        const text = this.getDisplayedValues()[i];
+        ctx.fillStyle = this.getValueFillStyles()[i];
+        ctx.strokeText(text, currentX, menu.midHeight);
+        ctx.fillText(text, currentX, menu.midHeight);
+        currentX += ctx.measureText(text).width;
+      }
       menu.currentHeight += SETTINGS_OPTION_HEIGHT;
     }
   }
@@ -816,8 +978,8 @@
      * The number of decimal digits that this setting's value is rounded to.
      */
     decimalDigits;
-    constructor(name, settingsKey, minValue, maxValue, decimalDigits) {
-      super(name);
+    constructor(name, settingsKey, minValue, maxValue, decimalDigits, tooltip) {
+      super(name, tooltip);
       this.minValue = minValue;
       this.maxValue = maxValue;
       this.decimalDigits = decimalDigits;
@@ -845,24 +1007,24 @@ Please enter a number between ${this.minValue} and ${this.maxValue}.`
   class RarityOption extends DisplayValueOption {
     state;
     settingsKey;
-    constructor(name, settingsKey) {
-      super(name);
+    constructor(name, settingsKey, tooltip) {
+      super(name, tooltip);
       this.state = settings.get(settingsKey);
       this.settingsKey = settingsKey;
     }
     isRarityOption() {
       return true;
     }
-    getValueFillStyle() {
+    getValueFillStyles() {
       if (this.changeTime > 0 && time - this.changeTime < 1500) {
         const ratio = (time - this.changeTime) / 1500;
-        return blendColor("#ffffff", Colors.rarities[this.state].color, ratio);
+        return [blendColor("#ffffff", Colors.rarities[this.state].color, ratio)];
       } else {
-        return Colors.rarities[this.state].color;
+        return [Colors.rarities[this.state].color];
       }
     }
-    getDisplayedValue() {
-      return Colors.rarities[this.state].name;
+    getDisplayedValues() {
+      return [Colors.rarities[this.state].name];
     }
     onClick() {
       const response = prompt(
@@ -893,24 +1055,36 @@ Please enter a Rarity.`
      * A timeout for cancelling an edit for this setting.
      */
     editingStateTimeout;
-    constructor(name, settingsKey) {
-      super(name);
+    constructor(name, settingsKey, tooltip) {
+      super(name, tooltip);
       this.state = settings.get(settingsKey);
       this.settingsKey = settingsKey;
       this.editingState = false;
     }
-    getValueFillStyle() {
-      return this.editingState ? CINDER_COLOUR : super.getValueFillStyle();
+    getDisplayedValues() {
+      if (this.editingState) {
+        return [this.state, " (Editing...)"];
+      } else {
+        return [this.state];
+      }
     }
-    getDisplayedValue() {
-      return this.editingState ? "Editing..." : this.state;
+    getValueFillStyles() {
+      if (this.editingState) {
+        return super.getValueFillStyles().concat(CINDER_COLOUR);
+      } else {
+        return super.getValueFillStyles();
+      }
     }
-    onClick() {
-      cinderSettingsMenu.setCurrentKeybindOption(this);
-      this.editingState = true;
-      this.editingStateTimeout = setTimeout(() => {
-        cinderSettingsMenu.setCurrentKeybindOption(void 0);
-      }, 3e3);
+    onClick(menu) {
+      if (!this.editingState) {
+        menu.setCurrentKeybindOption(this);
+        this.editingState = true;
+        this.editingStateTimeout = setTimeout(() => {
+          menu.cancelKeybind();
+        }, 3e3);
+      } else {
+        menu.cancelKeybind();
+      }
     }
     /**
      * Ends this option's editing state, and sets the setting to the new keybind
@@ -929,8 +1103,17 @@ Please enter a Rarity.`
   }
   class SettingsSectionHeading {
     text;
-    constructor(text) {
+    tooltipPos;
+    _tooltipBox;
+    constructor(text, tooltip) {
       this.text = text;
+      if (!isNil(tooltip)) {
+        this._tooltipBox = new TooltipBox(tooltip);
+      }
+      this.tooltipPos = { x: 0, y: 0 };
+    }
+    get tooltipBox() {
+      return settings.get("settingsTooltips") ? this._tooltipBox : void 0;
     }
     /**
      * @returns `true` iff this is a {@linkcode SettingsSectionHeading}.
@@ -945,49 +1128,78 @@ Please enter a Rarity.`
      */
     draw(menu) {
       ctx.font = "900 17px Ubuntu";
-      ctx.textAlign = "center";
+      const textWidth = ctx.measureText(this.text).width;
+      let textLeftPos = menu.w / 2 - textWidth / 2;
+      let textRightPos = menu.w / 2 + textWidth / 2;
+      if (!isNil(this.tooltipBox)) {
+        const extraSpace = TOOLTIP_ICON_SIZE + SETTINGS_BUTTON_PADDING;
+        textLeftPos -= extraSpace / 2;
+        textRightPos += extraSpace / 2;
+        this.tooltipPos = {
+          x: menu.x + textRightPos - TOOLTIP_ICON_SIZE / 2,
+          y: menu.y + menu.midHeight
+        };
+      }
+      ctx.textAlign = "left";
       ctx.textBaseline = "middle";
       ctx.fillStyle = "white";
       ctx.strokeStyle = "black";
       ctx.lineWidth = 2;
-      ctx.strokeText(
-        this.text,
-        menu.w / 2,
-        menu.currentHeight + SETTINGS_OPTION_HEIGHT / 2
-      );
-      ctx.fillText(
-        this.text,
-        menu.w / 2,
-        menu.currentHeight + SETTINGS_OPTION_HEIGHT / 2
-      );
-      const halfTextWidth = ctx.measureText(this.text).width / 2;
+      ctx.strokeText(this.text, textLeftPos, menu.midHeight);
+      ctx.fillText(this.text, textLeftPos, menu.midHeight);
       ctx.strokeStyle = "#7f7f7f";
       ctx.lineWidth = 8;
       ctx.lineCap = "round";
       ctx.beginPath();
-      ctx.moveTo(
-        20,
-        menu.currentHeight + SETTINGS_OPTION_HEIGHT / 2
-      );
-      ctx.lineTo(
-        menu.w / 2 - halfTextWidth - 20,
-        menu.currentHeight + SETTINGS_OPTION_HEIGHT / 2
-      );
+      ctx.moveTo(SETTINGS_BUTTON_PADDING, menu.midHeight);
+      ctx.lineTo(textLeftPos - SETTINGS_BUTTON_PADDING, menu.midHeight);
       ctx.stroke();
       ctx.closePath();
       ctx.beginPath();
-      ctx.moveTo(
-        menu.w / 2 + halfTextWidth + 20,
-        menu.currentHeight + SETTINGS_OPTION_HEIGHT / 2
-      );
-      ctx.lineTo(
-        menu.w - 20 - 16,
-        menu.currentHeight + SETTINGS_OPTION_HEIGHT / 2
-      );
+      ctx.moveTo(textRightPos + SETTINGS_BUTTON_PADDING, menu.midHeight);
+      ctx.lineTo(menu.w - SETTINGS_BUTTON_PADDING - 16, menu.midHeight);
       ctx.stroke();
       ctx.closePath();
       menu.currentHeight += SETTINGS_OPTION_HEIGHT;
     }
+    /**
+     * Draws this option's tooltip icon and tooltip.
+     */
+    drawTooltip() {
+      if (!isNil(this.tooltipBox)) {
+        drawTooltipIcon(this.tooltipPos, this.tooltipBox);
+      }
+    }
+  }
+  function drawTooltipIcon(pos, tooltipBox) {
+    const { x, y } = pos;
+    ctx.strokeStyle = TOOLTIP_BORDER_BLUE;
+    ctx.fillStyle = TOOLTIP_BLUE;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(x, y, TOOLTIP_ICON_SIZE / 2, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.fill();
+    ctx.closePath();
+    ctx.font = "900 17px Ubuntu";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "white";
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 2;
+    ctx.strokeText("?", x, y + 1);
+    ctx.fillText("?", x, y + 1);
+    const isHovered = mouseInBox(
+      { x: mouse.canvasX, y: mouse.canvasY },
+      // We intentionally make the tooltip icon's "hitbox" larger
+      {
+        x: x - SETTINGS_BUTTON_SIZE / 2,
+        y: y - SETTINGS_BUTTON_SIZE / 2,
+        w: SETTINGS_BUTTON_SIZE,
+        h: SETTINGS_BUTTON_SIZE
+      }
+    );
+    tooltipBox.draw(x, y + TOOLTIP_ICON_SIZE / 2 + 10, isHovered);
   }
   class CinderSettingsMenu extends SettingsMenu {
     /**
@@ -996,32 +1208,97 @@ Please enter a Rarity.`
     currentKeybindOption;
     constructor() {
       super();
-      initInvertToggles(
-        new BooleanOption("Invert Attack", "invertAttack"),
-        new BooleanOption("Invert Defend", "invertDefend")
-      );
-      this.w = 480;
-      this.options = Object.freeze([
-        invertAttackToggle,
-        invertDefendToggle,
-        new BooleanOption("Petal Craft Preview", "petalCraftPreview"),
-        new BooleanOption("Auto Copy Squad Codes", "autoCopyCodes"),
-        new NumberOption("Base FOV", "baseReciprocalOfFOV", 0.33, 5, 2),
-        new NumberOption("Player HP Bar Scale", "playerHpBarScale", 0.5, 5, 2),
-        new NumberOption("Special Drops Scale", "specialDropsScale", 1, 5, 2),
-        new RarityOption("Special Drops Threshold Rarity", "specialDropsRarity"),
-        new NumberOption(
+      initOptions({
+        "invertAttack": new BooleanOption("Invert Attack", "invertAttack"),
+        "invertDefend": new BooleanOption("Invert Defend", "invertDefend"),
+        "autoCopyCodes": new BooleanOption(
+          "Auto Copy Squad Codes",
+          "autoCopyCodes",
+          "If this is turned on and you generate a random squad code, it automatically copies the squad code to your clipboard."
+        ),
+        "settingsTooltips": new BooleanOption(
+          "Settings Tooltips",
+          "settingsTooltips"
+        ),
+        "petalCraftPreview": new BooleanOption(
+          "Petal Craft Preview",
+          "petalCraftPreview"
+        ),
+        "missileDrawPriority": new BooleanOption(
+          "Missile Rendering Priority",
+          "missileDrawPriority",
+          "If turned on, all enemy missiles will be rendered above all actual enemies."
+        ),
+        "baseReciprocalOfFOV": new NumberOption(
+          "Base Zoom Out",
+          "baseReciprocalOfFOV",
+          0.33,
+          5,
+          2
+        ),
+        "playerHpBarScale": new NumberOption(
+          "Player HP Bar Scale",
+          "playerHpBarScale",
+          0.5,
+          5,
+          2
+        ),
+        "specialDropsScale": new NumberOption(
+          "Special Drops Scale",
+          "specialDropsScale",
+          1,
+          5,
+          2,
+          () => `For this setting, a drop is considered 'Special' if it is worth at least $c${SETTINGS_GREEN} ${settings.get("specialDropsQuantity")} $c${Colors.rarities[settings.get("specialDropsRarity")].color} ${Colors.rarities[settings.get("specialDropsRarity")].name} $cwhite ${settings.get("specialDropsQuantity") === 1 ? "petal" : "petals"}, as configured below.`
+        ),
+        "specialDropsRarity": new RarityOption(
+          "Special Drops Threshold Rarity",
+          "specialDropsRarity"
+        ),
+        "specialDropsQuantity": new NumberOption(
           "Special Drops Threshold Amount",
           "specialDropsQuantity",
           0.1,
           999,
           1
         ),
-        new BooleanOption("Missile Rendering Priority", "missileDrawPriority"),
-        new SettingsSectionHeading("Keybinds"),
-        new KeybindOption("Quick Stats Box", "keybindStatsBox"),
-        new KeybindOption("Invert Attack", "keybindInvertAttack"),
-        new KeybindOption("Invert Defend", "keybindInvertDefend")
+        "keybindInvertAttack": new KeybindOption(
+          "Invert Attack",
+          "keybindInvertAttack"
+        ),
+        "keybindInvertDefend": new KeybindOption(
+          "Invert Defend",
+          "keybindInvertDefend"
+        ),
+        "keybindStatsBox": new KeybindOption(
+          "Quick Stats Box",
+          "keybindStatsBox",
+          "This keybind toggles the stats box of the highest-rarity mob currently alive in your room."
+        )
+      });
+      this.w = 480;
+      this.options = Object.freeze([
+        new SettingsSectionHeading("General Gameplay"),
+        settingsMap.invertAttack,
+        settingsMap.invertDefend,
+        settingsMap.autoCopyCodes,
+        new SettingsSectionHeading("General Display"),
+        settingsMap.settingsTooltips,
+        settingsMap.petalCraftPreview,
+        settingsMap.missileDrawPriority,
+        new SettingsSectionHeading("Zoom Settings"),
+        settingsMap.baseReciprocalOfFOV,
+        settingsMap.playerHpBarScale,
+        settingsMap.specialDropsScale,
+        settingsMap.specialDropsRarity,
+        settingsMap.specialDropsQuantity,
+        new SettingsSectionHeading(
+          "Keybinds",
+          "To edit a keybind, click its 'Edit' button and then enter a new key to bind it to."
+        ),
+        settingsMap.keybindInvertAttack,
+        settingsMap.keybindInvertDefend,
+        settingsMap.keybindStatsBox
       ]);
       const originalOnMouseDown = _unsafeWindow.onmousedown;
       _unsafeWindow.onmousedown = (e) => {
@@ -1035,6 +1312,20 @@ Please enter a Rarity.`
         originalDraw.apply(this);
         cinderSettingsMenu.draw();
       };
+    }
+    /**
+     * The y-position at the midpoint of the option currently being rendered.
+     */
+    get midHeight() {
+      return this.currentHeight + SETTINGS_OPTION_HEIGHT / 2;
+    }
+    draw() {
+      super.draw();
+      ctx.translate(0, this.offset);
+      for (let i = this.options.length - 1; i >= 0; i--) {
+        this.options[i].drawTooltip();
+      }
+      ctx.translate(0, -this.offset);
     }
     /**
      * Renders the given {@linkcode SettingsOption}. Each type of option is
@@ -1063,7 +1354,7 @@ Please enter a Rarity.`
             if (option.isBooleanOption()) {
               this.processToggle(option, e);
             } else if (option.isDisplayValueOption()) {
-              option.onClick();
+              option.onClick(this);
             }
           }
         }
@@ -1072,7 +1363,7 @@ Please enter a Rarity.`
     toggle() {
       super.toggle();
       if (!this.active) {
-        this.setCurrentKeybindOption(void 0);
+        this.cancelKeybind();
       }
     }
     /**
@@ -1085,6 +1376,12 @@ Please enter a Rarity.`
       }
       this.currentKeybindOption = option;
     }
+    /**
+     * Cancels editing the current keybind option.
+     */
+    cancelKeybind() {
+      this.setCurrentKeybindOption(void 0);
+    }
   }
   const cinderSettingsMenu = new CinderSettingsMenu();
   function allowEditingKeybinds() {
@@ -1092,7 +1389,7 @@ Please enter a Rarity.`
     inputHandler.handleKey = function(e) {
       if (_unsafeWindow.state === "menu" && e.type === "keydown" && !e.repeat && !isNil(cinderSettingsMenu.currentKeybindOption)) {
         cinderSettingsMenu.currentKeybindOption.finishEdit(e.code);
-        cinderSettingsMenu.setCurrentKeybindOption(void 0);
+        cinderSettingsMenu.cancelKeybind();
         return;
       }
       originalHandleKey.apply(inputHandler, [e]);
