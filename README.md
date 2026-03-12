@@ -1,6 +1,6 @@
 # About
 
-Welcome! This is a free, publicly available script containing a collection of QoL features that I have written for flowr.fun players. This is a very new project right now, so you can look forward to many additional features being added in the future. If you have any features/ideas that you want to be added, please feel free to message me on Discord (username: pigeonbar)  or submit a feature request on this GitHub repository!
+Welcome! This is a free, publicly available script containing a collection of QoL features that I have written for flowr.fun players. This is a very new project right now, so you can look forward to many additional features being added in the future. If you have any feedback or any features/ideas that you want to be added, please feel free to message me on Discord (username: pigeonbar) or submit a feature request on this GitHub repository!
 
 I intend to comply with all guidelines and conditions set by the flowr developers. Please report any compliance-related issues to me as needed, and I will fix them asap.
 

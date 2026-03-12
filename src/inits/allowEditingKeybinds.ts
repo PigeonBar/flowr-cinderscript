@@ -16,7 +16,7 @@ export function allowEditingKeybinds() {
         !isNil(cinderSettingsMenu.currentKeybindOption))
     {
       cinderSettingsMenu.currentKeybindOption.finishEdit(e.code);
-      cinderSettingsMenu.setCurrentKeybindOption(undefined);
+      cinderSettingsMenu.cancelKeybind();
       return;
     }
 

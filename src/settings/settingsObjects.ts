@@ -1,23 +1,23 @@
 // This file stores certain objects to avoid issues with circular imports.
 
-import type { BooleanOption } from "./settingsOptions";
+import type { BooleanSettingsKey, KeybindSettingsKey, NumberSettingsKey, RaritySettingsKey } from "./settingsManager";
+import type { BooleanOption, KeybindOption, NumberOption, RarityOption } from "./settingsOptions";
+
+type SettingsMap =
+  Record<BooleanSettingsKey, BooleanOption> &
+  Record<NumberSettingsKey, NumberOption> &
+  Record<RaritySettingsKey, RarityOption> &
+  Record<KeybindSettingsKey, KeybindOption>;
 
 /**
- * "Invert Attack" option, which can also be toggled using a hotkey in-game.
+ * The full list of settings options. It is placed here so that other modules
+ * can also access these options as needed.
  */
-export let invertAttackToggle: BooleanOption;
+export let settingsMap: SettingsMap;
 
 /**
- * "Invert Defend" option, which can also be toggled using a hotkey in-game.
+ * Initializes {@linkcode settingsMap}.
  */
-export let invertDefendToggle: BooleanOption;
-
-/**
- * Inits {@linkcode invertAttackToggle} and {@linkcode invertDefendToggle}.
- */
-export function initInvertToggles(
-  atkToggle: BooleanOption, defToggle: BooleanOption
-) {
-  invertAttackToggle = atkToggle;
-  invertDefendToggle = defToggle;
+export function initOptions(options: SettingsMap) {
+  settingsMap = Object.freeze(options);
 }

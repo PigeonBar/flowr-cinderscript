@@ -216,11 +216,13 @@ declare global {
 
   let time: number; // How many milliseconds have passed since loading the game
 
+  let dt: number; // The length of the previous tick/frame, in milliseconds.
+
   let fov: number;
 
   function easeOutCubic(x: number);
 
-  function blendColor(color1: string, color2: string, ratio: number);
+  function blendColor(color1: string, color2: string, ratio: number): string;
 
   let renderGame: (dt: number) => void;
 
@@ -285,6 +287,7 @@ declare global {
     y: number;
     w: number;
     h: number;
+    offset: number;
     currentHeight: number;
     active: boolean;
     options: readonly (SettingsOption | SettingsSectionHeading)[];
