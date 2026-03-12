@@ -9,6 +9,7 @@ import { addQuickStatsBoxHotkey } from "./features/quickStatsBoxHotkey";
 import { addRandomizedSquadCodes } from "./features/randomizedSquadCode";
 import { allowWsDataProcessing, initTheoryCraft, refreezeObjects, unfreezeObjects } from "./inits";
 import { allowEditingKeybinds } from "./inits/allowEditingKeybinds";
+import { initKeybindHandling } from "./inits/keybindHandling";
 import { addNewMenuButtons } from "./inits/newMenuButtons";
 import { preventMenuOverlap } from "./inits/preventMenuOverlap";
 
@@ -18,6 +19,7 @@ initTheoryCraft();
 allowWsDataProcessing();
 preventMenuOverlap();
 allowEditingKeybinds();
+initKeybindHandling();
 addNewMenuButtons();
 
 // #region Features

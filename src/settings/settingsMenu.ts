@@ -95,7 +95,10 @@ export class CinderSettingsMenu extends SettingsMenu {
       new SettingsSectionHeading(
         "Keybinds",
         "To edit a keybind, click its 'Edit' button and then enter a new " +
-        "key to bind it to.",
+        "key to bind it to. You can also delete a keybind by pressing the " +
+        "'Delete' key on your keyboard. $n $n " +
+        "Caution: If you set multiple keybinds to the same key, all of " +
+        "your keybinds will still remain active!",
       ),
       settingsMap.keybindInvertAttack,
       settingsMap.keybindInvertDefend,
@@ -206,4 +209,4 @@ export class CinderSettingsMenu extends SettingsMenu {
 
 export const cinderSettingsMenu = new CinderSettingsMenu();
 
-// TODO before release: Mouseover edit button, delete keybinds, scrolling
+// TODO before release: Scrollbar

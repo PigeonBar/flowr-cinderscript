@@ -66,6 +66,7 @@
   const TOOLTIP_ICON_SIZE = 20;
   const TOOLTIP_WIDTH_CAP = 400;
   const TOOLTIP_TEXT_HEIGHT = 22.5;
+  const KEYBIND_DELETED = "<None>";
   var _unsafeWindow = /* @__PURE__ */ (() => typeof unsafeWindow != "undefined" ? unsafeWindow : void 0)();
   const statsBoxQueue = [];
   function isNil(arg) {
@@ -114,6 +115,11 @@
   function isInGameInput(e) {
     if (e.repeat) {
       e.preventDefault();
+    }
+    if (e.code === KEYBIND_DELETED) {
+      console.warn(`Keypress code somehow equal to ${KEYBIND_DELETED}!`);
+      console.warn(e);
+      return false;
     }
     return _unsafeWindow.state === "game" && !inputHandler.chatOpen && !e.repeat;
   }
@@ -374,6 +380,30 @@
   function refreezeObjects() {
     processGameMessageMap = Object.freeze(processGameMessageMap);
   }
+  const keybinds = [];
+  function initKeybindHandling() {
+    const originalHandleKey = inputHandler.handleKey;
+    inputHandler.handleKey = function(e) {
+      originalHandleKey.apply(inputHandler, [e]);
+      if (!isInGameInput(e) || e.type !== "keydown") {
+        return;
+      }
+      for (let keybind of keybinds) {
+        if (keybind.type === "settings") {
+          if (e.code === settings.get(keybind.key)) {
+            keybind.fn();
+          }
+        } else if (keybind.type === "rawValue") {
+          if (e.code === keybind.value) {
+            keybind.fn();
+          }
+        }
+      }
+    };
+  }
+  function addKeybindInstruction(keybind) {
+    keybinds.push(keybind);
+  }
   function enableInvertAttackAndDefend() {
     let rawAttacking = false;
     let rawDefending = false;
@@ -412,35 +442,30 @@
         data[1] = updateClientDefend();
       }
     });
-    const originalHandleKey = inputHandler.handleKey;
-    inputHandler.handleKey = function(e) {
-      originalHandleKey.apply(this, [e]);
-      if (!isInGameInput(e)) {
-        return;
-      }
-      if (e.type === "keydown") {
-        if (e.code === settings.get("keybindInvertAttack")) {
-          const newInvertAttack = !settings.get("invertAttack");
-          settings.set("invertAttack", newInvertAttack);
-          chatAnnounce(
-            "Invert Attack set to " + (newInvertAttack ? "ON" : "OFF") + "!",
-            "#ffbfbf"
-            // Pink
-          );
-          send({ attack: rawAttacking });
-        }
-        if (e.code === settings.get("keybindInvertDefend")) {
-          const newInvertDefend = !settings.get("invertDefend");
-          settings.set("invertDefend", newInvertDefend);
-          chatAnnounce(
-            "Invert Defend set to " + (newInvertDefend ? "ON" : "OFF") + "!",
-            "#bfbfff"
-            // Light blue
-          );
-          send({ defend: rawDefending });
-        }
-      }
-    };
+    addKeybindInstruction(
+      { type: "settings", key: "keybindInvertAttack", fn: () => {
+        const newInvertAttack = !settings.get("invertAttack");
+        settings.set("invertAttack", newInvertAttack);
+        chatAnnounce(
+          "Invert Attack set to " + (newInvertAttack ? "ON" : "OFF") + "!",
+          "#ffbfbf"
+          // Pink
+        );
+        send({ attack: rawAttacking });
+      } }
+    );
+    addKeybindInstruction(
+      { type: "settings", key: "keybindInvertDefend", fn: () => {
+        const newInvertDefend = !settings.get("invertDefend");
+        settings.set("invertDefend", newInvertDefend);
+        chatAnnounce(
+          "Invert Defend set to " + (newInvertDefend ? "ON" : "OFF") + "!",
+          "#bfbfff"
+          // Light blue
+        );
+        send({ defend: rawDefending });
+      } }
+    );
     const originalEnterGame = enterGame;
     enterGame = function() {
       originalEnterGame();
@@ -449,16 +474,9 @@
     };
   }
   function modifyBaseFOV() {
-    const originalHandleKey = inputHandler.handleKey;
-    inputHandler.handleKey = function(e) {
-      originalHandleKey.apply(inputHandler, [e]);
-      if (!isInGameInput(e)) {
-        return;
-      }
-      if (e.code === "BracketLeft" && e.type === "keydown") {
-        fov = 1 / settings.get("baseReciprocalOfFOV");
-      }
-    };
+    addKeybindInstruction({ type: "rawValue", value: "BracketLeft", fn: () => {
+      fov = 1 / settings.get("baseReciprocalOfFOV");
+    } });
     const originalEnterGame = enterGame;
     enterGame = function() {
       originalEnterGame();
@@ -571,16 +589,9 @@
   }
   function addQuickStatsBoxHotkey() {
     let showQuickStatsBox = false;
-    const originalHandleKey = inputHandler.handleKey;
-    inputHandler.handleKey = function(e) {
-      originalHandleKey.apply(inputHandler, [e]);
-      if (!isInGameInput(e)) {
-        return;
-      }
-      if (e.code === settings.get("keybindStatsBox") && e.type === "keydown") {
-        showQuickStatsBox = !showQuickStatsBox;
-      }
-    };
+    addKeybindInstruction({ type: "settings", key: "keybindStatsBox", fn: () => {
+      showQuickStatsBox = !showQuickStatsBox;
+    } });
     const originalRenderGame = renderGame;
     const originalDrawStatsBox = PetalContainer.prototype.drawStatsBox;
     renderGame = (dt2) => {
@@ -759,28 +770,28 @@
       this.lines = [];
       let currentLine = [];
       let currentWidth = 0;
+      const addLine = () => {
+        this.lines.push(currentLine);
+        this.w = Math.max(this.w, currentWidth + 20);
+        this.h += TOOLTIP_TEXT_HEIGHT;
+        currentLine = [];
+        currentWidth = 0;
+      };
       for (let i = 0; i < splitText.length; i++) {
         const newText = splitText[i];
+        if (newText.trim() === "$n") {
+          addLine();
+          continue;
+        }
         const newWidth = newText[0] === "$" ? 0 : ctx.measureText(newText).width;
         if (currentWidth + newWidth > TOOLTIP_WIDTH_CAP) {
-          this.addLine(currentLine, currentWidth);
-          currentLine = [];
-          currentWidth = 0;
+          addLine();
         }
         currentLine.push(newText);
         currentWidth += newWidth;
       }
-      this.addLine(currentLine, currentWidth);
+      addLine();
       ctx.restore();
-    }
-    /**
-     * Adds another line of text to this tooltip box. Also updates this box's
-     * dimensions based on the dimensions of the text.
-     */
-    addLine(currentLine, currentWidth) {
-      this.lines.push(currentLine);
-      this.w = Math.max(this.w, currentWidth + 20);
-      this.h += TOOLTIP_TEXT_HEIGHT;
     }
   }
   const editIcon = new Image();
@@ -889,19 +900,32 @@
       }
       return { x, y };
     }
+    /**
+     * Returns this setting's name without any ": " formatting.
+     */
+    get simpleName() {
+      return this.name.replaceAll(": ", "");
+    }
     isDisplayValueOption() {
       return true;
+    }
+    /**
+     * Processes `originalColour` to make it flash white if the user has edited
+     * this setting within the past 1.5s.
+     */
+    getFlashColour(originalColour) {
+      if (this.changeTime > 0 && time - this.changeTime < 1500) {
+        const ratio = (time - this.changeTime) / 1500;
+        return blendColor("#ffffff", originalColour, ratio);
+      } else {
+        return originalColour;
+      }
     }
     /**
      * Determines the colours that the values should be displayed in.
      */
     getValueFillStyles() {
-      if (this.changeTime > 0 && time - this.changeTime < 1500) {
-        const ratio = (time - this.changeTime) / 1500;
-        return [blendColor("#ffffff", SETTINGS_GREEN, ratio)];
-      } else {
-        return [SETTINGS_GREEN];
-      }
+      return [this.getFlashColour(SETTINGS_GREEN)];
     }
     /**
      * Determines the displayed values, with formatting if necessary.
@@ -988,7 +1012,7 @@
     }
     onClick() {
       const rawValue = parseFloat(prompt(
-        `You are editing the setting "${this.name}".
+        `You are editing the setting "${this.simpleName}".
 
 Please enter a number between ${this.minValue} and ${this.maxValue}.`
       ) ?? "");
@@ -1016,19 +1040,14 @@ Please enter a number between ${this.minValue} and ${this.maxValue}.`
       return true;
     }
     getValueFillStyles() {
-      if (this.changeTime > 0 && time - this.changeTime < 1500) {
-        const ratio = (time - this.changeTime) / 1500;
-        return [blendColor("#ffffff", Colors.rarities[this.state].color, ratio)];
-      } else {
-        return [Colors.rarities[this.state].color];
-      }
+      return [this.getFlashColour(Colors.rarities[this.state].color)];
     }
     getDisplayedValues() {
       return [Colors.rarities[this.state].name];
     }
     onClick() {
       const response = prompt(
-        `You are editing the setting "${this.name}".
+        `You are editing the setting "${this.simpleName}".
 
 Please enter a Rarity.`
       ) ?? "";
@@ -1039,7 +1058,7 @@ Please enter a Rarity.`
         settings.set(this.settingsKey, rarity);
       } else {
         alert(
-          `Error: "${response}" is not a valid rarity!`
+          `Error: "${response}" is not a valid Rarity!`
         );
       }
     }
@@ -1069,10 +1088,13 @@ Please enter a Rarity.`
       }
     }
     getValueFillStyles() {
+      const colour1 = this.getFlashColour(
+        this.state === KEYBIND_DELETED ? "#afafaf" : SETTINGS_GREEN
+      );
       if (this.editingState) {
-        return super.getValueFillStyles().concat(CINDER_COLOUR);
+        return [colour1, CINDER_COLOUR];
       } else {
-        return super.getValueFillStyles();
+        return [colour1];
       }
     }
     onClick(menu) {
@@ -1294,7 +1316,7 @@ Please enter a Rarity.`
         settingsMap.specialDropsQuantity,
         new SettingsSectionHeading(
           "Keybinds",
-          "To edit a keybind, click its 'Edit' button and then enter a new key to bind it to."
+          "To edit a keybind, click its 'Edit' button and then enter a new key to bind it to. You can also delete a keybind by pressing the 'Delete' key on your keyboard. $n $n Caution: If you set multiple keybinds to the same key, all of your keybinds will still remain active!"
         ),
         settingsMap.keybindInvertAttack,
         settingsMap.keybindInvertDefend,
@@ -1388,7 +1410,11 @@ Please enter a Rarity.`
     const originalHandleKey = inputHandler.handleKey;
     inputHandler.handleKey = function(e) {
       if (_unsafeWindow.state === "menu" && e.type === "keydown" && !e.repeat && !isNil(cinderSettingsMenu.currentKeybindOption)) {
-        cinderSettingsMenu.currentKeybindOption.finishEdit(e.code);
+        if (e.code === "Delete") {
+          cinderSettingsMenu.currentKeybindOption.finishEdit(KEYBIND_DELETED);
+        } else {
+          cinderSettingsMenu.currentKeybindOption.finishEdit(e.code);
+        }
         cinderSettingsMenu.cancelKeybind();
         return;
       }
@@ -1501,6 +1527,7 @@ Please enter a Rarity.`
   allowWsDataProcessing();
   preventMenuOverlap();
   allowEditingKeybinds();
+  initKeybindHandling();
   addNewMenuButtons();
   addPetalCraftPreview();
   addRandomizedSquadCodes();

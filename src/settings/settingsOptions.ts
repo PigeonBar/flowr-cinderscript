@@ -1,4 +1,4 @@
-import { CINDER_COLOUR, EDIT_ICON_SIZE, SETTINGS_BUTTON_PADDING, SETTINGS_BUTTON_SIZE, SETTINGS_GREEN, SETTINGS_OPTION_HEIGHT, TOOLTIP_BLUE, TOOLTIP_BORDER_BLUE, TOOLTIP_ICON_SIZE } from "../constants";
+import { CINDER_COLOUR, EDIT_ICON_SIZE, KEYBIND_DELETED, SETTINGS_BUTTON_PADDING, SETTINGS_BUTTON_SIZE, SETTINGS_GREEN, SETTINGS_OPTION_HEIGHT, TOOLTIP_BLUE, TOOLTIP_BORDER_BLUE, TOOLTIP_ICON_SIZE } from "../constants";
 import type { Rarity } from "../enums";
 import { isNil, rarityToIndex } from "../utils";
 import { settings, type BooleanSettingsKey, type KeybindSettingsKey, type NumberSettingsKey, type RaritySettingsKey } from "./settingsManager";
@@ -11,8 +11,6 @@ editIcon.src = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz
 
 /**
  * A class for all options in the settings menu.
- * 
- * TODO: Tooltips describing what each setting does.
  */
 export abstract class SettingsOption {
   name: string;
@@ -152,8 +150,28 @@ export abstract class DisplayValueOption extends SettingsOption {
     return {x, y};
   }
 
+  /**
+   * Returns this setting's name without any ": " formatting.
+   */
+  get simpleName(): string {
+    return this.name.replaceAll(": ", "");
+  }
+
   isDisplayValueOption(): this is this {
     return true;
+  }
+
+  /**
+   * Processes `originalColour` to make it flash white if the user has edited
+   * this setting within the past 1.5s.
+   */
+  getFlashColour(originalColour: string): string {
+    if (this.changeTime > 0 && time - this.changeTime < 1500) {
+      const ratio = (time - this.changeTime) / 1500;
+      return blendColor("#ffffff", originalColour, ratio);
+    } else {
+      return originalColour;
+    }
   }
 
   /**
@@ -162,12 +180,7 @@ export abstract class DisplayValueOption extends SettingsOption {
   getValueFillStyles(): string[] {
     // By default, the value is displayed as green, and it flashes white over
     // 1.5s when the player edits it.
-    if (this.changeTime > 0 && time - this.changeTime < 1500) {
-      const ratio = (time - this.changeTime) / 1500;
-      return [blendColor("#ffffff", SETTINGS_GREEN, ratio)];
-    } else {
-      return [SETTINGS_GREEN];
-    }
+    return [this.getFlashColour(SETTINGS_GREEN)];
   }
 
   /**
@@ -289,7 +302,7 @@ export class NumberOption extends DisplayValueOption {
   onClick(): void {
     // Prompt the user for a new value, then check its validity
     const rawValue = parseFloat(prompt(
-      `You are editing the setting "${this.name}".\n\n` +
+      `You are editing the setting "${this.simpleName}".\n\n` +
       `Please enter a number between ${this.minValue} and ${this.maxValue}.`
     ) ?? "");
     if (rawValue >= this.minValue && rawValue <= this.maxValue) {
@@ -328,12 +341,7 @@ export class RarityOption extends DisplayValueOption {
   getValueFillStyles(): string[] {
     // The value is now displayed using the rarity's colour, and it still
     // flashes white over 1.5s when the player edits it.
-    if (this.changeTime > 0 && time - this.changeTime < 1500) {
-      const ratio = (time - this.changeTime) / 1500;
-      return [blendColor("#ffffff", Colors.rarities[this.state].color, ratio)];
-    } else {
-      return [Colors.rarities[this.state].color];
-    }
+    return [this.getFlashColour(Colors.rarities[this.state].color)];
   }
 
   getDisplayedValues(): string[] {
@@ -344,7 +352,7 @@ export class RarityOption extends DisplayValueOption {
   onClick(): void {
     // Prompt the user for a new value, then check its validity
     const response = prompt(
-      `You are editing the setting "${this.name}".\n\n` +
+      `You are editing the setting "${this.simpleName}".\n\n` +
       `Please enter a Rarity.`
     ) ?? "";
     const rarity = rarityToIndex(response);
@@ -354,7 +362,7 @@ export class RarityOption extends DisplayValueOption {
       settings.set(this.settingsKey, rarity);
     } else {
       alert(
-        `Error: "${response}" is not a valid rarity!`
+        `Error: "${response}" is not a valid Rarity!`
       );
     }
   }
@@ -396,11 +404,15 @@ export class KeybindOption extends DisplayValueOption {
   }
 
   getValueFillStyles(): string[] {
-    // Also display an "Editing..." status if this is being edited
+    // Gray out this setting if it is set to "<None>" (i.e., deleted by user).
+    // Also display an "Editing..." status if this is being edited.
+    const colour1 = this.getFlashColour(
+      this.state === KEYBIND_DELETED ? "#afafaf" : SETTINGS_GREEN
+    );
     if (this.editingState) {
-      return super.getValueFillStyles().concat(CINDER_COLOUR);
+      return [colour1, CINDER_COLOUR];
     } else {
-      return super.getValueFillStyles();
+      return [colour1];
     }
   }
 

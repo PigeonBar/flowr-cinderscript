@@ -1,4 +1,5 @@
 import { unsafeWindow } from "$";
+import { KEYBIND_DELETED } from "../constants";
 import { cinderSettingsMenu } from "../settings/settingsMenu";
 import { isNil } from "../utils";
 
@@ -15,7 +16,11 @@ export function allowEditingKeybinds() {
         !e.repeat &&
         !isNil(cinderSettingsMenu.currentKeybindOption))
     {
-      cinderSettingsMenu.currentKeybindOption.finishEdit(e.code);
+      if (e.code === "Delete") {
+        cinderSettingsMenu.currentKeybindOption.finishEdit(KEYBIND_DELETED);
+      } else {
+        cinderSettingsMenu.currentKeybindOption.finishEdit(e.code);
+      }
       cinderSettingsMenu.cancelKeybind();
       return;
     }

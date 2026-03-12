@@ -1,5 +1,5 @@
 import { unsafeWindow } from "$";
-import { CINDER_COLOUR, MAX_PETAL_RARITY } from "./constants";
+import { CINDER_COLOUR, KEYBIND_DELETED, MAX_PETAL_RARITY } from "./constants";
 import { Rarity } from "./enums";
 
 const statsBoxQueue = [] as {
@@ -104,6 +104,13 @@ export function isInGameInput(
 ): boolean {
   if (e.repeat) {
     e.preventDefault();
+  }
+  // If the key's code somehow equals our special token that indicates a
+  // deleted keybind, ignore it.
+  if (e.code === KEYBIND_DELETED) {
+    console.warn(`Keypress code somehow equal to ${KEYBIND_DELETED}!`);
+    console.warn(e);
+    return false;
   }
   return unsafeWindow.state === "game" && !inputHandler.chatOpen && !e.repeat;
 }
