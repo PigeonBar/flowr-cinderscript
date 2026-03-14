@@ -48,6 +48,7 @@ export abstract class SettingsOption {
    * The position of the centre of the ? tooltip icon for this option.
    */
   get tooltipPos(): {x: number, y: number} {
+    ctx.font = "900 17px Ubuntu";
     return {
       x: this.screenPosition.x + SETTINGS_BUTTON_SIZE +
         SETTINGS_BUTTON_PADDING * 2 + ctx.measureText(this.name).width +
@@ -93,11 +94,20 @@ export abstract class SettingsOption {
   }
 
   /**
-   * Draws this option's tooltip icon and tooltip.
+   * Draws this option's tooltip icon.
    */
-  drawTooltip(): void {
+  drawTooltipIcon(): void {
     if (!isNil(this.tooltipBox)) {
-      drawTooltipIcon(this.tooltipPos, this.tooltipBox);
+      drawTooltipIcon(this.tooltipPos);
+    }
+  }
+
+  /**
+   * Draws this option's tooltip box.
+   */
+  drawTooltipBox(e: CanvasMouseData): void {
+    if (!isNil(this.tooltipBox)) {
+      drawTooltipBox(this.tooltipPos, this.tooltipBox, e);
     }
   }
 
@@ -529,23 +539,28 @@ export class SettingsSectionHeading {
   }
 
   /**
-   * Draws this option's tooltip icon and tooltip.
+   * Draws this section's tooltip icon.
    */
-  drawTooltip(): void {
+  drawTooltipIcon(): void {
     if (!isNil(this.tooltipBox)) {
-      drawTooltipIcon(this.tooltipPos, this.tooltipBox);
+      drawTooltipIcon(this.tooltipPos);
+    }
+  }
+
+  /**
+   * Draws this section's tooltip box.
+   */
+  drawTooltipBox(e: CanvasMouseData): void {
+    if (!isNil(this.tooltipBox)) {
+      drawTooltipBox(this.tooltipPos, this.tooltipBox, e);
     }
   }
 }
 
 /**
- * A helper function to draw a ? tooltip icon centred at the given coordinates,
- * and also draw the tooltip box if the mouse is hovering over the icon.
+ * A helper function to draw a ? tooltip icon centred at the given coordinates.
  */
-function drawTooltipIcon(
-  pos: {x: number, y: number},
-  tooltipBox: TooltipBox
-): void {
+function drawTooltipIcon(pos: {x: number, y: number}): void {
   // Draw the blue circle containing the ? symbol
   const {x, y} = pos;
   ctx.strokeStyle = TOOLTIP_BORDER_BLUE;
@@ -566,10 +581,23 @@ function drawTooltipIcon(
   ctx.lineWidth = 2;
   ctx.strokeText("?", x, y + 1);
   ctx.fillText("?", x, y + 1);
-  
+}
+
+/**
+ * A helper function to draw a setting's tooltip box.
+ * @param pos The position of the *tooltip icon* (not the tooltip box itself).
+ * @param tooltipBox The tooltip box to display.
+ * @param e The position of the mouse.
+ */
+function drawTooltipBox(
+  pos: {x: number, y: number},
+  tooltipBox: TooltipBox,
+  e: CanvasMouseData,
+): void {
+  const {x, y} = pos;
   // Check whether the mouse is hovering over this icon
   const isHovered = mouseInBox(
-    {x: mouse.canvasX, y: mouse.canvasY},
+    e,
     // We intentionally make the tooltip icon's "hitbox" larger
     {
       x: x - SETTINGS_BUTTON_SIZE / 2,

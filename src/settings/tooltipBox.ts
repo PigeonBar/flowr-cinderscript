@@ -112,7 +112,6 @@ export class TooltipBox {
     this.alpha = 0;
 
     // Prepare to measure the text
-    ctx.save();
     ctx.font = "900 15px Ubuntu"; // Set font for measuring text width
     const text = (typeof this.text === "string") ? this.text : this.text();
     const splitText = text.split(" ").map(token => token + " ");
@@ -148,6 +147,5 @@ export class TooltipBox {
 
     // Also add the final line before concluding
     addLine();
-    ctx.restore();
   }
 }
