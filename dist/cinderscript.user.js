@@ -1459,7 +1459,7 @@ Please enter a Rarity.`
       ctx.lineTo(this.w - 16, this.scrollbarPos + SCROLLBAR_LENGTH / 2);
       ctx.stroke();
       ctx.closePath();
-      if (this.active && this.mouseOnScrollbar()) {
+      if (this.active && (this.mouseOnScrollbar() || !isNil(this.draggingScrollbarOffset))) {
         setCursor("pointer");
       }
       ctx.beginPath();

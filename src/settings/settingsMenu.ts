@@ -243,7 +243,8 @@ export class CinderSettingsMenu extends SettingsMenu {
     ctx.stroke();
     ctx.closePath();
     // Set the cursor to "pointer" if it is hovering over the scrollbar
-    if (this.active && this.mouseOnScrollbar()) {
+    if (this.active &&
+        (this.mouseOnScrollbar() || !isNil(this.draggingScrollbarOffset))) {
       setCursor("pointer");
     }
 
