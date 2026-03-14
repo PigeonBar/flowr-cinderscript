@@ -68,6 +68,17 @@ export const TOOLTIP_ICON_SIZE = 20;
 export const TOOLTIP_WIDTH_CAP = 400;
 
 /**
+ * The length of the settings menu's scrollbar.
+ */
+export const SCROLLBAR_LENGTH = 200;
+
+/**
+ * The minimum vertical position of the scrollbar, in order to apply padding.
+ * This position also gets reflected to determine a maximum position.
+ */
+export const SETTINGS_SCROLLBAR_MIN_POS = 120;
+
+/**
  * The height of each line of text in a tooltip (including spacing).
  */
 export const TOOLTIP_TEXT_HEIGHT = 22.5;

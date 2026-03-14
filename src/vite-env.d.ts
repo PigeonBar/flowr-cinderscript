@@ -224,6 +224,10 @@ declare global {
 
   function blendColor(color1: string, color2: string, ratio: number): string;
 
+  function interpolate(start: number, end: number, time: number): number;
+
+  function setCursor(state: string);
+
   let renderGame: (dt: number) => void;
 
   type HpBarData = {
@@ -288,6 +292,7 @@ declare global {
     w: number;
     h: number;
     offset: number;
+    targetOffset: number;
     currentHeight: number;
     active: boolean;
     options: readonly (SettingsOption | SettingsSectionHeading)[];

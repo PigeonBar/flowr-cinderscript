@@ -50,6 +50,21 @@
     Rarity2[Rarity2["ESOTERIC"] = 32] = "ESOTERIC";
     Rarity2[Rarity2["METAPHYSICAL"] = 33] = "METAPHYSICAL";
     Rarity2[Rarity2["PRIMORDIAL"] = 34] = "PRIMORDIAL";
+    Rarity2[Rarity2["VANGUARD"] = 35] = "VANGUARD";
+    Rarity2[Rarity2["LUMINOUS"] = 36] = "LUMINOUS";
+    Rarity2[Rarity2["FRACTURED"] = 37] = "FRACTURED";
+    Rarity2[Rarity2["ELOQUENT"] = 38] = "ELOQUENT";
+    Rarity2[Rarity2["TESSELATED"] = 39] = "TESSELATED";
+    Rarity2[Rarity2["VANQUISHED"] = 40] = "VANQUISHED";
+    Rarity2[Rarity2["COALESCENT"] = 41] = "COALESCENT";
+    Rarity2[Rarity2["SPECTRAL"] = 42] = "SPECTRAL";
+    Rarity2[Rarity2["UNFATHOMABLE"] = 43] = "UNFATHOMABLE";
+    Rarity2[Rarity2["PARAMOUNT"] = 44] = "PARAMOUNT";
+    Rarity2[Rarity2["EVANESCENT"] = 45] = "EVANESCENT";
+    Rarity2[Rarity2["STARFORGED"] = 46] = "STARFORGED";
+    Rarity2[Rarity2["TIMELIT"] = 47] = "TIMELIT";
+    Rarity2[Rarity2["AEONIC"] = 48] = "AEONIC";
+    Rarity2[Rarity2["UNREAL"] = 49] = "UNREAL";
     return Rarity2;
   })(Rarity || {});
   const LIGHT_CINDER_COLOUR = "#ffaf60";
@@ -65,6 +80,8 @@
   const EDIT_ICON_SIZE = 20;
   const TOOLTIP_ICON_SIZE = 20;
   const TOOLTIP_WIDTH_CAP = 400;
+  const SCROLLBAR_LENGTH = 200;
+  const SETTINGS_SCROLLBAR_MIN_POS = 120;
   const TOOLTIP_TEXT_HEIGHT = 22.5;
   const KEYBIND_DELETED = "<None>";
   var _unsafeWindow = /* @__PURE__ */ (() => typeof unsafeWindow != "undefined" ? unsafeWindow : void 0)();
@@ -173,7 +190,7 @@
           originalRenderGame(dt2);
           ctx.save();
           ctx.lineWidth = 6;
-          ctx.font = "900 32px 'Ubuntu'";
+          ctx.font = "900 32px Ubuntu";
           ctx.textAlign = "right";
           ctx.textBaseline = "top";
           ctx.fillStyle = CINDER_COLOUR;
@@ -763,7 +780,6 @@
       this.w = 20;
       this.h = 20 - (TOOLTIP_TEXT_HEIGHT - 15);
       this.alpha = 0;
-      ctx.save();
       ctx.font = "900 15px Ubuntu";
       const text = typeof this.text === "string" ? this.text : this.text();
       const splitText = text.split(" ").map((token) => token + " ");
@@ -791,7 +807,6 @@
         currentWidth += newWidth;
       }
       addLine();
-      ctx.restore();
     }
   }
   const editIcon = new Image();
@@ -825,6 +840,7 @@
      * The position of the centre of the ? tooltip icon for this option.
      */
     get tooltipPos() {
+      ctx.font = "900 17px Ubuntu";
       return {
         x: this.screenPosition.x + SETTINGS_BUTTON_SIZE + SETTINGS_BUTTON_PADDING * 2 + ctx.measureText(this.name).width + TOOLTIP_ICON_SIZE / 2,
         y: this.screenPosition.y + SETTINGS_BUTTON_SIZE / 2
@@ -862,11 +878,19 @@
       return mouseInBox(e, this.screenPosition);
     }
     /**
-     * Draws this option's tooltip icon and tooltip.
+     * Draws this option's tooltip icon.
      */
-    drawTooltip() {
+    drawTooltipIcon() {
       if (!isNil(this.tooltipBox)) {
-        drawTooltipIcon(this.tooltipPos, this.tooltipBox);
+        drawTooltipIcon(this.tooltipPos);
+      }
+    }
+    /**
+     * Draws this option's tooltip box.
+     */
+    drawTooltipBox(e) {
+      if (!isNil(this.tooltipBox)) {
+        drawTooltipBox(this.tooltipPos, this.tooltipBox, e);
       }
     }
     /**
@@ -1185,15 +1209,23 @@ Please enter a Rarity.`
       menu.currentHeight += SETTINGS_OPTION_HEIGHT;
     }
     /**
-     * Draws this option's tooltip icon and tooltip.
+     * Draws this section's tooltip icon.
      */
-    drawTooltip() {
+    drawTooltipIcon() {
       if (!isNil(this.tooltipBox)) {
-        drawTooltipIcon(this.tooltipPos, this.tooltipBox);
+        drawTooltipIcon(this.tooltipPos);
+      }
+    }
+    /**
+     * Draws this section's tooltip box.
+     */
+    drawTooltipBox(e) {
+      if (!isNil(this.tooltipBox)) {
+        drawTooltipBox(this.tooltipPos, this.tooltipBox, e);
       }
     }
   }
-  function drawTooltipIcon(pos, tooltipBox) {
+  function drawTooltipIcon(pos) {
     const { x, y } = pos;
     ctx.strokeStyle = TOOLTIP_BORDER_BLUE;
     ctx.fillStyle = TOOLTIP_BLUE;
@@ -1211,8 +1243,11 @@ Please enter a Rarity.`
     ctx.lineWidth = 2;
     ctx.strokeText("?", x, y + 1);
     ctx.fillText("?", x, y + 1);
+  }
+  function drawTooltipBox(pos, tooltipBox, e) {
+    const { x, y } = pos;
     const isHovered = mouseInBox(
-      { x: mouse.canvasX, y: mouse.canvasY },
+      e,
       // We intentionally make the tooltip icon's "hitbox" larger
       {
         x: x - SETTINGS_BUTTON_SIZE / 2,
@@ -1228,8 +1263,22 @@ Please enter a Rarity.`
      * The {@linkcode KeybindOption} currently being edited, if applicable.
      */
     currentKeybindOption;
+    _scroll;
+    /**
+     * The vertical offset of the mouse from the scrollbar's centre if the user
+     * is currently dragging the scrollbar, or `undefined` if the user is not
+     * dragging the scrollbar.
+     */
+    draggingScrollbarOffset;
+    /**
+     * The total height of this menu's contents, equal to
+     * {@linkcode SETTINGS_OPTION_HEIGHT} times `this.options.length`.
+     */
+    totalHeight;
     constructor() {
       super();
+      this._scroll = 0;
+      this.draggingScrollbarOffset = void 0;
       initOptions({
         "invertAttack": new BooleanOption("Invert Attack", "invertAttack"),
         "invertDefend": new BooleanOption("Invert Defend", "invertDefend"),
@@ -1298,6 +1347,7 @@ Please enter a Rarity.`
           "This keybind toggles the stats box of the highest-rarity mob currently alive in your room."
         )
       });
+      this.h = 11.7 * SETTINGS_OPTION_HEIGHT;
       this.w = 480;
       this.options = Object.freeze([
         new SettingsSectionHeading("General Gameplay"),
@@ -1322,6 +1372,7 @@ Please enter a Rarity.`
         settingsMap.keybindInvertDefend,
         settingsMap.keybindStatsBox
       ]);
+      this.totalHeight = SETTINGS_OPTION_HEIGHT * this.options.length;
       const originalOnMouseDown = _unsafeWindow.onmousedown;
       _unsafeWindow.onmousedown = (e) => {
         originalOnMouseDown?.apply(_unsafeWindow, [e]);
@@ -1329,11 +1380,21 @@ Please enter a Rarity.`
           this.mouseDown({ x: mouse.canvasX, y: mouse.canvasY });
         }
       };
+      const originalOnMouseUp = _unsafeWindow.onmouseup;
+      _unsafeWindow.onmouseup = (e) => {
+        originalOnMouseUp?.apply(_unsafeWindow, [e]);
+        if (_unsafeWindow.connected === true) {
+          this.mouseUp();
+        }
+      };
       const originalDraw = settingsMenu.draw;
       settingsMenu.draw = function() {
         originalDraw.apply(this);
         cinderSettingsMenu.draw();
       };
+      document.addEventListener("wheel", (e) => {
+        this.updateScroll(e);
+      });
     }
     /**
      * The y-position at the midpoint of the option currently being rendered.
@@ -1341,13 +1402,110 @@ Please enter a Rarity.`
     get midHeight() {
       return this.currentHeight + SETTINGS_OPTION_HEIGHT / 2;
     }
-    draw() {
-      super.draw();
-      ctx.translate(0, this.offset);
-      for (let i = this.options.length - 1; i >= 0; i--) {
-        this.options[i].drawTooltip();
+    /**
+     * How much the menu's contents are currently shifted due to scrolling. This
+     * is directly controlled by user inputs.
+     * 
+     * I originally planned to have a separate "renderScroll" value that
+     * interpolates towards this value, just like most other Flowr UI elements,
+     * but I scrapped it because it was causing too much spaghetti code for
+     * little benefit.
+     */
+    get scroll() {
+      return this._scroll;
+    }
+    set scroll(val) {
+      this._scroll = Math.min(Math.max(val, 0), this.totalHeight + 10 - this.h);
+    }
+    /**
+     * The ratio of scrollbar movement to actual content movement.
+     */
+    get scrollbarRatio() {
+      return (this.h - 2 * SETTINGS_SCROLLBAR_MIN_POS) / (this.totalHeight + 10 - this.h);
+    }
+    /**
+     * The vertical position of the centre of this menu's scrollbar.
+     */
+    get scrollbarPos() {
+      return this.scroll * this.scrollbarRatio + SETTINGS_SCROLLBAR_MIN_POS;
+    }
+    set scrollbarPos(pos) {
+      if (!isNil(this.draggingScrollbarOffset)) {
+        this.scroll = (pos - SETTINGS_SCROLLBAR_MIN_POS - this.y - this.offset) / this.scrollbarRatio;
       }
-      ctx.translate(0, -this.offset);
+    }
+    // TODO: Make the scroll translation code less spaghetti
+    draw() {
+      this.offset = interpolate(this.offset, this.targetOffset, 0.3);
+      if (!isNil(this.draggingScrollbarOffset)) {
+        this.scrollbarPos = mouse.canvasY - this.draggingScrollbarOffset;
+      }
+      ctx.save();
+      ctx.translate(this.x, this.y + this.offset);
+      ctx.beginPath();
+      ctx.roundRect(0, 0, this.w, this.h, 3);
+      ctx.clip();
+      ctx.closePath();
+      ctx.fillStyle = "#aaaaaa";
+      ctx.beginPath();
+      ctx.roundRect(0, 0, this.w, this.h, 3);
+      ctx.fill();
+      ctx.closePath();
+      ctx.strokeStyle = "#7f7f7f";
+      ctx.lineWidth = 8;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(this.w - 16, this.scrollbarPos - SCROLLBAR_LENGTH / 2);
+      ctx.lineTo(this.w - 16, this.scrollbarPos + SCROLLBAR_LENGTH / 2);
+      ctx.stroke();
+      ctx.closePath();
+      if (this.active && (this.mouseOnScrollbar() || !isNil(this.draggingScrollbarOffset))) {
+        setCursor("pointer");
+      }
+      ctx.beginPath();
+      ctx.roundRect(0, 0, this.w, this.h, 3);
+      ctx.clip();
+      ctx.closePath();
+      ctx.translate(0, -this.scroll);
+      const e = { x: mouse.canvasX, y: mouse.canvasY + this.scroll };
+      if (!this.active || !this.mouseInMenu()) {
+        e.x = e.y = -Infinity;
+      }
+      this.currentHeight = 5;
+      for (let option of this.options) {
+        this.renderOption(option);
+      }
+      ctx.translate(-this.x, -this.y);
+      for (let option of this.options) {
+        option.drawTooltipIcon();
+      }
+      if (this.active && this.mouseInMenu()) {
+        for (let option of this.options) {
+          if (!option.isSectionHeading()) {
+            if (option.mouseInButton(e)) {
+              setCursor("pointer");
+            }
+          }
+        }
+      }
+      ctx.restore();
+      ctx.strokeStyle = "#8a8a8a";
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.roundRect(
+        this.x,
+        this.y + this.offset,
+        this.w,
+        this.h,
+        3
+      );
+      ctx.stroke();
+      ctx.closePath();
+      ctx.translate(0, -this.scroll);
+      for (let option of this.options) {
+        option.drawTooltipBox(e);
+      }
+      ctx.translate(0, this.scroll);
     }
     /**
      * Renders the given {@linkcode SettingsOption}. Each type of option is
@@ -1370,6 +1528,13 @@ Please enter a Rarity.`
       if (!this.active) {
         return;
       }
+      if (!this.mouseInMenu()) {
+        return;
+      }
+      if (this.mouseOnScrollbar()) {
+        this.draggingScrollbarOffset = mouse.canvasY - (this.y + this.offset + this.scrollbarPos);
+      }
+      e.y += this.scroll;
       for (let option of this.options) {
         if (!option.isSectionHeading()) {
           if (option.mouseInButton(e)) {
@@ -1382,10 +1547,25 @@ Please enter a Rarity.`
         }
       }
     }
+    /**
+     * Precesses the user releasing a mouse click.
+     */
+    mouseUp() {
+      this.draggingScrollbarOffset = void 0;
+    }
+    /**
+     * Scrolls this menu up/down in response to a mouse wheel input.
+     */
+    updateScroll(e) {
+      if (this.active && this.mouseInMenu()) {
+        this.scroll += e.deltaY / 2;
+      }
+    }
     toggle() {
       super.toggle();
       if (!this.active) {
         this.cancelKeybind();
+        this.draggingScrollbarOffset = void 0;
       }
     }
     /**
@@ -1403,6 +1583,29 @@ Please enter a Rarity.`
      */
     cancelKeybind() {
       this.setCurrentKeybindOption(void 0);
+    }
+    /**
+     * Checks whether the mouse is inside this menu, excluding its borders.
+     */
+    mouseInMenu() {
+      return mouseInBox(
+        { x: mouse.canvasX, y: mouse.canvasY },
+        { x: this.x + 4, y: this.y + 4, w: this.w - 8, h: this.h - 8 }
+      );
+    }
+    /**
+     * Checks whether the mouse is hovering over this menu's scrollbar.
+     */
+    mouseOnScrollbar() {
+      return mouseInBox(
+        { x: mouse.canvasX, y: mouse.canvasY },
+        {
+          x: this.x + this.w - 24,
+          y: this.y + this.offset + this.scrollbarPos - SCROLLBAR_LENGTH / 2,
+          w: 16,
+          h: SCROLLBAR_LENGTH
+        }
+      );
     }
   }
   const cinderSettingsMenu = new CinderSettingsMenu();

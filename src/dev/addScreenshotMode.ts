@@ -44,7 +44,7 @@ export function addScreenshotMode() {
         // "Screenshot Mode" text
         ctx.save();
         ctx.lineWidth = 6;
-        ctx.font = "900 32px 'Ubuntu'";
+        ctx.font = "900 32px Ubuntu";
         ctx.textAlign = "right";
         ctx.textBaseline = "top";
         ctx.fillStyle = CINDER_COLOUR;
