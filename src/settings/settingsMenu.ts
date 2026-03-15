@@ -94,7 +94,7 @@ export class CinderSettingsMenu extends SettingsMenu {
       "keybindStatsBox": new KeybindOption(
         "Quick Stats Box",
         "keybindStatsBox",
-        "This keybind toggles the stats box of the highest-rarity mob " +
+        "This hotkey toggles the stats box of the highest-rarity mob " +
         "currently alive in your room.",
       ),
     });
@@ -160,7 +160,7 @@ export class CinderSettingsMenu extends SettingsMenu {
     // Allow this menu to respond to scrolling inputs
     document.addEventListener("wheel", (e: WheelEvent) => {
       this.updateScroll(e);
-    })
+    });
   }
 
   /**
@@ -378,7 +378,7 @@ export class CinderSettingsMenu extends SettingsMenu {
     // and cancel dragging the scrollbar.
     if (!this.active) {
       this.cancelKeybind();
-      this.draggingScrollbarOffset = undefined;
+      this.mouseUp();
     }
   }
 
@@ -428,5 +428,3 @@ export class CinderSettingsMenu extends SettingsMenu {
 }
 
 export const cinderSettingsMenu = new CinderSettingsMenu();
-
-// TODO before release: Scrollbar

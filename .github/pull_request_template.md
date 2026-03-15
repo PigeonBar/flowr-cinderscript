@@ -14,4 +14,5 @@
 ## Checklist
 
 - [ ] Updated the actual userscript using `npm run build`
+- [ ] Updated the changelog
 - [ ] Updated versions in `package.json`, `package-lock.json`, and the userscript (after initial release)
