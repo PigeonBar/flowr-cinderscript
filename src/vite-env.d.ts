@@ -186,7 +186,9 @@ declare global {
     };
   }
 
+  // Ty flowr devs for being inconsistent with mouse data
   type CanvasMouseData = {x: number, y: number};
+  type CanvasMouseData2 = {mouseX: number, mouseY: number};
 
   const mouse: MouseData;
   
@@ -315,14 +317,32 @@ declare global {
   const settingsMenu: SettingsMenu;
 
   class Changelog {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    offset: number;
     active: boolean;
+    hoveringOverX: boolean;
 
     toggle();
+    generateEntries();
+    draw();
+    mouseMove(e: CanvasMouseData2);
+    mouseDown(e: CanvasMouseData2);
+    mouseUp(e: CanvasMouseData2);
+    updateScroll(
+      delta: {x: number, y: number}, mouse: CanvasMouseData2
+    );
   }
 
   const changelog: Changelog;
 
   const changelogButton: HTMLDivElement;
+
+  type ChangelogEntry = {text: string, date: string};
+
+  const changeloglist: ChangelogEntry[];
 
   const ws: WebSocket;
 

@@ -1344,7 +1344,7 @@ Please enter a Rarity.`
         "keybindStatsBox": new KeybindOption(
           "Quick Stats Box",
           "keybindStatsBox",
-          "This keybind toggles the stats box of the highest-rarity mob currently alive in your room."
+          "This hotkey toggles the stats box of the highest-rarity mob currently alive in your room."
         )
       });
       this.h = 11.7 * SETTINGS_OPTION_HEIGHT;
@@ -1565,7 +1565,7 @@ Please enter a Rarity.`
       super.toggle();
       if (!this.active) {
         this.cancelKeybind();
-        this.draggingScrollbarOffset = void 0;
+        this.mouseUp();
       }
     }
     /**
@@ -1624,6 +1624,113 @@ Please enter a Rarity.`
       originalHandleKey.apply(inputHandler, [e]);
     };
   }
+  const cinderChangelogList = [
+    {
+      text: `Cinderscript's official release! Here are its initial features:
+- Invert Attack/Defend hotkeys (Default: Comma/Period) (PR #10)
+- Hotkey to display stats box of the highest-rarity mob alive in your room (Default: "G") (PR #9)
+- Fix a client freeze bug from displaying mobs with negative size (PR #8)
+- The player's HP bar and high-rarity petal drops are now rendered larger (PR #7)
+- When entering a new game, the game is now zoomed out by default (PR #5)
+- Enemy missiles will no longer be hidden below enemy mobs (PR #4)
+- Players can generate a random squad code by entering an empty private code (PR #3)
+- Petal craft preview added to the crafting menu (PR #1)
+- These features are configurable in the settings menu!`,
+      date: "Version 1.0.0"
+    }
+  ];
+  class CinderChangelog extends Changelog {
+    /**
+     * Whether or not this changelog has generated its entries.
+     */
+    generatedEntries;
+    constructor() {
+      super();
+      this.generatedEntries = false;
+      const originalOnMouseDown = _unsafeWindow.onmousedown;
+      _unsafeWindow.onmousedown = (e) => {
+        originalOnMouseDown?.apply(_unsafeWindow, [e]);
+        if (_unsafeWindow.connected === true && this.active) {
+          this.mouseDown({ mouseX: mouse.canvasX, mouseY: mouse.canvasY });
+        }
+      };
+      const originalOnMouseUp = _unsafeWindow.onmouseup;
+      _unsafeWindow.onmouseup = (e) => {
+        originalOnMouseUp?.apply(_unsafeWindow, [e]);
+        if (_unsafeWindow.connected === true) {
+          this.mouseUp({ mouseX: mouse.canvasX, mouseY: mouse.canvasY });
+        }
+      };
+      const originalHandleMouse = inputHandler.handleMouse;
+      inputHandler.handleMouse = (e) => {
+        originalHandleMouse.apply(inputHandler, [e]);
+        this.mouseMove({ mouseX: mouse.canvasX, mouseY: mouse.canvasY });
+      };
+      document.addEventListener("wheel", (e) => {
+        this.updateScroll(
+          { x: e.deltaX, y: e.deltaY },
+          { mouseX: mouse.canvasX, mouseY: mouse.canvasY }
+        );
+      });
+      const originalDraw = changelog.draw;
+      changelog.draw = () => {
+        originalDraw.apply(changelog);
+        this.draw();
+      };
+    }
+    toggle() {
+      super.toggle();
+      if (!this.active) {
+        this.mouseUp({ mouseX: mouse.canvasX, mouseY: mouse.canvasY });
+      }
+    }
+    draw() {
+      super.draw();
+      ctx.translate(this.x, this.y + this.offset);
+      ctx.fillStyle = "#9bb56b";
+      ctx.beginPath();
+      ctx.roundRect(5, 5, this.w - 50, 75);
+      ctx.fill();
+      ctx.closePath();
+      ctx.font = "900 30px Ubuntu";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "white";
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 4;
+      ctx.strokeText("Cinderscript Changelog", this.w / 2, 40);
+      ctx.fillText("Cinderscript Changelog", this.w / 2, 40);
+      ctx.translate(-this.x, -this.y - this.offset);
+    }
+    mouseDown(e) {
+      super.mouseDown(e);
+      if (this.hoveringOverX) {
+        this.toggle();
+      }
+    }
+    /**
+     * Generates this changelog's entries if they are not already generated.
+     * 
+     * To try to maximize modularity/compatibility, we reuse the superclass's
+     * `generateEntries` function. That function is hardcoded to retrieve entries
+     * from {@linkcode changeloglist}, so we need to temporarily overwrite
+     * `changeloglist`. This is a bit inefficient, but fortunately, we only need
+     * to do this once per page load.
+     */
+    generateEntries() {
+      if (this.generatedEntries) {
+        return;
+      }
+      this.generatedEntries = true;
+      const vanillaChangelogList = [...changeloglist];
+      changeloglist.splice(0, changeloglist.length);
+      changeloglist.push(...cinderChangelogList);
+      super.generateEntries();
+      changeloglist.splice(0, changeloglist.length);
+      changeloglist.push(...vanillaChangelogList);
+    }
+  }
+  const cinderChangelog = new CinderChangelog();
   function addNewMenuButtons() {
     const menuSeparatorLine = document.createElement("div");
     menuSeparatorLine.id = "menuSeparatorLine";
@@ -1633,12 +1740,35 @@ Please enter a Rarity.`
     settingsImage.src = `gfx/gear.png?v=${ver}`;
     settingsImage.draggable = false;
     const cinderSettingsButton = document.createElement("div");
-    cinderSettingsButton.id = "cinderSettingsButton";
+    cinderSettingsButton.className = "cinderMenuButton";
     cinderSettingsButton.appendChild(settingsImage);
     cinderSettingsButton.onclick = () => {
       cinderSettingsMenu.toggle();
     };
     buttonList?.appendChild(cinderSettingsButton);
+    const githubIcon = new Image(35, 35);
+    githubIcon.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik01Ni43OTM3IDg0Ljk2ODhDNDQuNDE4NyA4My40Njg4IDM1LjcgNzQuNTYyNSAzNS43IDYzLjAzMTNDMzUuNyA1OC4zNDM4IDM3LjM4NzUgNTMuMjgxMyA0MC4yIDQ5LjkwNjNDMzguOTgxMiA0Ni44MTI1IDM5LjE2ODcgNDAuMjUgNDAuNTc1IDM3LjUzMTNDNDQuMzI1IDM3LjA2MjUgNDkuMzg3NSAzOS4wMzEzIDUyLjM4NzUgNDEuNzVDNTUuOTUgNDAuNjI1IDU5LjcgNDAuMDYyNSA2NC4yOTM3IDQwLjA2MjVDNjguODg3NSA0MC4wNjI1IDcyLjYzNzUgNDAuNjI1IDc2LjAxMjUgNDEuNjU2M0M3OC45MTg3IDM5LjAzMTMgODQuMDc1IDM3LjA2MjUgODcuODI1IDM3LjUzMTNDODkuMTM3NSA0MC4wNjI1IDg5LjMyNSA0Ni42MjUgODguMTA2MiA0OS44MTI1QzkxLjEwNjIgNTMuMzc1IDkyLjcgNTguMTU2MyA5Mi43IDYzLjAzMTNDOTIuNyA3NC41NjI1IDgzLjk4MTIgODMuMjgxMyA3MS40MTg3IDg0Ljg3NUM3NC42MDYyIDg2LjkzNzUgNzYuNzYyNSA5MS40Mzc1IDc2Ljc2MjUgOTYuNTkzOEw3Ni43NjI1IDEwNi4zNDRDNzYuNzYyNSAxMDkuMTU2IDc5LjEwNjIgMTEwLjc1IDgxLjkxODcgMTA5LjYyNUM5OC44ODc1IDEwMy4xNTYgMTEyLjIgODYuMTg3NSAxMTIuMiA2NS4xODc1QzExMi4yIDM4LjY1NjMgOTAuNjM3NSAxNyA2NC4xMDYyIDE3QzM3LjU3NSAxNyAxNi4yIDM4LjY1NjIgMTYuMiA2NS4xODc1QzE2LjIgODYgMjkuNDE4NyAxMDMuMjUgNDcuMjMxMiAxMDkuNzE5QzQ5Ljc2MjUgMTEwLjY1NiA1Mi4yIDEwOC45NjkgNTIuMiAxMDYuNDM4TDUyLjIgOTguOTM3NUM1MC44ODc1IDk5LjUgNDkuMiA5OS44NzUgNDcuNyA5OS44NzVDNDEuNTEyNSA5OS44NzUgMzcuODU2MiA5Ni41IDM1LjIzMTIgOTAuMjE4OEMzNC4yIDg3LjY4NzUgMzMuMDc1IDg2LjE4NzUgMzAuOTE4NyA4NS45MDYzQzI5Ljc5MzcgODUuODEyNSAyOS40MTg3IDg1LjM0MzggMjkuNDE4NyA4NC43ODEzQzI5LjQxODcgODMuNjU2MyAzMS4yOTM3IDgyLjgxMjUgMzMuMTY4NyA4Mi44MTI1QzM1Ljg4NzUgODIuODEyNSAzOC4yMzEyIDg0LjUgNDAuNjY4NyA4Ny45Njg4QzQyLjU0MzcgOTAuNjg3NSA0NC41MTI1IDkxLjkwNjMgNDYuODU2MiA5MS45MDYzQzQ5LjIgOTEuOTA2MyA1MC43IDkxLjA2MjUgNTIuODU2MiA4OC45MDYzQzU0LjQ1IDg3LjMxMjUgNTUuNjY4NyA4NS45MDYzIDU2Ljc5MzcgODQuOTY4OFoiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPgo=";
+    githubIcon.id = "githubIcon";
+    githubIcon.draggable = false;
+    const githubButton = document.createElement("div");
+    githubButton.className = "cinderMenuButton";
+    const githubLink = document.createElement("a");
+    githubLink.href = "https://github.com/PigeonBar/flowr-cinderscript";
+    githubLink.target = "_blank";
+    githubLink.title = "Check out Cinderscript on GitHub!";
+    githubLink.appendChild(githubIcon);
+    githubButton.appendChild(githubLink);
+    buttonList?.appendChild(githubButton);
+    const changelogImage = new Image(24, 24);
+    changelogImage.src = `gfx/scroll.png?v=${ver}`;
+    changelogImage.draggable = false;
+    const cinderChangelogButton = document.createElement("div");
+    cinderChangelogButton.className = "cinderMenuButton";
+    cinderChangelogButton.appendChild(changelogImage);
+    cinderChangelogButton.onclick = () => {
+      cinderChangelog.toggle();
+    };
+    buttonList?.appendChild(cinderChangelogButton);
     const styles = `
     #menuSeparatorLine {
       background-color: ${CINDER_BORDER_COLOUR};
@@ -1649,7 +1779,11 @@ Please enter a Rarity.`
       border-radius: 3px;
     }
 
-    #cinderSettingsButton {
+    #githubIcon {
+      margin-top: 3px;
+    }
+
+    .cinderMenuButton {
       border-color: ${CINDER_BORDER_COLOUR};
       border-style: solid;
       border-width: 3px;
@@ -1665,7 +1799,7 @@ Please enter a Rarity.`
       align-items: center;
     }
     
-    #cinderSettingsButton:hover {
+    .cinderMenuButton:hover {
       cursor: pointer;
       background-color: ${LIGHT_CINDER_COLOUR};
     }
@@ -1678,7 +1812,6 @@ Please enter a Rarity.`
     styleSheet.textContent = styles;
     document.head.appendChild(styleSheet);
   }
-  const cinderChangelog = new Changelog();
   const menuList = Object.freeze([
     settingsMenu,
     changelog,
