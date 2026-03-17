@@ -9,5 +9,5 @@ export function unfreezeObjects(): void {
  * Refreezes frozen objects that this script has done modifying.
  */
 export function refreezeObjects(): void {
-  processGameMessageMap = Object.freeze(processGameMessageMap);
+  Object.freeze(processGameMessageMap);
 }

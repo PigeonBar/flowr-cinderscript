@@ -1,4 +1,5 @@
 import { settings } from "../settings/settingsManager";
+import { isNil } from "../utils";
 
 /**
  * This feature adds a preview of the petal that you are attempting to craft in
@@ -31,18 +32,10 @@ export function addPetalCraftPreview(): void {
     originalDrawCrafting.apply(this, [alpha]); // Draw everything else as usual
 
     // Redo translation
-    let translation = 0;
-    if (time - this.lastCloseTime < 160) {
-      translation += this.h * easeOutCubic((time - this.lastCloseTime) / 160);
+    ctx.translate(130, this.renderY);
+    if (!isNil(this.previewPetalContainer)) {
+      this.previewPetalContainer.y = this.previewPetalSlot.y;
     }
-    if (time - this.lastOpenTime < 160) {
-      translation += (this.h + 40)
-        - (this.h + 40) * easeOutCubic((time - this.lastOpenTime) / 160);
-    }
-    if (translation !== 0) {
-      ctx.translate(0, translation);
-    }
-    ctx.translate(130, canvas.h - this.h - 20);
 
     // Display the petal slot for the preview
     const slot = this.previewPetalSlot;
@@ -97,10 +90,7 @@ export function addPetalCraftPreview(): void {
     }
 
     // Undo translation
-    ctx.translate(-130, -(canvas.h - this.h - 20));
-    if (translation !== 0) {
-      ctx.translate(0, -translation);
-    }
+    ctx.translate(-130, -this.renderY);
   }
 
   const originalAddPetal = craftingMenu.addCraftingPetalContainers;

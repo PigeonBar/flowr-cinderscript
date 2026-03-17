@@ -7,7 +7,8 @@ export type BooleanSettingsKey =
   "missileDrawPriority" |
   "invertAttack" |
   "invertDefend" |
-  "settingsTooltips";
+  "settingsTooltips" |
+  "craftingSearchBar";
 
 export type NumberSettingsKey =
   "baseReciprocalOfFOV" |
@@ -38,6 +39,7 @@ const defaultSettings = Object.freeze({
   invertAttack: false,
   invertDefend: false,
   settingsTooltips: true,
+  craftingSearchBar: true,
   baseReciprocalOfFOV: 3,
   playerHpBarScale: 2.5,
   specialDropsScale: 2.5,
