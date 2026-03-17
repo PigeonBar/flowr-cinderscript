@@ -1,5 +1,4 @@
 import { settings } from "../settings/settingsManager";
-import { queueDrawStatsBox, drawQueuedStatsBoxes } from "../utils";
 
 /**
  * This feature adds a preview of the petal that you are attempting to craft in
@@ -27,13 +26,6 @@ export function addPetalCraftPreview(): void {
     if (!settings.get("petalCraftPreview")) {
       originalDrawCrafting.apply(this, [alpha]);
       return;
-    }
-
-    // Make sure stats boxes get queued instead of drawn immediately,
-    // so that they are not covered up by the craft preview.
-    const originalDrawStatsBox = PetalContainer.prototype.drawStatsBox;
-    PetalContainer.prototype.drawStatsBox = function(...args): void {
-      queueDrawStatsBox(this, args);
     }
 
     originalDrawCrafting.apply(this, [alpha]); // Draw everything else as usual
@@ -76,7 +68,7 @@ export function addPetalCraftPreview(): void {
     ctx.strokeText("Preview", slot.x, slot.y - 55);
     ctx.fillText("Preview", slot.x, slot.y - 55);
 
-    // Draw the petal being previewed and queue its stats box, if applicable
+    // Draw the petal being previewed, as well as its stats box
     const mouseX = mouse.canvasX;
     const mouseY = mouse.canvasY;
     const container = this.previewPetalContainer;
@@ -109,11 +101,6 @@ export function addPetalCraftPreview(): void {
     if (translation !== 0) {
       ctx.translate(0, -translation);
     }
-    
-    // Draw all queued stats boxes.
-    // For some reason, this can only be done after undoing the translation.
-    PetalContainer.prototype.drawStatsBox = originalDrawStatsBox;
-    drawQueuedStatsBoxes();
   }
 
   const originalAddPetal = craftingMenu.addCraftingPetalContainers;

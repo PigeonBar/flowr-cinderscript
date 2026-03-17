@@ -152,6 +152,10 @@ declare global {
     );
   }
 
+  class StatsBox {
+    draw();
+  }
+
   // Yeah the Flowr devs actually skissued and forgot to capitalize 1st letter
   class enemyBox {
     type: EnemyType;
@@ -207,7 +211,7 @@ declare global {
 
   const inputHandler: InputHandler;
 
-  const ctx: CanvasRenderingContext2D;
+  let ctx: CanvasRenderingContext2D;
 
   const canvas: HTMLCanvasElement & {
     // New fields added by flowr devs
@@ -230,7 +234,11 @@ declare global {
 
   function setCursor(state: string);
 
+  let draw: () => void;
+
   let renderGame: (dt: number) => void;
+
+  let savedRenderTransform: DOMMatrix;
 
   type HpBarData = {
     x: number;

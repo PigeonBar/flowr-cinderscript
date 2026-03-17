@@ -14,6 +14,7 @@ import { allowEditingKeybinds } from "./inits/allowEditingKeybinds";
 import { initKeybindHandling } from "./inits/keybindHandling";
 import { addNewMenuButtons } from "./inits/newMenuButtons";
 import { preventMenuOverlap } from "./inits/preventMenuOverlap";
+import { prioritizeRenderingStatsBoxes } from "./features/statsBoxRenderingPriority";
 
 // #region Inits
 unfreezeObjects();
@@ -33,6 +34,7 @@ enlargeZoomedOutItems();
 fixNegativeRadiusFreeze();
 addQuickStatsBoxHotkey();
 enableInvertAttackAndDefend();
+prioritizeRenderingStatsBoxes();
 
 // #region Dev tools
 addScreenshotMode();

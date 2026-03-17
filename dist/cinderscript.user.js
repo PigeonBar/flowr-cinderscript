@@ -85,24 +85,8 @@
   const TOOLTIP_TEXT_HEIGHT = 22.5;
   const KEYBIND_DELETED = "<None>";
   var _unsafeWindow = /* @__PURE__ */ (() => typeof unsafeWindow != "undefined" ? unsafeWindow : void 0)();
-  const statsBoxQueue = [];
   function isNil(arg) {
     return arg === void 0 || arg === null;
-  }
-  function queueDrawStatsBox(container, args) {
-    statsBoxQueue.push({ container, args });
-  }
-  function drawQueuedStatsBoxes() {
-    let queueEmpty = false;
-    while (!queueEmpty) {
-      const item = statsBoxQueue.shift();
-      if (isNil(item)) {
-        queueEmpty = true;
-      } else {
-        const { container, args } = item;
-        container.drawStatsBox(...args);
-      }
-    }
   }
   function chatAnnounce(msg, color = CINDER_COLOUR) {
     chatDiv.classList.remove("hidden");
@@ -491,10 +475,6 @@
         originalDrawCrafting.apply(this, [alpha]);
         return;
       }
-      const originalDrawStatsBox = PetalContainer.prototype.drawStatsBox;
-      PetalContainer.prototype.drawStatsBox = function(...args) {
-        queueDrawStatsBox(this, args);
-      };
       originalDrawCrafting.apply(this, [alpha]);
       let translation = 0;
       if (time - this.lastCloseTime < 160) {
@@ -554,8 +534,6 @@
       if (translation !== 0) {
         ctx.translate(0, -translation);
       }
-      PetalContainer.prototype.drawStatsBox = originalDrawStatsBox;
-      drawQueuedStatsBoxes();
     };
     const originalAddPetal = craftingMenu.addCraftingPetalContainers;
     craftingMenu.addCraftingPetalContainers = function(type, rarity, amount, attempt) {
@@ -1858,6 +1836,30 @@ Please enter a Rarity.`
   function isTopMenu(menu) {
     return Object.hasOwn(menu, "active");
   }
+  function prioritizeRenderingStatsBoxes() {
+    const statsBoxCanvas = document.createElement("canvas");
+    statsBoxCanvas.style = "z-index: 1; pointer-events: none";
+    document.body.appendChild(statsBoxCanvas);
+    const statsBoxCtx = statsBoxCanvas.getContext("2d");
+    const originalStatsBoxDraw = StatsBox.prototype.draw;
+    StatsBox.prototype.draw = function() {
+      statsBoxCanvas.width = canvas.width;
+      statsBoxCanvas.height = canvas.height;
+      const originalCtx = ctx;
+      if (!isNil(statsBoxCtx)) {
+        ctx = statsBoxCtx;
+        ctx.globalAlpha = originalCtx.globalAlpha;
+        ctx.setTransform(savedRenderTransform);
+      }
+      originalStatsBoxDraw.apply(this);
+      ctx = originalCtx;
+    };
+    const originalDraw = draw;
+    draw = function() {
+      statsBoxCtx?.clearRect(0, 0, statsBoxCanvas.width, statsBoxCanvas.height);
+      originalDraw();
+    };
+  }
   unfreezeObjects();
   initTheoryCraft();
   allowWsDataEditing();
@@ -1873,6 +1875,7 @@ Please enter a Rarity.`
   fixNegativeRadiusFreeze();
   addQuickStatsBoxHotkey();
   enableInvertAttackAndDefend();
+  prioritizeRenderingStatsBoxes();
   addScreenshotMode();
   refreezeObjects();
 
