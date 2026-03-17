@@ -10,26 +10,16 @@ Finally, this project is not associated with Flamescript in any way. I just thou
 
 # Installation steps
 
-The userscript is stored at [dist/cinderscript.user.js](https://github.com/PigeonBar/flowr-cinderscript/tree/main/dist/cinderscript.user.js).
+The userscript is stored at [dist/cinderscript.user.js](https://github.com/PigeonBar/flowr-cinderscript/raw/refs/heads/main/dist/cinderscript.user.js).
 
-This script is meant to be installed using a userscript manager, such as Tampermonkey. If needed, you can install Tampermonkey itself through their [official website](https://www.tampermonkey.net/). Afterward, you can install individual scripts by following these steps:
+This script is meant to be installed using a userscript manager, such as Tampermonkey. If needed, you can install Tampermonkey itself through their [official website](https://www.tampermonkey.net/).
 
-1. Navigate to the file (e.g., [dist/cinderscript.user.js](https://github.com/PigeonBar/flowr-cinderscript/tree/main/dist/cinderscript.user.js)) on Github, then click on the "Copy raw file" button, which copies the file's contents to your clipboard. (It will be the button *adjacent* to the button that says "Raw".)
+Once you have installed a userscript manager, navigate to the raw script file (e.g., [dist/cinderscript.user.js](https://github.com/PigeonBar/flowr-cinderscript/raw/refs/heads/main/dist/cinderscript.user.js)) on GitHub, and then your userscript manager should automatically prompt you to install the script. (This is my first time publishing a userscript, so please let me know if you encounter any issues at this step.)
 
-![alt text](docs/installStep1.png)
-
-2. Navigate to flowr.fun, then click on Tampermonkey's "Create a new script" button, which will open Tampermonkey's script editor.
-
-![alt text](docs/installStep2.png)
-
-3. Paste the script contents (Ctrl+V) into the editor, then save the script (Ctrl+S).
-
-After this initial installation, Tampermonkey should automatically take care of finding detecting and applying updates to your installed script.
-
-(In the future, I may also look into other script hosting sites, such as Greasy Fork, to help simplify these installation steps for you.)
+After this initial installation, your userscript manager should automatically take care of detecting and applying updates to your installed script.
 
 # Security notice
 
-Currently, this Github repository (https://github.com/PigeonBar/flowr-cinderscript) is the **only official source** for my script. If you ever receive my script as a file from any other source, then **do not trust that source**, since bad actors may have tampered with the file to add malicious code.
+Currently, this GitHub repository (https://github.com/PigeonBar/flowr-cinderscript) is the **only official source** for this script. If you ever receive this script as a file from any other source, then **do not trust that source**, since bad actors may have tampered with the file to add malicious code.
 
-Likewise, if you would like to share my script with others, then please link them to this Github repository instead of directly sending them my script as a file. Thank you for helping to keep other flowr players safe online.
+Likewise, if you would like to share this script with other people, then please link them to this GitHub repository instead of directly sending them this script as a file. Thank you for helping to keep other flowr players safe online.
