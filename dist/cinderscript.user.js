@@ -351,52 +351,6 @@
       }
     };
   }
-  const wsDataProcessing = [];
-  function initTheoryCraft() {
-    if (theoryCraft.length > 0) {
-      console.warn("theoryCraft already initialized!");
-      return;
-    }
-    for (let rarity = 0; rarity <= MAX_PETAL_RARITY; rarity++) {
-      theoryCraft.push(5);
-      let probFailedSoFar = 1;
-      let attempt = 0;
-      while (probFailedSoFar > 0) {
-        probFailedSoFar *= 1 - calculateChance(attempt, rarity) / 100;
-        theoryCraft[rarity] += probFailedSoFar * 2.5;
-        attempt++;
-      }
-    }
-  }
-  function allowWsDataProcessing() {
-    function injectWsSend() {
-      const originalSend = ws.send;
-      ws.send = function(data) {
-        const rawData = msgpackr.unpack(data);
-        for (let fn of wsDataProcessing) {
-          fn(rawData);
-        }
-        originalSend.apply(ws, [msgpackr.pack(rawData)]);
-      };
-    }
-    const originalInitWS = initWS;
-    initWS = function() {
-      originalInitWS();
-      injectWsSend();
-    };
-    if (!isNil(ws)) {
-      injectWsSend();
-    }
-  }
-  function addWsDataProcessing(fn) {
-    wsDataProcessing.push(fn);
-  }
-  function unfreezeObjects() {
-    processGameMessageMap = { ...processGameMessageMap };
-  }
-  function refreezeObjects() {
-    processGameMessageMap = Object.freeze(processGameMessageMap);
-  }
   const keybinds = [];
   function initKeybindHandling() {
     const originalHandleKey = inputHandler.handleKey;
@@ -421,6 +375,30 @@
   function addKeybindInstruction(keybind) {
     keybinds.push(keybind);
   }
+  const wsDataEditing = [];
+  function allowWsDataEditing() {
+    function injectWsSend() {
+      const originalSend = ws.send;
+      ws.send = function(data) {
+        const rawData = msgpackr.unpack(data);
+        for (let fn of wsDataEditing) {
+          fn(rawData);
+        }
+        originalSend.apply(ws, [msgpackr.pack(rawData)]);
+      };
+    }
+    const originalInitWS = initWS;
+    initWS = function() {
+      originalInitWS();
+      injectWsSend();
+    };
+    if (!isNil(ws)) {
+      injectWsSend();
+    }
+  }
+  function addWsDataEditing(fn) {
+    wsDataEditing.push(fn);
+  }
   function enableInvertAttackAndDefend() {
     let rawAttacking = false;
     let rawDefending = false;
@@ -444,7 +422,7 @@
       }
       return newDefending;
     }
-    addWsDataProcessing((data) => {
+    addWsDataEditing((data) => {
       if (!isNil(data.attack)) {
         rawAttacking = data.attack;
         data.attack = updateClientAttack();
@@ -694,6 +672,28 @@
       }
     }
     return hasLetter ? squadCode : randomSquadCode();
+  }
+  function unfreezeObjects() {
+    processGameMessageMap = { ...processGameMessageMap };
+  }
+  function refreezeObjects() {
+    processGameMessageMap = Object.freeze(processGameMessageMap);
+  }
+  function initTheoryCraft() {
+    if (theoryCraft.length > 0) {
+      console.warn("theoryCraft already initialized!");
+      return;
+    }
+    for (let rarity = 0; rarity <= MAX_PETAL_RARITY; rarity++) {
+      theoryCraft.push(5);
+      let probFailedSoFar = 1;
+      let attempt = 0;
+      while (probFailedSoFar > 0) {
+        probFailedSoFar *= 1 - calculateChance(attempt, rarity) / 100;
+        theoryCraft[rarity] += probFailedSoFar * 2.5;
+        attempt++;
+      }
+    }
   }
   class TooltipBox {
     w;
@@ -1860,7 +1860,7 @@ Please enter a Rarity.`
   }
   unfreezeObjects();
   initTheoryCraft();
-  allowWsDataProcessing();
+  allowWsDataEditing();
   preventMenuOverlap();
   allowEditingKeybinds();
   initKeybindHandling();
