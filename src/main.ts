@@ -1,4 +1,5 @@
 import { addScreenshotMode } from "./dev/addScreenshotMode";
+import { addCraftingSearchBar } from "./features/craftingSearchBar";
 import { displayMissilesAboveEnemies } from "./features/displayMissilesAboveEnemies";
 import { enlargeZoomedOutItems } from "./features/enlargeZoomedOutItems";
 import { fixNegativeRadiusFreeze } from "./features/fixNegativeRadiusFreeze";
@@ -11,6 +12,7 @@ import { refreezeObjects, unfreezeObjects } from "./inits/unfreezeObjects";
 import { allowWsDataEditing } from "./inits/wsDataEditing";
 import { initTheoryCraft } from "./inits/initTheoryCraft";
 import { allowEditingKeybinds } from "./inits/allowEditingKeybinds";
+import { handleCraftMenuTranslation } from "./inits/handleCraftMenuTranslation";
 import { initKeybindHandling } from "./inits/keybindHandling";
 import { addNewMenuButtons } from "./inits/newMenuButtons";
 import { preventMenuOverlap } from "./inits/preventMenuOverlap";
@@ -24,9 +26,11 @@ preventMenuOverlap();
 allowEditingKeybinds();
 initKeybindHandling();
 addNewMenuButtons();
+handleCraftMenuTranslation();
 
 // #region Features
 addPetalCraftPreview();
+addCraftingSearchBar();
 addRandomizedSquadCodes();
 displayMissilesAboveEnemies();
 modifyBaseFOV();

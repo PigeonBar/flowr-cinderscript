@@ -41,12 +41,51 @@ declare global {
   class CraftingMenu {
     w: number;
     h: number;
+    scroll: number;
     menuActive: boolean;
     lastOpenTime: number;
     lastCloseTime: number;
     petalContainerSize: number;
     craftingPetalContainers: PetalContainer[];
     previewPetalContainer: PetalContainer | undefined;
+
+    /**
+     * A list of owned petals displayed below the crafting area, after applying
+     * filtering from the search bar.
+     */
+    petalContainers: Record<PetalType, Record<Rarity, PetalContainer>>;
+
+    /**
+     * A list of all owned petals, without applying filtering from the search
+     * bar.
+     */
+    rawPetalContainers: Record<PetalType, Record<Rarity, PetalContainer>>;
+
+    /**
+     * A search bar that allows for filtering petals by petal type.
+     */
+    craftSearch: HTMLInputElement;
+
+    /**
+     * The y-position of this crafting menu on the canvas. This value changes
+     * when the menu is opened or closed.
+     */
+    renderY: number;
+
+    craftingPetalSlotsDimensions: {
+      x: number;
+      y: number;
+      maxRadius: number;
+      radius: number;
+      angleOffset: number;
+    };
+
+    inventorySpace: {
+      x: number;
+      y: number;
+      w: number;
+      h: number;
+    }
     
     previewPetalSlot: {
       x: number;
@@ -55,11 +94,50 @@ declare global {
       h: number;
     };
     
+    searchBarDimensions: {
+      x: number;
+      y: number;
+      w: number;
+      h: number;
+    };
+
+    scrollbar: {
+      top: number;
+      bottom: number;
+      renderTop: number;
+      renderBottom: number;
+      length: number;
+
+      /**
+       * The smallest possible y-position of the scrollbar
+       */
+      start: number;
+
+      /**
+       * The largest possible y-position of the scrollbar
+       */
+      end: number;
+    }
+    
     toggleMenu();
 
     drawInventory(alpha: number = 1);
 
     getSlotColor();
+
+    getMainFill();
+
+    getMainStroke();
+
+    runCraftingAnimation();
+
+    addPetalContainer(p: PetalContainer);
+
+    removePetalContainer(type: PetalType, rarity: Rarity);
+
+    removePetalContainerAmount(
+      type: PetalType, rarity: Rarity, amount: number,
+    );
 
     addCraftingPetalContainers(
       type: PetalType,
@@ -71,14 +149,39 @@ declare global {
     removeCraftingPetalContainers();
 
     enterGame();
+
+    mouseDown({mouseX, mouseY}: CanvasMouseData2, evt: MouseEvent);
+
+    mouseMove({mouseX, mouseY}: CanvasMouseData2, evt: MouseEvent);
+
+    recalculateTypeIndexes();
+
+    /**
+     * Determines whether the mouse is currently hovering over the search bar.
+     */
+    mouseInSearchBar(): boolean;
+
+    /**
+     * Determines whether the player is currently typing in the search bar.
+     */
+    searchBarActive(): boolean;
+
+    /**
+     * Reapplies the search bar's filter to the list of owned petals.
+     */
+    recalculateFilteredPetals(): void;
   }
 
   const craftingMenu: CraftingMenu;
+
+  const petalsearch: HTMLInputElement;
 
   class GlobalInventory {
     menuActive: boolean;
 
     toggleMenu();
+
+    initInventory(data: any);
   }
 
   const globalInventory: GlobalInventory;
@@ -124,6 +227,8 @@ declare global {
     type: PetalType;
     rarity: Rarity;
     amount: number;
+    x: number;
+    y: number;
     w: number;
     h: number;
     isHovered: boolean;

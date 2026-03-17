@@ -2,6 +2,7 @@ import { unsafeWindow } from "$";
 
 const cinderChangelogList: ChangelogEntry[] = [
   {text: `Cinderscript's official release! Here are its initial features:
+- The crafting menu now has a petal search bar (PR #18)
 - Invert Attack/Defend hotkeys (Default: Comma/Period) (PR #10)
 - Hotkey to display stats box of the highest-rarity mob alive in your room (Default: "G") (PR #9)
 - Fix a client freeze bug from displaying mobs with negative size (PR #8)
@@ -9,7 +10,7 @@ const cinderChangelogList: ChangelogEntry[] = [
 - When entering a new game, the game is now zoomed out by default (PR #5)
 - Enemy missiles will no longer be hidden below enemy mobs (PR #4)
 - Players can generate a random squad code by entering an empty private code (PR #3)
-- Petal craft preview added to the crafting menu (PR #1)
+- The crafting menu now has a petal craft preview (PR #1)
 - These features are configurable in the settings menu!`,
   date: "Version 1.0.0"},
 ];

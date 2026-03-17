@@ -226,6 +226,7 @@
     invertAttack: false,
     invertDefend: false,
     settingsTooltips: true,
+    craftingSearchBar: true,
     baseReciprocalOfFOV: 3,
     playerHpBarScale: 2.5,
     specialDropsScale: 2.5,
@@ -260,6 +261,173 @@
     }
   }
   const settings = new SettingsManager();
+  function addCraftingSearchBar() {
+    craftingMenu.rawPetalContainers = { ...craftingMenu.petalContainers };
+    craftingMenu.searchBarDimensions = {
+      x: craftingMenu.inventorySpace.x + 4,
+      // `inventorySpace` has not been translated yet
+      y: craftingMenu.inventorySpace.y - 45 + 50,
+      w: craftingMenu.inventorySpace.w - 8,
+      h: 35
+    };
+    const craftSearch = document.createElement("input");
+    craftSearch.className = petalsearch.className;
+    craftSearch.type = "text";
+    craftSearch.tabIndex = -2;
+    craftSearch.maxLength = 20;
+    craftSearch.autocomplete = "off";
+    craftSearch.spellcheck = false;
+    craftSearch.addEventListener("input", () => {
+      craftingMenu.recalculateFilteredPetals();
+    });
+    document.body.appendChild(craftSearch);
+    craftingMenu.craftSearch = craftSearch;
+    craftingMenu.mouseInSearchBar = function() {
+      return mouseInBox(
+        { x: mouse.canvasX, y: mouse.canvasY },
+        {
+          x: this.searchBarDimensions.x + 130,
+          y: this.searchBarDimensions.y + this.renderY,
+          w: this.searchBarDimensions.w,
+          h: this.searchBarDimensions.h
+        }
+      );
+    };
+    craftingMenu.searchBarActive = function() {
+      return document.activeElement === this.craftSearch;
+    };
+    const originalDraw = craftingMenu.drawInventory;
+    craftingMenu.drawInventory = function(alpha = 1) {
+      if (!settings.get("craftingSearchBar")) {
+        originalDraw.apply(this, [alpha]);
+        return;
+      }
+      makeSpaceForSearchBar(this);
+      originalDraw.apply(this, [alpha]);
+      ctx.translate(130, this.renderY);
+      ctx.fillStyle = "white";
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.roundRect(
+        this.searchBarDimensions.x,
+        this.searchBarDimensions.y,
+        this.searchBarDimensions.w,
+        this.searchBarDimensions.h
+      );
+      ctx.fill();
+      ctx.stroke();
+      ctx.closePath();
+      if (this.mouseInSearchBar()) {
+        setCursor("text");
+      }
+      const hasText = this.craftSearch.value !== "";
+      ctx.fillStyle = hasText ? "#000000" : "#cccccc";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.font = "600 22px Ubuntu";
+      ctx.letterSpacing = "0px";
+      ctx.fillText(
+        hasText ? this.craftSearch.value : "Search...",
+        this.searchBarDimensions.x + 8,
+        this.searchBarDimensions.y + this.searchBarDimensions.h / 2
+      );
+      if (this.searchBarActive() && Math.floor(time / 500) % 2 === 0) {
+        const text = this.craftSearch.value;
+        const caretIndex = this.craftSearch.selectionStart ?? text.length;
+        const textWidth = ctx.measureText(text.slice(0, caretIndex)).width;
+        const caretX = this.searchBarDimensions.x + 8 + textWidth;
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "black";
+        ctx.beginPath();
+        ctx.moveTo(caretX, this.searchBarDimensions.y + 5);
+        ctx.lineTo(
+          caretX,
+          this.searchBarDimensions.y + this.searchBarDimensions.h - 5
+        );
+        ctx.stroke();
+        ctx.closePath();
+      }
+      ctx.translate(-130, -this.renderY);
+      undoSpaceForSearchBar(this);
+    };
+    const originalMouseDown = craftingMenu.mouseDown;
+    craftingMenu.mouseDown = function({ mouseX, mouseY }, evt) {
+      if (!settings.get("craftingSearchBar")) {
+        originalMouseDown.apply(this, [{ mouseX, mouseY }, evt]);
+        return;
+      }
+      makeSpaceForSearchBar(this);
+      originalMouseDown.apply(this, [{ mouseX, mouseY }, evt]);
+      if (this.mouseInSearchBar()) {
+        setTimeout(() => craftSearch.focus(), 0);
+      }
+      undoSpaceForSearchBar(this);
+    };
+    const originalMouseMove = craftingMenu.mouseMove;
+    craftingMenu.mouseMove = function({ mouseX, mouseY }, evt) {
+      if (!settings.get("craftingSearchBar")) {
+        originalMouseMove.apply(this, [{ mouseX, mouseY }, evt]);
+        return;
+      }
+      makeSpaceForSearchBar(this);
+      originalMouseMove.apply(this, [{ mouseX, mouseY }, evt]);
+      undoSpaceForSearchBar(this);
+    };
+    const originalToggle = craftingMenu.toggleMenu;
+    craftingMenu.toggleMenu = function() {
+      originalToggle.apply(this, []);
+      this.craftSearch.value = "";
+      this.recalculateFilteredPetals();
+    };
+    craftingMenu.recalculateFilteredPetals = function() {
+      let filterCount = 0;
+      this.petalContainers = {};
+      for (let type in this.rawPetalContainers) {
+        if (type.toLowerCase().includes(this.craftSearch.value.toLowerCase())) {
+          filterCount++;
+          this.petalContainers[type] = this.rawPetalContainers[type];
+        }
+      }
+      this.recalculateTypeIndexes();
+      if (filterCount < 5) {
+        this.scrollbar.top = 0;
+        this.scrollbar.bottom = 0;
+        this.scrollbar.renderTop = 0;
+        this.scrollbar.renderBottom = 0;
+        this.scroll = 0;
+      }
+    };
+    function rawPetalModifier(key) {
+      const originalFn = craftingMenu[key];
+      craftingMenu[key] = function(...args) {
+        this.petalContainers = this.rawPetalContainers;
+        originalFn.apply(craftingMenu, args);
+        this.recalculateFilteredPetals();
+      };
+    }
+    rawPetalModifier("addPetalContainer");
+    rawPetalModifier("removePetalContainer");
+    rawPetalModifier("removePetalContainerAmount");
+    rawPetalModifier("runCraftingAnimation");
+    const originalInitInventory = globalInventory.initInventory;
+    globalInventory.initInventory = function(data) {
+      craftingMenu.rawPetalContainers = {};
+      originalInitInventory.apply(this, [data]);
+    };
+    function makeSpaceForSearchBar(menu) {
+      menu.h += 50;
+      menu.inventorySpace.y += 50;
+      menu.scrollbar.start += 50;
+      menu.scrollbar.end += 50;
+    }
+    function undoSpaceForSearchBar(menu) {
+      menu.h -= 50;
+      menu.inventorySpace.y -= 50;
+      menu.scrollbar.start -= 50;
+      menu.scrollbar.end -= 50;
+    }
+  }
   function displayMissilesAboveEnemies() {
     const originalRenderGame = renderGame;
     renderGame = (dt2) => {
@@ -476,17 +644,10 @@
         return;
       }
       originalDrawCrafting.apply(this, [alpha]);
-      let translation = 0;
-      if (time - this.lastCloseTime < 160) {
-        translation += this.h * easeOutCubic((time - this.lastCloseTime) / 160);
+      ctx.translate(130, this.renderY);
+      if (!isNil(this.previewPetalContainer)) {
+        this.previewPetalContainer.y = this.previewPetalSlot.y;
       }
-      if (time - this.lastOpenTime < 160) {
-        translation += this.h + 40 - (this.h + 40) * easeOutCubic((time - this.lastOpenTime) / 160);
-      }
-      if (translation !== 0) {
-        ctx.translate(0, translation);
-      }
-      ctx.translate(130, canvas.h - this.h - 20);
       const slot = this.previewPetalSlot;
       ctx.fillStyle = this.getSlotColor();
       ctx.beginPath();
@@ -530,10 +691,7 @@
           canvas.h - this.h - 20 + container.render.y
         );
       }
-      ctx.translate(-130, -(canvas.h - this.h - 20));
-      if (translation !== 0) {
-        ctx.translate(0, -translation);
-      }
+      ctx.translate(-130, -this.renderY);
     };
     const originalAddPetal = craftingMenu.addCraftingPetalContainers;
     craftingMenu.addCraftingPetalContainers = function(type, rarity, amount, attempt) {
@@ -655,7 +813,7 @@
     processGameMessageMap = { ...processGameMessageMap };
   }
   function refreezeObjects() {
-    processGameMessageMap = Object.freeze(processGameMessageMap);
+    Object.freeze(processGameMessageMap);
   }
   function initTheoryCraft() {
     if (theoryCraft.length > 0) {
@@ -1260,6 +1418,10 @@ Please enter a Rarity.`
       initOptions({
         "invertAttack": new BooleanOption("Invert Attack", "invertAttack"),
         "invertDefend": new BooleanOption("Invert Defend", "invertDefend"),
+        "craftingSearchBar": new BooleanOption(
+          "Crafting Search Bar",
+          "craftingSearchBar"
+        ),
         "autoCopyCodes": new BooleanOption(
           "Auto Copy Squad Codes",
           "autoCopyCodes",
@@ -1331,6 +1493,7 @@ Please enter a Rarity.`
         new SettingsSectionHeading("General Gameplay"),
         settingsMap.invertAttack,
         settingsMap.invertDefend,
+        settingsMap.craftingSearchBar,
         settingsMap.autoCopyCodes,
         new SettingsSectionHeading("General Display"),
         settingsMap.settingsTooltips,
@@ -1602,9 +1765,24 @@ Please enter a Rarity.`
       originalHandleKey.apply(inputHandler, [e]);
     };
   }
+  function handleCraftMenuTranslation() {
+    Object.defineProperty(craftingMenu, "renderY", {
+      get: function() {
+        let translate = 0;
+        if (time - this.lastCloseTime < 160) {
+          translate += this.h * easeOutCubic((time - this.lastCloseTime) / 160);
+        }
+        if (time - this.lastOpenTime < 160) {
+          translate += (this.h + 40) * (1 - easeOutCubic((time - this.lastOpenTime) / 160));
+        }
+        return canvas.h - this.h - 20 + translate;
+      }
+    });
+  }
   const cinderChangelogList = [
     {
       text: `Cinderscript's official release! Here are its initial features:
+- The crafting menu now has a petal search bar (PR #18)
 - Invert Attack/Defend hotkeys (Default: Comma/Period) (PR #10)
 - Hotkey to display stats box of the highest-rarity mob alive in your room (Default: "G") (PR #9)
 - Fix a client freeze bug from displaying mobs with negative size (PR #8)
@@ -1612,7 +1790,7 @@ Please enter a Rarity.`
 - When entering a new game, the game is now zoomed out by default (PR #5)
 - Enemy missiles will no longer be hidden below enemy mobs (PR #4)
 - Players can generate a random squad code by entering an empty private code (PR #3)
-- Petal craft preview added to the crafting menu (PR #1)
+- The crafting menu now has a petal craft preview (PR #1)
 - These features are configurable in the settings menu!`,
       date: "Version 1.0.0"
     }
@@ -1867,7 +2045,9 @@ Please enter a Rarity.`
   allowEditingKeybinds();
   initKeybindHandling();
   addNewMenuButtons();
+  handleCraftMenuTranslation();
   addPetalCraftPreview();
+  addCraftingSearchBar();
   addRandomizedSquadCodes();
   displayMissilesAboveEnemies();
   modifyBaseFOV();

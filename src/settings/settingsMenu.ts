@@ -40,6 +40,9 @@ export class CinderSettingsMenu extends SettingsMenu {
     initOptions({
       "invertAttack": new BooleanOption("Invert Attack", "invertAttack"),
       "invertDefend": new BooleanOption("Invert Defend", "invertDefend"),
+      "craftingSearchBar": new BooleanOption(
+        "Crafting Search Bar", "craftingSearchBar",
+      ),
       "autoCopyCodes": new BooleanOption(
         "Auto Copy Squad Codes",
         "autoCopyCodes",
@@ -107,6 +110,7 @@ export class CinderSettingsMenu extends SettingsMenu {
       new SettingsSectionHeading("General Gameplay"),
       settingsMap.invertAttack,
       settingsMap.invertDefend,
+      settingsMap.craftingSearchBar,
       settingsMap.autoCopyCodes,
       new SettingsSectionHeading("General Display"),
       settingsMap.settingsTooltips,
