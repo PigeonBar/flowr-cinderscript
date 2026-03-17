@@ -1,6 +1,6 @@
 import { unsafeWindow } from "$";
-import { addWsDataProcessing } from "../inits";
 import { addKeybindInstruction } from "../inits/keybindHandling";
+import { addWsDataEditing } from "../inits/wsDataEditing";
 import { settings } from "../settings/settingsManager";
 import { chatAnnounce, isNil } from "../utils";
 
@@ -53,7 +53,7 @@ export function enableInvertAttackAndDefend() {
     return newDefending;
   }
 
-  addWsDataProcessing((data: any) => {
+  addWsDataEditing((data: any) => {
     if (!isNil(data.attack)) {
       rawAttacking = data.attack;
       data.attack = updateClientAttack();
