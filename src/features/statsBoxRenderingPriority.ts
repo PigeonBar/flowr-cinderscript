@@ -11,7 +11,7 @@ export function prioritizeRenderingStatsBoxes() {
   const statsBoxCanvas = document.createElement("canvas");
   // Also set `pointer-events: none` so that the player can click on UI
   // elements that are behind this canvas
-  statsBoxCanvas.style = "z-index: 1; pointer-events: none";
+  statsBoxCanvas.style = "z-index: 2; pointer-events: none";
   document.body.appendChild(statsBoxCanvas);
   const statsBoxCtx = statsBoxCanvas.getContext("2d");
 

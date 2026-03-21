@@ -1,6 +1,10 @@
 import { unsafeWindow } from "$";
 
 const cinderChangelogList: ChangelogEntry[] = [
+  {text: `- Dragged petals now get displayed above the inventory menu and other UI (PR #21)
+- Dragged petals no longer randomly get sent to the shadow realm (PR #21)
+- The debug info now also shows this script's version number (PR #21)`,
+  date: "Version 1.0.2"},
   {text: `- Clicking on a menu (e.g, Inventory) no longer affects loadout petals behind the menu (PR #20)
 - Some behind-the-scenes changes to how the search bar affects the crafting menu's height (PR #20)`,
   date: "Version 1.0.1"},
