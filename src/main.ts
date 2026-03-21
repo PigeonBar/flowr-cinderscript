@@ -1,4 +1,5 @@
 import { addScreenshotMode } from "./dev/addScreenshotMode";
+import { addScriptVersionToDebugInfo } from "./dev/displayScriptVersion";
 import { addCraftingSearchBar } from "./features/craftingSearchBar";
 import { displayMissilesAboveEnemies } from "./features/displayMissilesAboveEnemies";
 import { prioritizeRenderingDragPetal } from "./features/draggingPetalRenderingPriority";
@@ -48,6 +49,7 @@ fixDraggingPetalsOutOfBounds();
 
 // #region Dev tools
 addScreenshotMode();
+addScriptVersionToDebugInfo();
 
 // #region Ending
 refreezeObjects();

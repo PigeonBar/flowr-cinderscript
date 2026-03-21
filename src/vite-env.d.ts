@@ -394,6 +394,8 @@ declare global {
 
   let renderGame: (dt: number) => void;
 
+  let renderDebug: () => void;
+
   let savedRenderTransform: DOMMatrix;
 
   type HpBarData = {

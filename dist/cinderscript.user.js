@@ -88,7 +88,8 @@
   const cinderChangelogList = [
     {
       text: `- Dragged petals now get displayed above the inventory menu and other UI (PR #21)
-- Dragged petals no longer randomly get sent to the shadow realm (PR #21)`,
+- Dragged petals no longer randomly get sent to the shadow realm (PR #21)
+- The debug info now also shows this script's version number (PR #21)`,
       date: "Version 1.0.2"
     },
     {
@@ -1335,6 +1336,30 @@ Please enter a Rarity.`
       }
     };
   }
+  const version = "1.0.2";
+  function addScriptVersionToDebugInfo() {
+    const originalRenderDebug = renderDebug;
+    renderDebug = () => {
+      let baseDebugText = "";
+      let baseDebugX = 0;
+      let baseDebugY = 0;
+      const originalFillText = ctx.fillText;
+      ctx.fillText = function(text, x2, y2, maxWidth) {
+        baseDebugText = text;
+        baseDebugX = x2;
+        baseDebugY = y2;
+        originalFillText.apply(this, [text, x2, y2, maxWidth]);
+      };
+      originalRenderDebug();
+      ctx.fillText = originalFillText;
+      const versionText = `Cinderscript: v${version}, `;
+      const x = baseDebugX - ctx.measureText(baseDebugText).width;
+      const y = baseDebugY;
+      ctx.fillStyle = LIGHT_CINDER_COLOUR;
+      ctx.strokeText(versionText, x, y);
+      ctx.fillText(versionText, x, y);
+    };
+  }
   function addCraftingSearchBar() {
     craftingMenu.rawPetalContainers = { ...craftingMenu.petalContainers };
     craftingMenu.searchBarDimensions = {
@@ -2188,6 +2213,7 @@ Please enter a Rarity.`
   preventClickingBehindMenu();
   fixDraggingPetalsOutOfBounds();
   addScreenshotMode();
+  addScriptVersionToDebugInfo();
   refreezeObjects();
 
 })();
