@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Flowr - Cinderscript
 // @namespace    npm/vite-plugin-monkey
-// @version      1.0.0
+// @version      1.0.1
 // @author       PigeonBar (original creator)
 // @description  A free, publicly available collection of QoL features for flowr.fun players.
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=flowr.fun
@@ -85,136 +85,119 @@
   const TOOLTIP_TEXT_HEIGHT = 22.5;
   const KEYBIND_DELETED = "<None>";
   var _unsafeWindow = /* @__PURE__ */ (() => typeof unsafeWindow != "undefined" ? unsafeWindow : void 0)();
-  function isNil(arg) {
-    return arg === void 0 || arg === null;
-  }
-  function chatAnnounce(msg, color = CINDER_COLOUR) {
-    chatDiv.classList.remove("hidden");
-    appendChatAnnouncement("[Cinder]: " + msg, color);
-  }
-  const theoryCraft = [];
-  function convertPetalValue(amount, oldRarity, newRarity) {
-    if (oldRarity > MAX_PETAL_RARITY) {
-      return Infinity;
+  const cinderChangelogList = [
+    {
+      text: `- Clicking on a menu (e.g, Inventory) no longer affects loadout petals behind the menu (PR #20)
+- Some behind-the-scenes changes to how the search bar affects the crafting menu's height (PR #20)`,
+      date: "Version 1.0.1"
+    },
+    {
+      text: `Cinderscript's official release! Here are its initial features:
+- The crafting menu now has a petal search bar (PR #18)
+- Invert Attack/Defend hotkeys (Default: Comma/Period) (PR #10)
+- Hotkey to display stats box of the highest-rarity mob alive in your room (Default: "G") (PR #9)
+- Fix a client freeze bug from displaying mobs with negative size (PR #8)
+- The player's HP bar and high-rarity petal drops are now rendered larger (PR #7)
+- When entering a new game, the game is now zoomed out by default (PR #5)
+- Enemy missiles will no longer be hidden below enemy mobs (PR #4)
+- Players can generate a random squad code by entering an empty private code (PR #3)
+- The crafting menu now has a petal craft preview (PR #1)
+- These features are configurable in the settings menu!`,
+      date: "Version 1.0.0 (Initial Release)"
     }
-    if (newRarity > MAX_PETAL_RARITY) {
-      return 0;
-    }
-    while (oldRarity < newRarity) {
-      amount /= theoryCraft[oldRarity];
-      oldRarity++;
-    }
-    while (oldRarity > newRarity) {
-      amount *= theoryCraft[oldRarity - 1];
-      oldRarity--;
-    }
-    return amount;
-  }
-  function rarityToIndex(rarity) {
-    return Rarity[rarity.toUpperCase()];
-  }
-  function isInGameInput(e) {
-    if (e.repeat) {
-      e.preventDefault();
-    }
-    if (e.code === KEYBIND_DELETED) {
-      console.warn(`Keypress code somehow equal to ${KEYBIND_DELETED}!`);
-      console.warn(e);
-      return false;
-    }
-    return _unsafeWindow.state === "game" && !inputHandler.chatOpen && !e.repeat;
-  }
-  function deepCopy(obj, depth = 5) {
-    if (depth === 0) {
-      return obj;
-    }
-    if (obj === null) {
-      return obj;
-    }
-    if (typeof obj === "object") {
-      try {
-        if (Array.isArray(obj)) {
-          return obj.map((item) => deepCopy(item, depth - 1));
-        } else {
-          const ret = Object.create(Object.getPrototypeOf(obj));
-          for (let key in obj) {
-            ret[key] = deepCopy(obj[key], depth - 1);
-          }
-          return ret;
+  ];
+  class CinderChangelog extends Changelog {
+    /**
+     * Whether or not this changelog has generated its entries.
+     */
+    generatedEntries;
+    constructor() {
+      super();
+      this.generatedEntries = false;
+      const originalOnMouseDown = _unsafeWindow.onmousedown;
+      _unsafeWindow.onmousedown = (e) => {
+        originalOnMouseDown?.apply(_unsafeWindow, [e]);
+        if (_unsafeWindow.connected === true && this.active) {
+          this.mouseDown({ mouseX: mouse.canvasX, mouseY: mouse.canvasY });
         }
-      } catch (e) {
-        console.warn("Failed to copy:", obj);
-        return obj;
-      }
-    } else {
-      return obj;
-    }
-  }
-  function addScreenshotMode() {
-    const originalRenderGame = renderGame;
-    const originalOnMessage = ws.onmessage;
-    const originalDeadMenuDraw = deadMenu.draw;
-    const queuedMessages = [];
-    let screenshotMode = false;
-    let screenshotRoom;
-    let runningRoom;
-    function toggleScreenshotMode() {
-      screenshotMode = !screenshotMode;
-      if (screenshotMode) {
-        deadMenu.draw = () => {
-        };
-        screenshotRoom = deepCopy(room);
-        runningRoom = room;
-        renderGame = (dt2) => {
-          ws.onmessage = (data2) => {
-            queuedMessages.push(data2);
-          };
-          chatDiv.classList.add("hidden");
-          room = screenshotRoom;
-          originalRenderGame(dt2);
-          ctx.save();
-          ctx.lineWidth = 6;
-          ctx.font = "900 32px Ubuntu";
-          ctx.textAlign = "right";
-          ctx.textBaseline = "top";
-          ctx.fillStyle = CINDER_COLOUR;
-          ctx.strokeStyle = "black";
-          const text = "Screenshot Mode";
-          ctx.strokeText(text, canvas.w - 30, 30);
-          ctx.fillText(text, canvas.w - 30, 30);
-          ctx.restore();
-          room = runningRoom;
-          let data = queuedMessages.shift();
-          while (!isNil(data)) {
-            originalOnMessage?.apply(ws, [data]);
-            data = queuedMessages.shift();
-          }
-          ws.onmessage = originalOnMessage;
-        };
-      } else {
-        room = runningRoom;
-        chatDiv.classList.remove("hidden");
-        deadMenu.draw = originalDeadMenuDraw;
-        renderGame = originalRenderGame;
-        let data = queuedMessages.shift();
-        while (!isNil(data)) {
-          originalOnMessage?.apply(ws, [data]);
-          data = queuedMessages.shift();
+      };
+      const originalOnMouseUp = _unsafeWindow.onmouseup;
+      _unsafeWindow.onmouseup = (e) => {
+        originalOnMouseUp?.apply(_unsafeWindow, [e]);
+        if (_unsafeWindow.connected === true) {
+          this.mouseUp({ mouseX: mouse.canvasX, mouseY: mouse.canvasY });
         }
-        ws.onmessage = originalOnMessage;
+      };
+      const originalHandleMouse = inputHandler.handleMouse;
+      inputHandler.handleMouse = (e) => {
+        originalHandleMouse.apply(inputHandler, [e]);
+        this.mouseMove({ mouseX: mouse.canvasX, mouseY: mouse.canvasY });
+      };
+      document.addEventListener("wheel", (e) => {
+        this.updateScroll(
+          { x: e.deltaX, y: e.deltaY },
+          { mouseX: mouse.canvasX, mouseY: mouse.canvasY }
+        );
+      });
+      const originalDraw = changelog.draw;
+      changelog.draw = () => {
+        originalDraw.apply(changelog);
+        this.draw();
+      };
+    }
+    toggle() {
+      super.toggle();
+      if (!this.active) {
+        this.mouseUp({ mouseX: mouse.canvasX, mouseY: mouse.canvasY });
       }
     }
-    const originalHandleKey = inputHandler.handleKey;
-    inputHandler.handleKey = function(e) {
-      originalHandleKey.apply(inputHandler, [e]);
-      if (!isInGameInput(e)) {
+    draw() {
+      super.draw();
+      ctx.translate(this.x, this.y + this.offset);
+      ctx.fillStyle = "#9bb56b";
+      ctx.beginPath();
+      ctx.roundRect(5, 5, this.w - 50, 75);
+      ctx.fill();
+      ctx.closePath();
+      ctx.font = "900 30px Ubuntu";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "white";
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 4;
+      ctx.strokeText("Cinderscript Changelog", this.w / 2, 40);
+      ctx.fillText("Cinderscript Changelog", this.w / 2, 40);
+      ctx.translate(-this.x, -this.y - this.offset);
+    }
+    mouseDown(e) {
+      super.mouseDown(e);
+      if (this.hoveringOverX) {
+        this.toggle();
+      }
+    }
+    /**
+     * Generates this changelog's entries if they are not already generated.
+     * 
+     * To try to maximize modularity/compatibility, we reuse the superclass's
+     * `generateEntries` function. That function is hardcoded to retrieve entries
+     * from {@linkcode changeloglist}, so we need to temporarily overwrite
+     * `changeloglist`. This is a bit inefficient, but fortunately, we only need
+     * to do this once per page load.
+     */
+    generateEntries() {
+      if (this.generatedEntries) {
         return;
       }
-      if (e.code === localStorage.getItem("cinderDevScreenshotMode") && e.code.length > 0 && e.type === "keydown") {
-        toggleScreenshotMode();
-      }
-    };
+      this.generatedEntries = true;
+      const vanillaChangelogList = [...changeloglist];
+      changeloglist.splice(0, changeloglist.length);
+      changeloglist.push(...cinderChangelogList);
+      super.generateEntries();
+      changeloglist.splice(0, changeloglist.length);
+      changeloglist.push(...vanillaChangelogList);
+    }
   }
+  const cinderChangelog = new CinderChangelog();
   let settingsMap;
   function initOptions(options) {
     settingsMap = Object.freeze(options);
@@ -258,579 +241,12 @@
       if (key === "specialDropsQuantity" || key === "specialDropsRarity") {
         settingsMap.specialDropsScale.updateTooltip();
       }
+      if (key === "craftingSearchBar") {
+        craftingMenu.updateSearchBarActive();
+      }
     }
   }
   const settings = new SettingsManager();
-  function addCraftingSearchBar() {
-    craftingMenu.rawPetalContainers = { ...craftingMenu.petalContainers };
-    craftingMenu.searchBarDimensions = {
-      x: craftingMenu.inventorySpace.x + 4,
-      // `inventorySpace` has not been translated yet
-      y: craftingMenu.inventorySpace.y - 45 + 50,
-      w: craftingMenu.inventorySpace.w - 8,
-      h: 35
-    };
-    const craftSearch = document.createElement("input");
-    craftSearch.className = petalsearch.className;
-    craftSearch.type = "text";
-    craftSearch.tabIndex = -2;
-    craftSearch.maxLength = 20;
-    craftSearch.autocomplete = "off";
-    craftSearch.spellcheck = false;
-    craftSearch.addEventListener("input", () => {
-      craftingMenu.recalculateFilteredPetals();
-    });
-    document.body.appendChild(craftSearch);
-    craftingMenu.craftSearch = craftSearch;
-    craftingMenu.mouseInSearchBar = function() {
-      return mouseInBox(
-        { x: mouse.canvasX, y: mouse.canvasY },
-        {
-          x: this.searchBarDimensions.x + 130,
-          y: this.searchBarDimensions.y + this.renderY,
-          w: this.searchBarDimensions.w,
-          h: this.searchBarDimensions.h
-        }
-      );
-    };
-    craftingMenu.searchBarActive = function() {
-      return document.activeElement === this.craftSearch;
-    };
-    const originalDraw = craftingMenu.drawInventory;
-    craftingMenu.drawInventory = function(alpha = 1) {
-      if (!settings.get("craftingSearchBar")) {
-        originalDraw.apply(this, [alpha]);
-        return;
-      }
-      makeSpaceForSearchBar(this);
-      originalDraw.apply(this, [alpha]);
-      ctx.translate(130, this.renderY);
-      ctx.fillStyle = "white";
-      ctx.strokeStyle = "black";
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.roundRect(
-        this.searchBarDimensions.x,
-        this.searchBarDimensions.y,
-        this.searchBarDimensions.w,
-        this.searchBarDimensions.h
-      );
-      ctx.fill();
-      ctx.stroke();
-      ctx.closePath();
-      if (this.mouseInSearchBar()) {
-        setCursor("text");
-      }
-      const hasText = this.craftSearch.value !== "";
-      ctx.fillStyle = hasText ? "#000000" : "#cccccc";
-      ctx.textAlign = "left";
-      ctx.textBaseline = "middle";
-      ctx.font = "600 22px Ubuntu";
-      ctx.letterSpacing = "0px";
-      ctx.fillText(
-        hasText ? this.craftSearch.value : "Search...",
-        this.searchBarDimensions.x + 8,
-        this.searchBarDimensions.y + this.searchBarDimensions.h / 2
-      );
-      if (this.searchBarActive() && Math.floor(time / 500) % 2 === 0) {
-        const text = this.craftSearch.value;
-        const caretIndex = this.craftSearch.selectionStart ?? text.length;
-        const textWidth = ctx.measureText(text.slice(0, caretIndex)).width;
-        const caretX = this.searchBarDimensions.x + 8 + textWidth;
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = "black";
-        ctx.beginPath();
-        ctx.moveTo(caretX, this.searchBarDimensions.y + 5);
-        ctx.lineTo(
-          caretX,
-          this.searchBarDimensions.y + this.searchBarDimensions.h - 5
-        );
-        ctx.stroke();
-        ctx.closePath();
-      }
-      ctx.translate(-130, -this.renderY);
-      undoSpaceForSearchBar(this);
-    };
-    const originalMouseDown = craftingMenu.mouseDown;
-    craftingMenu.mouseDown = function({ mouseX, mouseY }, evt) {
-      if (!settings.get("craftingSearchBar")) {
-        originalMouseDown.apply(this, [{ mouseX, mouseY }, evt]);
-        return;
-      }
-      makeSpaceForSearchBar(this);
-      originalMouseDown.apply(this, [{ mouseX, mouseY }, evt]);
-      if (this.mouseInSearchBar()) {
-        setTimeout(() => craftSearch.focus(), 0);
-      }
-      undoSpaceForSearchBar(this);
-    };
-    const originalMouseMove = craftingMenu.mouseMove;
-    craftingMenu.mouseMove = function({ mouseX, mouseY }, evt) {
-      if (!settings.get("craftingSearchBar")) {
-        originalMouseMove.apply(this, [{ mouseX, mouseY }, evt]);
-        return;
-      }
-      makeSpaceForSearchBar(this);
-      originalMouseMove.apply(this, [{ mouseX, mouseY }, evt]);
-      undoSpaceForSearchBar(this);
-    };
-    const originalToggle = craftingMenu.toggleMenu;
-    craftingMenu.toggleMenu = function() {
-      originalToggle.apply(this, []);
-      this.craftSearch.value = "";
-      this.recalculateFilteredPetals();
-    };
-    craftingMenu.recalculateFilteredPetals = function() {
-      let filterCount = 0;
-      this.petalContainers = {};
-      for (let type in this.rawPetalContainers) {
-        if (type.toLowerCase().includes(this.craftSearch.value.toLowerCase())) {
-          filterCount++;
-          this.petalContainers[type] = this.rawPetalContainers[type];
-        }
-      }
-      this.recalculateTypeIndexes();
-      if (filterCount < 5) {
-        this.scrollbar.top = 0;
-        this.scrollbar.bottom = 0;
-        this.scrollbar.renderTop = 0;
-        this.scrollbar.renderBottom = 0;
-        this.scroll = 0;
-      }
-    };
-    function rawPetalModifier(key) {
-      const originalFn = craftingMenu[key];
-      craftingMenu[key] = function(...args) {
-        this.petalContainers = this.rawPetalContainers;
-        originalFn.apply(craftingMenu, args);
-        this.recalculateFilteredPetals();
-      };
-    }
-    rawPetalModifier("addPetalContainer");
-    rawPetalModifier("removePetalContainer");
-    rawPetalModifier("removePetalContainerAmount");
-    rawPetalModifier("runCraftingAnimation");
-    const originalInitInventory = globalInventory.initInventory;
-    globalInventory.initInventory = function(data) {
-      craftingMenu.rawPetalContainers = {};
-      originalInitInventory.apply(this, [data]);
-    };
-    function makeSpaceForSearchBar(menu) {
-      menu.h += 50;
-      menu.inventorySpace.y += 50;
-      menu.scrollbar.start += 50;
-      menu.scrollbar.end += 50;
-    }
-    function undoSpaceForSearchBar(menu) {
-      menu.h -= 50;
-      menu.inventorySpace.y -= 50;
-      menu.scrollbar.start -= 50;
-      menu.scrollbar.end -= 50;
-    }
-  }
-  function displayMissilesAboveEnemies() {
-    const originalRenderGame = renderGame;
-    renderGame = (dt2) => {
-      if (!settings.get("missileDrawPriority")) {
-        originalRenderGame(dt2);
-        return;
-      }
-      const queuedMissiles = [];
-      const maxId = Math.max(...Object.keys(room.enemies).map((k) => Number(k)));
-      for (let id in room.enemies) {
-        const enemy = room.enemies[id];
-        if (enemy.type.includes("Missile")) {
-          enemy.draw = function() {
-            queuedMissiles.push(this);
-          };
-        }
-        if (Number(id) === maxId) {
-          enemy.draw = function() {
-            Enemy.prototype.draw.apply(this);
-            for (let missile of queuedMissiles) {
-              Enemy.prototype.draw.apply(missile);
-            }
-          };
-        }
-      }
-      originalRenderGame(dt2);
-      for (let enemy of Object.values(room.enemies)) {
-        enemy.draw = Enemy.prototype.draw;
-      }
-    };
-  }
-  function enlargeZoomedOutItems() {
-    const originalRenderHpBar = renderHpBar;
-    renderHpBar = function(data, entity) {
-      if (data.flowerName !== void 0 && entity?.id === _unsafeWindow.selfId) {
-        const scale = settings.get("playerHpBarScale");
-        const rScale = scale ** (1 / 1.2);
-        data.y -= (scale - 1) * data.radius;
-        data.radius *= rScale;
-      }
-      originalRenderHpBar(data, entity);
-    };
-    const originalNewPetalContainer = processGameMessageMap.newPetalContainer;
-    processGameMessageMap.newPetalContainer = function(data, _me, _advanced) {
-      const scale = settings.get("specialDropsScale");
-      const desiredRarity = settings.get("specialDropsRarity");
-      const desiredQuantity = settings.get("specialDropsQuantity");
-      const effectiveQuantity = convertPetalValue(
-        data.amount ?? 1,
-        data.rarity,
-        desiredRarity
-      );
-      if (effectiveQuantity >= desiredQuantity) {
-        const originalSize = data.w;
-        data.w *= scale;
-        data.h *= scale;
-        const dx = data.x - data.originalX;
-        const dy = data.y - data.originalY;
-        const d = Math.sqrt(dx * dx + dy * dy);
-        if (d > 0) {
-          data.x = data.originalX + dx * (d + originalSize * (scale - 1)) / d;
-          data.y = data.originalY + dy * (d + originalSize * (scale - 1)) / d;
-        }
-      }
-      originalNewPetalContainer(data, _me, _advanced);
-    };
-  }
-  function fixNegativeRadiusFreeze() {
-    const originalArc = ctx.arc;
-    ctx.arc = function(...args) {
-      if (args[2] > 0) {
-        originalArc.apply(this, args);
-      }
-    };
-  }
-  const keybinds = [];
-  function initKeybindHandling() {
-    const originalHandleKey = inputHandler.handleKey;
-    inputHandler.handleKey = function(e) {
-      originalHandleKey.apply(inputHandler, [e]);
-      if (!isInGameInput(e) || e.type !== "keydown") {
-        return;
-      }
-      for (let keybind of keybinds) {
-        if (keybind.type === "settings") {
-          if (e.code === settings.get(keybind.key)) {
-            keybind.fn();
-          }
-        } else if (keybind.type === "rawValue") {
-          if (e.code === keybind.value) {
-            keybind.fn();
-          }
-        }
-      }
-    };
-  }
-  function addKeybindInstruction(keybind) {
-    keybinds.push(keybind);
-  }
-  const wsDataEditing = [];
-  function allowWsDataEditing() {
-    function injectWsSend() {
-      const originalSend = ws.send;
-      ws.send = function(data) {
-        const rawData = msgpackr.unpack(data);
-        for (let fn of wsDataEditing) {
-          fn(rawData);
-        }
-        originalSend.apply(ws, [msgpackr.pack(rawData)]);
-      };
-    }
-    const originalInitWS = initWS;
-    initWS = function() {
-      originalInitWS();
-      injectWsSend();
-    };
-    if (!isNil(ws)) {
-      injectWsSend();
-    }
-  }
-  function addWsDataEditing(fn) {
-    wsDataEditing.push(fn);
-  }
-  function enableInvertAttackAndDefend() {
-    let rawAttacking = false;
-    let rawDefending = false;
-    function updateClientAttack() {
-      const newAttacking = rawAttacking !== settings.get("invertAttack");
-      if (!isNil(_unsafeWindow.selfId)) {
-        const player = room.flowers[_unsafeWindow.selfId];
-        if (!isNil(player)) {
-          player.attacking = newAttacking;
-        }
-      }
-      return newAttacking;
-    }
-    function updateClientDefend() {
-      const newDefending = rawDefending !== settings.get("invertDefend");
-      if (!isNil(_unsafeWindow.selfId)) {
-        const player = room.flowers[_unsafeWindow.selfId];
-        if (!isNil(player)) {
-          player.defending = newDefending;
-        }
-      }
-      return newDefending;
-    }
-    addWsDataEditing((data) => {
-      if (!isNil(data.attack)) {
-        rawAttacking = data.attack;
-        data.attack = updateClientAttack();
-      } else if (data[0] === "a") {
-        rawAttacking = data[1];
-        data[1] = updateClientAttack();
-      } else if (!isNil(data.defend)) {
-        rawDefending = data.defend;
-        data.defend = updateClientDefend();
-      } else if (data[0] === "d") {
-        rawDefending = data[1];
-        data[1] = updateClientDefend();
-      }
-    });
-    addKeybindInstruction(
-      { type: "settings", key: "keybindInvertAttack", fn: () => {
-        const newInvertAttack = !settings.get("invertAttack");
-        settings.set("invertAttack", newInvertAttack);
-        chatAnnounce(
-          "Invert Attack set to " + (newInvertAttack ? "ON" : "OFF") + "!",
-          "#ffbfbf"
-          // Pink
-        );
-        send({ attack: rawAttacking });
-      } }
-    );
-    addKeybindInstruction(
-      { type: "settings", key: "keybindInvertDefend", fn: () => {
-        const newInvertDefend = !settings.get("invertDefend");
-        settings.set("invertDefend", newInvertDefend);
-        chatAnnounce(
-          "Invert Defend set to " + (newInvertDefend ? "ON" : "OFF") + "!",
-          "#bfbfff"
-          // Light blue
-        );
-        send({ defend: rawDefending });
-      } }
-    );
-    const originalEnterGame = enterGame;
-    enterGame = function() {
-      originalEnterGame();
-      send({ attack: false });
-      send({ defend: false });
-    };
-  }
-  function modifyBaseFOV() {
-    addKeybindInstruction({ type: "rawValue", value: "BracketLeft", fn: () => {
-      fov = 1 / settings.get("baseReciprocalOfFOV");
-    } });
-    const originalEnterGame = enterGame;
-    enterGame = function() {
-      originalEnterGame();
-      fov = 1 / settings.get("baseReciprocalOfFOV");
-    };
-  }
-  function addPetalCraftPreview() {
-    craftingMenu.previewPetalSlot = {
-      x: craftingMenu.w * 0.83,
-      y: craftingMenu.h * 0.167,
-      w: 65,
-      h: 65
-    };
-    const originalDrawCrafting = craftingMenu.drawInventory;
-    craftingMenu.drawInventory = function(alpha = 1) {
-      if (!settings.get("petalCraftPreview")) {
-        originalDrawCrafting.apply(this, [alpha]);
-        return;
-      }
-      originalDrawCrafting.apply(this, [alpha]);
-      ctx.translate(130, this.renderY);
-      if (!isNil(this.previewPetalContainer)) {
-        this.previewPetalContainer.y = this.previewPetalSlot.y;
-      }
-      const slot = this.previewPetalSlot;
-      ctx.fillStyle = this.getSlotColor();
-      ctx.beginPath();
-      ctx.roundRect(
-        slot.x - this.petalContainerSize / 2,
-        slot.y - this.petalContainerSize / 2,
-        this.petalContainerSize,
-        this.petalContainerSize,
-        8
-      );
-      ctx.fill();
-      ctx.closePath();
-      ctx.fillStyle = "#f0f0f0";
-      ctx.strokeStyle = "black";
-      ctx.lineWidth = 3.75;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.font = "900 16px Ubuntu";
-      ctx.strokeText("Preview", slot.x, slot.y - 55);
-      ctx.fillText("Preview", slot.x, slot.y - 55);
-      const mouseX = mouse.canvasX;
-      const mouseY = mouse.canvasY;
-      const container = this.previewPetalContainer;
-      if (container !== void 0) {
-        container.draw();
-        if (mouseInBox(
-          { x: mouseX, y: mouseY },
-          {
-            x: container.render.x - container.w / 2 + 130,
-            y: container.render.y - container.h / 2 + canvas.h - this.h - 20,
-            w: container.w,
-            h: container.h
-          }
-        )) {
-          container.isHovered = true;
-        }
-        container.drawStatsBox(
-          false,
-          false,
-          130 + container.render.x,
-          canvas.h - this.h - 20 + container.render.y
-        );
-      }
-      ctx.translate(-130, -this.renderY);
-    };
-    const originalAddPetal = craftingMenu.addCraftingPetalContainers;
-    craftingMenu.addCraftingPetalContainers = function(type, rarity, amount, attempt) {
-      originalAddPetal.apply(this, [type, rarity, amount, attempt]);
-      const currentPetal = this.craftingPetalContainers[0];
-      if (currentPetal !== void 0 && (this.previewPetalContainer?.type !== currentPetal.type || this.previewPetalContainer?.rarity !== currentPetal.rarity + 1)) {
-        const slot = this.previewPetalSlot;
-        this.previewPetalContainer = new PetalContainer(
-          [new Petal({ type: currentPetal.type, rarity: currentPetal.rarity + 1 })],
-          { x: slot.x, y: slot.y, w: 65, h: 65, toOscillate: false },
-          Math.random(),
-          1
-        );
-      }
-    };
-    const originalRemovePetal = craftingMenu.removeCraftingPetalContainers;
-    craftingMenu.removeCraftingPetalContainers = function() {
-      originalRemovePetal.apply(this);
-      this.previewPetalContainer = void 0;
-    };
-    const originalEnterGame = craftingMenu.enterGame;
-    craftingMenu.enterGame = function() {
-      originalEnterGame.apply(this);
-      this.previewPetalContainer = void 0;
-    };
-  }
-  function addQuickStatsBoxHotkey() {
-    let showQuickStatsBox = false;
-    addKeybindInstruction({ type: "settings", key: "keybindStatsBox", fn: () => {
-      showQuickStatsBox = !showQuickStatsBox;
-    } });
-    const originalRenderGame = renderGame;
-    const originalDrawStatsBox = PetalContainer.prototype.drawStatsBox;
-    renderGame = (dt2) => {
-      if (showQuickStatsBox) {
-        PetalContainer.prototype.drawStatsBox = function() {
-          if (this.petals[0]?.constructor === Petal) {
-            originalDrawStatsBox.apply(this);
-          }
-        };
-      }
-      originalRenderGame(dt2);
-      PetalContainer.prototype.drawStatsBox = originalDrawStatsBox;
-      if (showQuickStatsBox) {
-        const totalCount = {};
-        for (let enemyBox of Object.values(room.enemyBoxes)) {
-          totalCount[enemyBox.type] ??= 0;
-          totalCount[enemyBox.type] += enemyBox.amount;
-        }
-        let highestBox = void 0;
-        for (let enemyBox of Object.values(room.enemyBoxes)) {
-          if (isNil(highestBox) || enemyBox.rarity > highestBox.rarity || enemyBox.rarity === highestBox.rarity && totalCount[enemyBox.type] <= totalCount[highestBox.type]) {
-            if (!enemyBox.isBoss) {
-              highestBox = enemyBox;
-            }
-          }
-        }
-        if (!isNil(highestBox)) {
-          if (isNil(highestBox.ec)) {
-            highestBox.ec = mobGallery.generateEnemyPc(
-              highestBox.type,
-              highestBox.rarity,
-              1
-            );
-          }
-          if (!Stats.enemies[highestBox.type]) {
-            calculateStats();
-          } else {
-            highestBox.ec.isHovered = true;
-            highestBox.ec.drawStatsBox(
-              true,
-              true,
-              canvas.w / 2 + highestBox.x,
-              highestBox.y + highestBox.w / 2 + 3 * highestBox.w / 5
-            );
-          }
-        }
-      }
-    };
-  }
-  function addRandomizedSquadCodes() {
-    const originalSendRoomRequest = sendRoomRequest;
-    sendRoomRequest = function(msg) {
-      if (msg.findPrivate === true && msg.squadCode === "") {
-        const newCode = randomSquadCode();
-        msg.squadCode = newCode;
-        if (settings.get("autoCopyCodes")) {
-          navigator.clipboard.writeText(newCode);
-          chatAnnounce("Code copied to clipboard! (" + newCode + ")");
-        } else {
-          chatAnnounce("Random code generated! (" + newCode + ")");
-        }
-      }
-      originalSendRoomRequest(msg);
-    };
-    const originalPrompt = prompt;
-    _unsafeWindow.prompt = function(msg, _def) {
-      if (msg === "Enter Private Squad Code") {
-        msg = "Enter private squad code (leave empty to generate a random code):";
-      }
-      return originalPrompt(msg, _def);
-    };
-  }
-  function randomSquadCode() {
-    let squadCode = "";
-    let hasLetter = false;
-    for (let i = 0; i < 6; i++) {
-      const roll = Math.floor(Math.random() * 16);
-      if (roll < 10) {
-        squadCode += String.fromCharCode("0".charCodeAt(0) + roll);
-      } else {
-        squadCode += String.fromCharCode("a".charCodeAt(0) + roll - 10);
-        hasLetter = true;
-      }
-    }
-    return hasLetter ? squadCode : randomSquadCode();
-  }
-  function unfreezeObjects() {
-    processGameMessageMap = { ...processGameMessageMap };
-  }
-  function refreezeObjects() {
-    Object.freeze(processGameMessageMap);
-  }
-  function initTheoryCraft() {
-    if (theoryCraft.length > 0) {
-      console.warn("theoryCraft already initialized!");
-      return;
-    }
-    for (let rarity = 0; rarity <= MAX_PETAL_RARITY; rarity++) {
-      theoryCraft.push(5);
-      let probFailedSoFar = 1;
-      let attempt = 0;
-      while (probFailedSoFar > 0) {
-        probFailedSoFar *= 1 - calculateChance(attempt, rarity) / 100;
-        theoryCraft[rarity] += probFailedSoFar * 2.5;
-        attempt++;
-      }
-    }
-  }
   class TooltipBox {
     w;
     h;
@@ -1750,6 +1166,725 @@ Please enter a Rarity.`
     }
   }
   const cinderSettingsMenu = new CinderSettingsMenu();
+  const MENU_LIST = Object.freeze([
+    settingsMenu,
+    changelog,
+    cinderSettingsMenu,
+    cinderChangelog,
+    globalInventory,
+    craftingMenu,
+    mobGallery
+  ]);
+  function isNil(arg) {
+    return arg === void 0 || arg === null;
+  }
+  function chatAnnounce(msg, color = CINDER_COLOUR) {
+    chatDiv.classList.remove("hidden");
+    appendChatAnnouncement("[Cinder]: " + msg, color);
+  }
+  const theoryCraft = [];
+  function convertPetalValue(amount, oldRarity, newRarity) {
+    if (oldRarity > MAX_PETAL_RARITY) {
+      return Infinity;
+    }
+    if (newRarity > MAX_PETAL_RARITY) {
+      return 0;
+    }
+    while (oldRarity < newRarity) {
+      amount /= theoryCraft[oldRarity];
+      oldRarity++;
+    }
+    while (oldRarity > newRarity) {
+      amount *= theoryCraft[oldRarity - 1];
+      oldRarity--;
+    }
+    return amount;
+  }
+  function rarityToIndex(rarity) {
+    return Rarity[rarity.toUpperCase()];
+  }
+  function isInGameInput(e) {
+    if (e.repeat) {
+      e.preventDefault();
+    }
+    if (e.code === KEYBIND_DELETED) {
+      console.warn(`Keypress code somehow equal to ${KEYBIND_DELETED}!`);
+      console.warn(e);
+      return false;
+    }
+    return _unsafeWindow.state === "game" && !inputHandler.chatOpen && !e.repeat;
+  }
+  function deepCopy(obj, depth = 5) {
+    if (depth === 0) {
+      return obj;
+    }
+    if (obj === null) {
+      return obj;
+    }
+    if (typeof obj === "object") {
+      try {
+        if (Array.isArray(obj)) {
+          return obj.map((item) => deepCopy(item, depth - 1));
+        } else {
+          const ret = Object.create(Object.getPrototypeOf(obj));
+          for (let key in obj) {
+            ret[key] = deepCopy(obj[key], depth - 1);
+          }
+          return ret;
+        }
+      } catch (e) {
+        console.warn("Failed to copy:", obj);
+        return obj;
+      }
+    } else {
+      return obj;
+    }
+  }
+  function isTopMenu(menu) {
+    return Object.hasOwn(menu, "active");
+  }
+  function mouseOnMenu() {
+    if (_unsafeWindow.state !== "menu") {
+      return false;
+    }
+    for (let menu of MENU_LIST) {
+      if (mouseInBox(
+        {
+          x: mouse.canvasX,
+          y: mouse.canvasY
+        },
+        {
+          x: isTopMenu(menu) ? menu.x : 130,
+          y: menu.renderY,
+          w: menu.w,
+          h: menu.h
+        }
+      )) {
+        return true;
+      }
+    }
+    return false;
+  }
+  function addScreenshotMode() {
+    const originalRenderGame = renderGame;
+    const originalOnMessage = ws.onmessage;
+    const originalDeadMenuDraw = deadMenu.draw;
+    const queuedMessages = [];
+    let screenshotMode = false;
+    let screenshotRoom;
+    let runningRoom;
+    function toggleScreenshotMode() {
+      screenshotMode = !screenshotMode;
+      if (screenshotMode) {
+        deadMenu.draw = () => {
+        };
+        screenshotRoom = deepCopy(room);
+        runningRoom = room;
+        renderGame = (dt2) => {
+          ws.onmessage = (data2) => {
+            queuedMessages.push(data2);
+          };
+          chatDiv.classList.add("hidden");
+          room = screenshotRoom;
+          originalRenderGame(dt2);
+          ctx.save();
+          ctx.lineWidth = 6;
+          ctx.font = "900 32px Ubuntu";
+          ctx.textAlign = "right";
+          ctx.textBaseline = "top";
+          ctx.fillStyle = CINDER_COLOUR;
+          ctx.strokeStyle = "black";
+          const text = "Screenshot Mode";
+          ctx.strokeText(text, canvas.w - 30, 30);
+          ctx.fillText(text, canvas.w - 30, 30);
+          ctx.restore();
+          room = runningRoom;
+          let data = queuedMessages.shift();
+          while (!isNil(data)) {
+            originalOnMessage?.apply(ws, [data]);
+            data = queuedMessages.shift();
+          }
+          ws.onmessage = originalOnMessage;
+        };
+      } else {
+        room = runningRoom;
+        chatDiv.classList.remove("hidden");
+        deadMenu.draw = originalDeadMenuDraw;
+        renderGame = originalRenderGame;
+        let data = queuedMessages.shift();
+        while (!isNil(data)) {
+          originalOnMessage?.apply(ws, [data]);
+          data = queuedMessages.shift();
+        }
+        ws.onmessage = originalOnMessage;
+      }
+    }
+    const originalHandleKey = inputHandler.handleKey;
+    inputHandler.handleKey = function(e) {
+      originalHandleKey.apply(inputHandler, [e]);
+      if (!isInGameInput(e)) {
+        return;
+      }
+      if (e.code === localStorage.getItem("cinderDevScreenshotMode") && e.code.length > 0 && e.type === "keydown") {
+        toggleScreenshotMode();
+      }
+    };
+  }
+  function addCraftingSearchBar() {
+    craftingMenu.rawPetalContainers = { ...craftingMenu.petalContainers };
+    craftingMenu.searchBarDimensions = {
+      x: craftingMenu.inventorySpace.x + 4,
+      // `inventorySpace` has not been translated yet
+      y: craftingMenu.inventorySpace.y - 45 + 50,
+      w: craftingMenu.inventorySpace.w - 8,
+      h: 35
+    };
+    const craftSearch = document.createElement("input");
+    craftSearch.className = petalsearch.className;
+    craftSearch.type = "text";
+    craftSearch.tabIndex = -2;
+    craftSearch.maxLength = 20;
+    craftSearch.autocomplete = "off";
+    craftSearch.spellcheck = false;
+    craftSearch.addEventListener("input", () => {
+      craftingMenu.recalculateFilteredPetals();
+    });
+    document.body.appendChild(craftSearch);
+    craftingMenu.craftSearch = craftSearch;
+    craftingMenu.mouseInSearchBar = function() {
+      return this.searchBarActive && mouseInBox(
+        { x: mouse.canvasX, y: mouse.canvasY },
+        {
+          x: this.searchBarDimensions.x + 130,
+          y: this.searchBarDimensions.y + this.renderY,
+          w: this.searchBarDimensions.w,
+          h: this.searchBarDimensions.h
+        }
+      );
+    };
+    craftingMenu.searchBarFocused = function() {
+      return document.activeElement === this.craftSearch;
+    };
+    const originalDraw = craftingMenu.drawInventory;
+    craftingMenu.drawInventory = function(alpha = 1) {
+      this.inventorySpace.h = this.h - this.inventorySpace.y - 4;
+      if (this.maxRarity > 5) {
+        this.inventorySpace.h -= 24;
+      }
+      if (!settings.get("craftingSearchBar")) {
+        originalDraw.apply(this, [alpha]);
+        return;
+      }
+      originalDraw.apply(this, [alpha]);
+      ctx.translate(130, this.renderY);
+      ctx.fillStyle = "white";
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.roundRect(
+        this.searchBarDimensions.x,
+        this.searchBarDimensions.y,
+        this.searchBarDimensions.w,
+        this.searchBarDimensions.h
+      );
+      ctx.fill();
+      ctx.stroke();
+      ctx.closePath();
+      if (this.mouseInSearchBar()) {
+        setCursor("text");
+      }
+      const hasText = this.craftSearch.value !== "";
+      ctx.fillStyle = hasText ? "#000000" : "#cccccc";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.font = "600 22px Ubuntu";
+      ctx.letterSpacing = "0px";
+      ctx.fillText(
+        hasText ? this.craftSearch.value : "Search...",
+        this.searchBarDimensions.x + 8,
+        this.searchBarDimensions.y + this.searchBarDimensions.h / 2
+      );
+      if (this.searchBarFocused() && Math.floor(time / 500) % 2 === 0) {
+        const text = this.craftSearch.value;
+        const caretIndex = this.craftSearch.selectionStart ?? text.length;
+        const textWidth = ctx.measureText(text.slice(0, caretIndex)).width;
+        const caretX = this.searchBarDimensions.x + 8 + textWidth;
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "black";
+        ctx.beginPath();
+        ctx.moveTo(caretX, this.searchBarDimensions.y + 5);
+        ctx.lineTo(
+          caretX,
+          this.searchBarDimensions.y + this.searchBarDimensions.h - 5
+        );
+        ctx.stroke();
+        ctx.closePath();
+      }
+      ctx.translate(-130, -this.renderY);
+    };
+    const originalMouseDown = craftingMenu.mouseDown;
+    craftingMenu.mouseDown = function({ mouseX, mouseY }, evt) {
+      originalMouseDown.apply(this, [{ mouseX, mouseY }, evt]);
+      if (this.mouseInSearchBar()) {
+        setTimeout(() => craftSearch.focus(), 0);
+      }
+    };
+    const originalToggle = craftingMenu.toggleMenu;
+    craftingMenu.toggleMenu = function() {
+      originalToggle.apply(this, []);
+      this.craftSearch.value = "";
+      this.recalculateFilteredPetals();
+    };
+    craftingMenu.recalculateFilteredPetals = function() {
+      let filterCount = 0;
+      this.petalContainers = {};
+      for (let type in this.rawPetalContainers) {
+        if (type.toLowerCase().includes(this.craftSearch.value.toLowerCase())) {
+          filterCount++;
+          this.petalContainers[type] = this.rawPetalContainers[type];
+        }
+      }
+      this.recalculateTypeIndexes();
+      if (filterCount < 5) {
+        this.scrollbar.top = 0;
+        this.scrollbar.bottom = 0;
+        this.scrollbar.renderTop = 0;
+        this.scrollbar.renderBottom = 0;
+        this.scroll = 0;
+      }
+    };
+    function rawPetalModifier(key) {
+      const originalFn = craftingMenu[key];
+      craftingMenu[key] = function(...args) {
+        this.petalContainers = this.rawPetalContainers;
+        originalFn.apply(craftingMenu, args);
+        this.recalculateFilteredPetals();
+      };
+    }
+    rawPetalModifier("addPetalContainer");
+    rawPetalModifier("removePetalContainer");
+    rawPetalModifier("removePetalContainerAmount");
+    rawPetalModifier("runCraftingAnimation");
+    const originalInitInventory = globalInventory.initInventory;
+    globalInventory.initInventory = function(data) {
+      craftingMenu.rawPetalContainers = {};
+      originalInitInventory.apply(this, [data]);
+    };
+    craftingMenu.updateSearchBarActive = function() {
+      const oldTranslate = this.searchBarActive ? 50 : 0;
+      this.searchBarActive = settings.get("craftingSearchBar");
+      const newTranslate = (this.searchBarActive ? 50 : 0) - oldTranslate;
+      this.h += newTranslate;
+      this.inventorySpace.y += newTranslate;
+      this.scrollbar.start += newTranslate;
+      this.scrollbar.end += newTranslate;
+    };
+    craftingMenu.searchBarActive = false;
+    craftingMenu.updateSearchBarActive();
+  }
+  function displayMissilesAboveEnemies() {
+    const originalRenderGame = renderGame;
+    renderGame = (dt2) => {
+      if (!settings.get("missileDrawPriority")) {
+        originalRenderGame(dt2);
+        return;
+      }
+      const queuedMissiles = [];
+      const maxId = Math.max(...Object.keys(room.enemies).map((k) => Number(k)));
+      for (let id in room.enemies) {
+        const enemy = room.enemies[id];
+        if (enemy.type.includes("Missile")) {
+          enemy.draw = function() {
+            queuedMissiles.push(this);
+          };
+        }
+        if (Number(id) === maxId) {
+          enemy.draw = function() {
+            Enemy.prototype.draw.apply(this);
+            for (let missile of queuedMissiles) {
+              Enemy.prototype.draw.apply(missile);
+            }
+          };
+        }
+      }
+      originalRenderGame(dt2);
+      for (let enemy of Object.values(room.enemies)) {
+        enemy.draw = Enemy.prototype.draw;
+      }
+    };
+  }
+  function enlargeZoomedOutItems() {
+    const originalRenderHpBar = renderHpBar;
+    renderHpBar = function(data, entity) {
+      if (data.flowerName !== void 0 && entity?.id === _unsafeWindow.selfId) {
+        const scale = settings.get("playerHpBarScale");
+        const rScale = scale ** (1 / 1.2);
+        data.y -= (scale - 1) * data.radius;
+        data.radius *= rScale;
+      }
+      originalRenderHpBar(data, entity);
+    };
+    const originalNewPetalContainer = processGameMessageMap.newPetalContainer;
+    processGameMessageMap.newPetalContainer = function(data, _me, _advanced) {
+      const scale = settings.get("specialDropsScale");
+      const desiredRarity = settings.get("specialDropsRarity");
+      const desiredQuantity = settings.get("specialDropsQuantity");
+      const effectiveQuantity = convertPetalValue(
+        data.amount ?? 1,
+        data.rarity,
+        desiredRarity
+      );
+      if (effectiveQuantity >= desiredQuantity) {
+        const originalSize = data.w;
+        data.w *= scale;
+        data.h *= scale;
+        const dx = data.x - data.originalX;
+        const dy = data.y - data.originalY;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        if (d > 0) {
+          data.x = data.originalX + dx * (d + originalSize * (scale - 1)) / d;
+          data.y = data.originalY + dy * (d + originalSize * (scale - 1)) / d;
+        }
+      }
+      originalNewPetalContainer(data, _me, _advanced);
+    };
+  }
+  function fixNegativeRadiusFreeze() {
+    const originalArc = ctx.arc;
+    ctx.arc = function(...args) {
+      if (args[2] > 0) {
+        originalArc.apply(this, args);
+      }
+    };
+  }
+  const keybinds = [];
+  function initKeybindHandling() {
+    const originalHandleKey = inputHandler.handleKey;
+    inputHandler.handleKey = function(e) {
+      originalHandleKey.apply(inputHandler, [e]);
+      if (!isInGameInput(e) || e.type !== "keydown") {
+        return;
+      }
+      for (let keybind of keybinds) {
+        if (keybind.type === "settings") {
+          if (e.code === settings.get(keybind.key)) {
+            keybind.fn();
+          }
+        } else if (keybind.type === "rawValue") {
+          if (e.code === keybind.value) {
+            keybind.fn();
+          }
+        }
+      }
+    };
+  }
+  function addKeybindInstruction(keybind) {
+    keybinds.push(keybind);
+  }
+  const wsDataEditing = [];
+  function allowWsDataEditing() {
+    function injectWsSend() {
+      const originalSend = ws.send;
+      ws.send = function(data) {
+        const rawData = msgpackr.unpack(data);
+        for (let fn of wsDataEditing) {
+          fn(rawData);
+        }
+        originalSend.apply(ws, [msgpackr.pack(rawData)]);
+      };
+    }
+    const originalInitWS = initWS;
+    initWS = function() {
+      originalInitWS();
+      injectWsSend();
+    };
+    if (!isNil(ws)) {
+      injectWsSend();
+    }
+  }
+  function addWsDataEditing(fn) {
+    wsDataEditing.push(fn);
+  }
+  function enableInvertAttackAndDefend() {
+    let rawAttacking = false;
+    let rawDefending = false;
+    function updateClientAttack() {
+      const newAttacking = rawAttacking !== settings.get("invertAttack");
+      if (!isNil(_unsafeWindow.selfId)) {
+        const player = room.flowers[_unsafeWindow.selfId];
+        if (!isNil(player)) {
+          player.attacking = newAttacking;
+        }
+      }
+      return newAttacking;
+    }
+    function updateClientDefend() {
+      const newDefending = rawDefending !== settings.get("invertDefend");
+      if (!isNil(_unsafeWindow.selfId)) {
+        const player = room.flowers[_unsafeWindow.selfId];
+        if (!isNil(player)) {
+          player.defending = newDefending;
+        }
+      }
+      return newDefending;
+    }
+    addWsDataEditing((data) => {
+      if (!isNil(data.attack)) {
+        rawAttacking = data.attack;
+        data.attack = updateClientAttack();
+      } else if (data[0] === "a") {
+        rawAttacking = data[1];
+        data[1] = updateClientAttack();
+      } else if (!isNil(data.defend)) {
+        rawDefending = data.defend;
+        data.defend = updateClientDefend();
+      } else if (data[0] === "d") {
+        rawDefending = data[1];
+        data[1] = updateClientDefend();
+      }
+    });
+    addKeybindInstruction(
+      { type: "settings", key: "keybindInvertAttack", fn: () => {
+        const newInvertAttack = !settings.get("invertAttack");
+        settings.set("invertAttack", newInvertAttack);
+        chatAnnounce(
+          "Invert Attack set to " + (newInvertAttack ? "ON" : "OFF") + "!",
+          "#ffbfbf"
+          // Pink
+        );
+        send({ attack: rawAttacking });
+      } }
+    );
+    addKeybindInstruction(
+      { type: "settings", key: "keybindInvertDefend", fn: () => {
+        const newInvertDefend = !settings.get("invertDefend");
+        settings.set("invertDefend", newInvertDefend);
+        chatAnnounce(
+          "Invert Defend set to " + (newInvertDefend ? "ON" : "OFF") + "!",
+          "#bfbfff"
+          // Light blue
+        );
+        send({ defend: rawDefending });
+      } }
+    );
+    const originalEnterGame = enterGame;
+    enterGame = function() {
+      originalEnterGame();
+      send({ attack: false });
+      send({ defend: false });
+    };
+  }
+  function modifyBaseFOV() {
+    addKeybindInstruction({ type: "rawValue", value: "BracketLeft", fn: () => {
+      fov = 1 / settings.get("baseReciprocalOfFOV");
+    } });
+    const originalEnterGame = enterGame;
+    enterGame = function() {
+      originalEnterGame();
+      fov = 1 / settings.get("baseReciprocalOfFOV");
+    };
+  }
+  function addPetalCraftPreview() {
+    craftingMenu.previewPetalSlot = {
+      x: craftingMenu.w * 0.83,
+      y: craftingMenu.h * 0.167,
+      w: 65,
+      h: 65
+    };
+    const originalDrawCrafting = craftingMenu.drawInventory;
+    craftingMenu.drawInventory = function(alpha = 1) {
+      if (!settings.get("petalCraftPreview")) {
+        originalDrawCrafting.apply(this, [alpha]);
+        return;
+      }
+      originalDrawCrafting.apply(this, [alpha]);
+      ctx.translate(130, this.renderY);
+      if (!isNil(this.previewPetalContainer)) {
+        this.previewPetalContainer.y = this.previewPetalSlot.y;
+      }
+      const slot = this.previewPetalSlot;
+      ctx.fillStyle = this.getSlotColor();
+      ctx.beginPath();
+      ctx.roundRect(
+        slot.x - this.petalContainerSize / 2,
+        slot.y - this.petalContainerSize / 2,
+        this.petalContainerSize,
+        this.petalContainerSize,
+        8
+      );
+      ctx.fill();
+      ctx.closePath();
+      ctx.fillStyle = "#f0f0f0";
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 3.75;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "900 16px Ubuntu";
+      ctx.strokeText("Preview", slot.x, slot.y - 55);
+      ctx.fillText("Preview", slot.x, slot.y - 55);
+      const mouseX = mouse.canvasX;
+      const mouseY = mouse.canvasY;
+      const container = this.previewPetalContainer;
+      if (container !== void 0) {
+        container.draw();
+        if (mouseInBox(
+          { x: mouseX, y: mouseY },
+          {
+            x: container.render.x - container.w / 2 + 130,
+            y: container.render.y - container.h / 2 + canvas.h - this.h - 20,
+            w: container.w,
+            h: container.h
+          }
+        )) {
+          container.isHovered = true;
+        }
+        container.drawStatsBox(
+          false,
+          false,
+          130 + container.render.x,
+          canvas.h - this.h - 20 + container.render.y
+        );
+      }
+      ctx.translate(-130, -this.renderY);
+    };
+    const originalAddPetal = craftingMenu.addCraftingPetalContainers;
+    craftingMenu.addCraftingPetalContainers = function(type, rarity, amount, attempt) {
+      originalAddPetal.apply(this, [type, rarity, amount, attempt]);
+      const currentPetal = this.craftingPetalContainers[0];
+      if (currentPetal !== void 0 && (this.previewPetalContainer?.type !== currentPetal.type || this.previewPetalContainer?.rarity !== currentPetal.rarity + 1)) {
+        const slot = this.previewPetalSlot;
+        this.previewPetalContainer = new PetalContainer(
+          [new Petal({ type: currentPetal.type, rarity: currentPetal.rarity + 1 })],
+          { x: slot.x, y: slot.y, w: 65, h: 65, toOscillate: false },
+          Math.random(),
+          1
+        );
+      }
+    };
+    const originalRemovePetal = craftingMenu.removeCraftingPetalContainers;
+    craftingMenu.removeCraftingPetalContainers = function() {
+      originalRemovePetal.apply(this);
+      this.previewPetalContainer = void 0;
+    };
+    const originalEnterGame = craftingMenu.enterGame;
+    craftingMenu.enterGame = function() {
+      originalEnterGame.apply(this);
+      this.previewPetalContainer = void 0;
+    };
+  }
+  function addQuickStatsBoxHotkey() {
+    let showQuickStatsBox = false;
+    addKeybindInstruction({ type: "settings", key: "keybindStatsBox", fn: () => {
+      showQuickStatsBox = !showQuickStatsBox;
+    } });
+    const originalRenderGame = renderGame;
+    const originalDrawStatsBox = PetalContainer.prototype.drawStatsBox;
+    renderGame = (dt2) => {
+      if (showQuickStatsBox) {
+        PetalContainer.prototype.drawStatsBox = function(drawBelow, mob, x, y) {
+          if (this.petals[0]?.constructor === Petal) {
+            originalDrawStatsBox.apply(this, [drawBelow, mob, x, y]);
+          }
+        };
+      }
+      originalRenderGame(dt2);
+      PetalContainer.prototype.drawStatsBox = originalDrawStatsBox;
+      if (showQuickStatsBox) {
+        const totalCount = {};
+        for (let enemyBox of Object.values(room.enemyBoxes)) {
+          totalCount[enemyBox.type] ??= 0;
+          totalCount[enemyBox.type] += enemyBox.amount;
+        }
+        let highestBox = void 0;
+        for (let enemyBox of Object.values(room.enemyBoxes)) {
+          if (isNil(highestBox) || enemyBox.rarity > highestBox.rarity || enemyBox.rarity === highestBox.rarity && totalCount[enemyBox.type] <= totalCount[highestBox.type]) {
+            if (!enemyBox.isBoss) {
+              highestBox = enemyBox;
+            }
+          }
+        }
+        if (!isNil(highestBox)) {
+          if (isNil(highestBox.ec)) {
+            highestBox.ec = mobGallery.generateEnemyPc(
+              highestBox.type,
+              highestBox.rarity,
+              1
+            );
+          }
+          if (!Stats.enemies[highestBox.type]) {
+            calculateStats();
+          } else {
+            highestBox.ec.isHovered = true;
+            highestBox.ec.drawStatsBox(
+              true,
+              true,
+              canvas.w / 2 + highestBox.x,
+              highestBox.y + highestBox.w / 2 + 3 * highestBox.w / 5
+            );
+          }
+        }
+      }
+    };
+  }
+  function addRandomizedSquadCodes() {
+    const originalSendRoomRequest = sendRoomRequest;
+    sendRoomRequest = function(msg) {
+      if (msg.findPrivate === true && msg.squadCode === "") {
+        const newCode = randomSquadCode();
+        msg.squadCode = newCode;
+        if (settings.get("autoCopyCodes")) {
+          navigator.clipboard.writeText(newCode);
+          chatAnnounce("Code copied to clipboard! (" + newCode + ")");
+        } else {
+          chatAnnounce("Random code generated! (" + newCode + ")");
+        }
+      }
+      originalSendRoomRequest(msg);
+    };
+    const originalPrompt = prompt;
+    _unsafeWindow.prompt = function(msg, _def) {
+      if (msg === "Enter Private Squad Code") {
+        msg = "Enter private squad code (leave empty to generate a random code):";
+      }
+      return originalPrompt(msg, _def);
+    };
+  }
+  function randomSquadCode() {
+    let squadCode = "";
+    let hasLetter = false;
+    for (let i = 0; i < 6; i++) {
+      const roll = Math.floor(Math.random() * 16);
+      if (roll < 10) {
+        squadCode += String.fromCharCode("0".charCodeAt(0) + roll);
+      } else {
+        squadCode += String.fromCharCode("a".charCodeAt(0) + roll - 10);
+        hasLetter = true;
+      }
+    }
+    return hasLetter ? squadCode : randomSquadCode();
+  }
+  function unfreezeObjects() {
+    processGameMessageMap = { ...processGameMessageMap };
+  }
+  function refreezeObjects() {
+    Object.freeze(processGameMessageMap);
+  }
+  function initTheoryCraft() {
+    if (theoryCraft.length > 0) {
+      console.warn("theoryCraft already initialized!");
+      return;
+    }
+    for (let rarity = 0; rarity <= MAX_PETAL_RARITY; rarity++) {
+      theoryCraft.push(5);
+      let probFailedSoFar = 1;
+      let attempt = 0;
+      while (probFailedSoFar > 0) {
+        probFailedSoFar *= 1 - calculateChance(attempt, rarity) / 100;
+        theoryCraft[rarity] += probFailedSoFar * 2.5;
+        attempt++;
+      }
+    }
+  }
   function allowEditingKeybinds() {
     const originalHandleKey = inputHandler.handleKey;
     inputHandler.handleKey = function(e) {
@@ -1765,128 +1900,35 @@ Please enter a Rarity.`
       originalHandleKey.apply(inputHandler, [e]);
     };
   }
-  function handleCraftMenuTranslation() {
-    Object.defineProperty(craftingMenu, "renderY", {
-      get: function() {
-        let translate = 0;
-        if (time - this.lastCloseTime < 160) {
-          translate += this.h * easeOutCubic((time - this.lastCloseTime) / 160);
-        }
-        if (time - this.lastOpenTime < 160) {
-          translate += (this.h + 40) * (1 - easeOutCubic((time - this.lastOpenTime) / 160));
-        }
-        return canvas.h - this.h - 20 + translate;
+  function handleMenuTranslations() {
+    for (let menu of MENU_LIST) {
+      if (isTopMenu(menu)) {
+        Object.defineProperty(menu, "renderY", {
+          get: function() {
+            return this.y + this.offset;
+          }
+        });
+      } else {
+        Object.defineProperty(menu, "renderY", {
+          get: function() {
+            this.lastOpenTime ??= time - 160;
+            this.lastCloseTime ??= time - 160;
+            if (!this.menuActive && time - this.lastCloseTime >= 160) {
+              return canvas.h;
+            }
+            let translate = 0;
+            if (time - this.lastCloseTime < 160) {
+              translate += this.h * easeOutCubic((time - this.lastCloseTime) / 160);
+            }
+            if (time - this.lastOpenTime < 160) {
+              translate += (this.h + 40) * (1 - easeOutCubic((time - this.lastOpenTime) / 160));
+            }
+            return canvas.h - this.h - 20 + translate;
+          }
+        });
       }
-    });
-  }
-  const cinderChangelogList = [
-    {
-      text: `Cinderscript's official release! Here are its initial features:
-- The crafting menu now has a petal search bar (PR #18)
-- Invert Attack/Defend hotkeys (Default: Comma/Period) (PR #10)
-- Hotkey to display stats box of the highest-rarity mob alive in your room (Default: "G") (PR #9)
-- Fix a client freeze bug from displaying mobs with negative size (PR #8)
-- The player's HP bar and high-rarity petal drops are now rendered larger (PR #7)
-- When entering a new game, the game is now zoomed out by default (PR #5)
-- Enemy missiles will no longer be hidden below enemy mobs (PR #4)
-- Players can generate a random squad code by entering an empty private code (PR #3)
-- The crafting menu now has a petal craft preview (PR #1)
-- These features are configurable in the settings menu!`,
-      date: "Version 1.0.0"
-    }
-  ];
-  class CinderChangelog extends Changelog {
-    /**
-     * Whether or not this changelog has generated its entries.
-     */
-    generatedEntries;
-    constructor() {
-      super();
-      this.generatedEntries = false;
-      const originalOnMouseDown = _unsafeWindow.onmousedown;
-      _unsafeWindow.onmousedown = (e) => {
-        originalOnMouseDown?.apply(_unsafeWindow, [e]);
-        if (_unsafeWindow.connected === true && this.active) {
-          this.mouseDown({ mouseX: mouse.canvasX, mouseY: mouse.canvasY });
-        }
-      };
-      const originalOnMouseUp = _unsafeWindow.onmouseup;
-      _unsafeWindow.onmouseup = (e) => {
-        originalOnMouseUp?.apply(_unsafeWindow, [e]);
-        if (_unsafeWindow.connected === true) {
-          this.mouseUp({ mouseX: mouse.canvasX, mouseY: mouse.canvasY });
-        }
-      };
-      const originalHandleMouse = inputHandler.handleMouse;
-      inputHandler.handleMouse = (e) => {
-        originalHandleMouse.apply(inputHandler, [e]);
-        this.mouseMove({ mouseX: mouse.canvasX, mouseY: mouse.canvasY });
-      };
-      document.addEventListener("wheel", (e) => {
-        this.updateScroll(
-          { x: e.deltaX, y: e.deltaY },
-          { mouseX: mouse.canvasX, mouseY: mouse.canvasY }
-        );
-      });
-      const originalDraw = changelog.draw;
-      changelog.draw = () => {
-        originalDraw.apply(changelog);
-        this.draw();
-      };
-    }
-    toggle() {
-      super.toggle();
-      if (!this.active) {
-        this.mouseUp({ mouseX: mouse.canvasX, mouseY: mouse.canvasY });
-      }
-    }
-    draw() {
-      super.draw();
-      ctx.translate(this.x, this.y + this.offset);
-      ctx.fillStyle = "#9bb56b";
-      ctx.beginPath();
-      ctx.roundRect(5, 5, this.w - 50, 75);
-      ctx.fill();
-      ctx.closePath();
-      ctx.font = "900 30px Ubuntu";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillStyle = "white";
-      ctx.strokeStyle = "black";
-      ctx.lineWidth = 4;
-      ctx.strokeText("Cinderscript Changelog", this.w / 2, 40);
-      ctx.fillText("Cinderscript Changelog", this.w / 2, 40);
-      ctx.translate(-this.x, -this.y - this.offset);
-    }
-    mouseDown(e) {
-      super.mouseDown(e);
-      if (this.hoveringOverX) {
-        this.toggle();
-      }
-    }
-    /**
-     * Generates this changelog's entries if they are not already generated.
-     * 
-     * To try to maximize modularity/compatibility, we reuse the superclass's
-     * `generateEntries` function. That function is hardcoded to retrieve entries
-     * from {@linkcode changeloglist}, so we need to temporarily overwrite
-     * `changeloglist`. This is a bit inefficient, but fortunately, we only need
-     * to do this once per page load.
-     */
-    generateEntries() {
-      if (this.generatedEntries) {
-        return;
-      }
-      this.generatedEntries = true;
-      const vanillaChangelogList = [...changeloglist];
-      changeloglist.splice(0, changeloglist.length);
-      changeloglist.push(...cinderChangelogList);
-      super.generateEntries();
-      changeloglist.splice(0, changeloglist.length);
-      changeloglist.push(...vanillaChangelogList);
     }
   }
-  const cinderChangelog = new CinderChangelog();
   function addNewMenuButtons() {
     const menuSeparatorLine = document.createElement("div");
     menuSeparatorLine.id = "menuSeparatorLine";
@@ -1968,17 +2010,8 @@ Please enter a Rarity.`
     styleSheet.textContent = styles;
     document.head.appendChild(styleSheet);
   }
-  const menuList = Object.freeze([
-    settingsMenu,
-    changelog,
-    cinderSettingsMenu,
-    cinderChangelog,
-    globalInventory,
-    craftingMenu,
-    mobGallery
-  ]);
   function preventMenuOverlap() {
-    for (let menu of menuList) {
+    for (let menu of MENU_LIST) {
       if (isTopMenu(menu)) {
         const originalToggle = menu.toggle;
         menu.toggle = function() {
@@ -1999,7 +2032,7 @@ Please enter a Rarity.`
     }
   }
   function closeAllMenus() {
-    for (let menu of menuList) {
+    for (let menu of MENU_LIST) {
       if (isTopMenu(menu)) {
         if (menu.active) {
           menu.toggle();
@@ -2010,9 +2043,6 @@ Please enter a Rarity.`
         }
       }
     }
-  }
-  function isTopMenu(menu) {
-    return Object.hasOwn(menu, "active");
   }
   function prioritizeRenderingStatsBoxes() {
     const statsBoxCanvas = document.createElement("canvas");
@@ -2034,8 +2064,62 @@ Please enter a Rarity.`
     };
     const originalDraw = draw;
     draw = function() {
+      statsBoxCtx?.reset();
       statsBoxCtx?.clearRect(0, 0, statsBoxCanvas.width, statsBoxCanvas.height);
       originalDraw();
+    };
+  }
+  function preventClickingBehindMenu() {
+    const originalMouseDown = menuInventory.mouseDown;
+    menuInventory.mouseDown = function({ mouseX, mouseY }, inv) {
+      if (!mouseOnMenu()) {
+        originalMouseDown.apply(this, [{ mouseX, mouseY }, inv]);
+      }
+    };
+    const originalAddClosest = menuInventory.addClosest;
+    menuInventory.addClosest = function(p, globalInv) {
+      if (!mouseOnMenu()) {
+        return originalAddClosest.apply(this, [p, globalInv]);
+      } else {
+        return false;
+      }
+    };
+    const originalDraw = menuInventory.draw;
+    menuInventory.draw = function(alpha) {
+      const originalDrawStatsBox = PetalContainer.prototype.drawStatsBox;
+      if (mouseOnMenu()) {
+        PetalContainer.prototype.drawStatsBox = function(drawBelow, mob, x, y) {
+          this.isHovered = false;
+          originalDrawStatsBox.apply(this, [drawBelow, mob, x, y]);
+        };
+      }
+      originalDraw.apply(this, [alpha]);
+      PetalContainer.prototype.drawStatsBox = originalDrawStatsBox;
+    };
+    const originalGetClosest = menuInventory.getClosest;
+    menuInventory.getClosest = function(p) {
+      if (!mouseOnMenu()) {
+        return originalGetClosest.apply(menuInventory, [p]);
+      } else {
+        return false;
+      }
+    };
+    const originalRender = squadUI.render;
+    squadUI.render = function(dt2) {
+      const originalX = mouse.canvasX;
+      const originalY = mouse.canvasY;
+      if (mouseOnMenu()) {
+        mouse.canvasX = mouse.canvasY = -1e99;
+      }
+      originalRender.apply(this, [dt2]);
+      mouse.canvasX = originalX;
+      mouse.canvasY = originalY;
+    };
+    const originalStartSliderDrag = squadUI.startSliderDrag;
+    squadUI.startSliderDrag = function(x) {
+      if (!mouseOnMenu()) {
+        originalStartSliderDrag.apply(this, [x]);
+      }
     };
   }
   unfreezeObjects();
@@ -2045,7 +2129,7 @@ Please enter a Rarity.`
   allowEditingKeybinds();
   initKeybindHandling();
   addNewMenuButtons();
-  handleCraftMenuTranslation();
+  handleMenuTranslations();
   addPetalCraftPreview();
   addCraftingSearchBar();
   addRandomizedSquadCodes();
@@ -2056,6 +2140,7 @@ Please enter a Rarity.`
   addQuickStatsBoxHotkey();
   enableInvertAttackAndDefend();
   prioritizeRenderingStatsBoxes();
+  preventClickingBehindMenu();
   addScreenshotMode();
   refreezeObjects();
 

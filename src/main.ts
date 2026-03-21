@@ -12,11 +12,12 @@ import { refreezeObjects, unfreezeObjects } from "./inits/unfreezeObjects";
 import { allowWsDataEditing } from "./inits/wsDataEditing";
 import { initTheoryCraft } from "./inits/initTheoryCraft";
 import { allowEditingKeybinds } from "./inits/allowEditingKeybinds";
-import { handleCraftMenuTranslation } from "./inits/handleCraftMenuTranslation";
+import { handleMenuTranslations } from "./inits/handleMenuTranslations";
 import { initKeybindHandling } from "./inits/keybindHandling";
 import { addNewMenuButtons } from "./inits/newMenuButtons";
 import { preventMenuOverlap } from "./inits/preventMenuOverlap";
 import { prioritizeRenderingStatsBoxes } from "./features/statsBoxRenderingPriority";
+import { preventClickingBehindMenu } from "./inits/preventClickingBehindMenu";
 
 // #region Inits
 unfreezeObjects();
@@ -26,7 +27,7 @@ preventMenuOverlap();
 allowEditingKeybinds();
 initKeybindHandling();
 addNewMenuButtons();
-handleCraftMenuTranslation();
+handleMenuTranslations();
 
 // #region Features
 addPetalCraftPreview();
@@ -39,6 +40,7 @@ fixNegativeRadiusFreeze();
 addQuickStatsBoxHotkey();
 enableInvertAttackAndDefend();
 prioritizeRenderingStatsBoxes();
+preventClickingBehindMenu();
 
 // #region Dev tools
 addScreenshotMode();

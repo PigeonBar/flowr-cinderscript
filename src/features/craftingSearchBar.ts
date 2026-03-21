@@ -34,7 +34,7 @@ export function addCraftingSearchBar() {
   craftingMenu.craftSearch = craftSearch;
 
   craftingMenu.mouseInSearchBar = function(): boolean {
-    return mouseInBox(
+    return this.searchBarActive && mouseInBox(
       {x: mouse.canvasX, y: mouse.canvasY},
       {
         x: this.searchBarDimensions.x + 130,
@@ -45,19 +45,24 @@ export function addCraftingSearchBar() {
     );
   }
 
-  craftingMenu.searchBarActive = function(): boolean {
+  craftingMenu.searchBarFocused = function(): boolean {
     return document.activeElement === this.craftSearch;
   }
 
   const originalDraw = craftingMenu.drawInventory;
   craftingMenu.drawInventory = function(alpha: number = 1) {
+    // Fix a bug where the inventory space's height becomes too large since it
+    // scales with the crafting menu's height
+    this.inventorySpace.h = this.h - this.inventorySpace.y - 4;
+    if (this.maxRarity > 5) {
+      this.inventorySpace.h -= 24; // Make space for horizontal search bar
+    }
+
     // If feature is turned off in settings, just draw crafting menu as usual
     if (!settings.get("craftingSearchBar")) {
       originalDraw.apply(this, [alpha]);
       return;
     }
-
-    makeSpaceForSearchBar(this);
 
     originalDraw.apply(this, [alpha]);
 
@@ -95,7 +100,7 @@ export function addCraftingSearchBar() {
     );
 
     // Draw the flashing caret
-    if (this.searchBarActive() && Math.floor(time / 500) % 2 === 0) {
+    if (this.searchBarFocused() && Math.floor(time / 500) % 2 === 0) {
       const text = this.craftSearch.value;
       const caretIndex = this.craftSearch.selectionStart ?? text.length;
       const textWidth = ctx.measureText(text.slice(0, caretIndex)).width;
@@ -113,46 +118,18 @@ export function addCraftingSearchBar() {
     }
 
     ctx.translate(-130, -this.renderY);
-    undoSpaceForSearchBar(this);
   }
 
   const originalMouseDown = craftingMenu.mouseDown;
   craftingMenu.mouseDown = function(
     {mouseX, mouseY}: CanvasMouseData2, evt: MouseEvent
   ) {
-    // If feature is turned off in settings, just handle crafting menu as usual
-    if (!settings.get("craftingSearchBar")) {
-      originalMouseDown.apply(this, [{mouseX, mouseY}, evt]);
-      return;
-    }
-
-    makeSpaceForSearchBar(this);
-
     originalMouseDown.apply(this, [{mouseX, mouseY}, evt]);
 
     // Let user type in the search bar if they click on it
     if (this.mouseInSearchBar()) {
       setTimeout(() => craftSearch.focus(), 0);
     }
-
-    undoSpaceForSearchBar(this);
-  }
-
-  const originalMouseMove = craftingMenu.mouseMove;
-  craftingMenu.mouseMove = function(
-    {mouseX, mouseY}: CanvasMouseData2, evt: MouseEvent
-  ) {
-    // If feature is turned off in settings, just handle crafting menu as usual
-    if (!settings.get("craftingSearchBar")) {
-      originalMouseMove.apply(this, [{mouseX, mouseY}, evt]);
-      return;
-    }
-
-    makeSpaceForSearchBar(this);
-
-    originalMouseMove.apply(this, [{mouseX, mouseY}, evt]);
-
-    undoSpaceForSearchBar(this);
   }
 
   const originalToggle = craftingMenu.toggleMenu;
@@ -223,25 +200,19 @@ export function addCraftingSearchBar() {
     originalInitInventory.apply(this, [data]);
   }
 
-  /**
-   * A helper function to make space for the search bar in the crafting menu by
-   * shifting certain positions by 50 units.
-   */
-  function makeSpaceForSearchBar(menu: CraftingMenu) {
-    menu.h += 50;
-    menu.inventorySpace.y += 50;
-    menu.scrollbar.start += 50;
-    menu.scrollbar.end += 50;
+  craftingMenu.updateSearchBarActive = function() {
+    const oldTranslate = this.searchBarActive ? 50 : 0;
+    this.searchBarActive = settings.get("craftingSearchBar");
+    const newTranslate = (this.searchBarActive ? 50 : 0) - oldTranslate;
+    
+    // Make room (50 units) for the search bar if needed
+    this.h += newTranslate;
+    this.inventorySpace.y += newTranslate;
+    this.scrollbar.start += newTranslate;
+    this.scrollbar.end += newTranslate;
   }
 
-  /**
-   * A helper function to restore the crafting menu's normal dimensions after
-   * we are done making space for the search bar.
-   */
-  function undoSpaceForSearchBar(menu: CraftingMenu) {
-    menu.h -= 50;
-    menu.inventorySpace.y -= 50;
-    menu.scrollbar.start -= 50;
-    menu.scrollbar.end -= 50;
-  }
+  // Apply the current settings right now
+  craftingMenu.searchBarActive = false;
+  craftingMenu.updateSearchBarActive();
 }

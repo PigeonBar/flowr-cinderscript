@@ -1,6 +1,9 @@
 import { unsafeWindow } from "$";
 
 const cinderChangelogList: ChangelogEntry[] = [
+  {text: `- Clicking on a menu (e.g, Inventory) no longer affects loadout petals behind the menu (PR #20)
+- Some behind-the-scenes changes to how the search bar affects the crafting menu's height (PR #20)`,
+  date: "Version 1.0.1"},
   {text: `Cinderscript's official release! Here are its initial features:
 - The crafting menu now has a petal search bar (PR #18)
 - Invert Attack/Defend hotkeys (Default: Comma/Period) (PR #10)
@@ -12,7 +15,7 @@ const cinderChangelogList: ChangelogEntry[] = [
 - Players can generate a random squad code by entering an empty private code (PR #3)
 - The crafting menu now has a petal craft preview (PR #1)
 - These features are configurable in the settings menu!`,
-  date: "Version 1.0.0"},
+  date: "Version 1.0.0 (Initial Release)"},
 ];
 
 /**

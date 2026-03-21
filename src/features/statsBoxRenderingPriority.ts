@@ -33,6 +33,7 @@ export function prioritizeRenderingStatsBoxes() {
   const originalDraw = draw;
   draw = function() {
     // Clear the stats box canvas before drawing the next frame
+    statsBoxCtx?.reset();
     statsBoxCtx?.clearRect(0, 0, statsBoxCanvas.width, statsBoxCanvas.height);
 
     originalDraw();

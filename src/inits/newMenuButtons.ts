@@ -1,5 +1,5 @@
 import { cinderChangelog } from "../changelog";
-import { CINDER_BORDER_COLOUR, CINDER_COLOUR, LIGHT_CINDER_COLOUR } from "../constants";
+import { CINDER_BORDER_COLOUR, CINDER_COLOUR, LIGHT_CINDER_COLOUR } from "../constants/constants";
 import { cinderSettingsMenu } from "../settings/settingsMenu";
 
 /**
