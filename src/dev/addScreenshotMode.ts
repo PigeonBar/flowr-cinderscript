@@ -1,4 +1,4 @@
-import { CINDER_COLOUR } from "../constants";
+import { CINDER_COLOUR } from "../constants/constants";
 import { deepCopy, isInGameInput, isNil } from "../utils";
 
 /**

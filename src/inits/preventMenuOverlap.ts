@@ -1,15 +1,5 @@
-import { cinderChangelog } from "../changelog";
-import { cinderSettingsMenu } from "../settings/settingsMenu";
-
-const menuList: readonly Menu[] = Object.freeze([
-  settingsMenu,
-  changelog,
-  cinderSettingsMenu,
-  cinderChangelog,
-  globalInventory,
-  craftingMenu,
-  mobGallery,
-]);
+import { MENU_LIST } from "../constants/menuLists";
+import { isTopMenu } from "../utils";
 
 /**
  * This initializer makes sure that opening any menu closes all other menus so
@@ -20,7 +10,7 @@ const menuList: readonly Menu[] = Object.freeze([
  * properly.
  */
 export function preventMenuOverlap() {
-  for (let menu of menuList) {
+  for (let menu of MENU_LIST) {
     if (isTopMenu(menu)) {
       const originalToggle = menu.toggle;
 
@@ -57,7 +47,7 @@ export function preventMenuOverlap() {
  * A helper function that closes all menus.
  */
 function closeAllMenus() {
-  for (let menu of menuList) {
+  for (let menu of MENU_LIST) {
     if (isTopMenu(menu)) {
       if (menu.active) {
         menu.toggle();
@@ -68,13 +58,4 @@ function closeAllMenus() {
       }
     }
   }
-}
-
-/**
- * A helper function that determines whether a menu is a {@linkcode TopMenu}
- * (which uses the field `active`) or a {@linkcode BottomMenu} (which uses the
- * field `menuActive`).
- */
-function isTopMenu(menu: Menu): menu is TopMenu {
-  return Object.hasOwn(menu, "active");
 }

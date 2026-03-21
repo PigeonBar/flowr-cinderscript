@@ -1,5 +1,5 @@
 import { unsafeWindow } from "$";
-import { SETTINGS_GREEN, SETTINGS_OPTION_HEIGHT, SCROLLBAR_LENGTH, SETTINGS_SCROLLBAR_MIN_POS } from "../constants";
+import { SETTINGS_GREEN, SETTINGS_OPTION_HEIGHT, SCROLLBAR_LENGTH, SETTINGS_SCROLLBAR_MIN_POS } from "../constants/constants";
 import { isNil } from "../utils";
 import { settings } from "./settingsManager";
 import { initOptions, settingsMap } from "./settingsObjects";

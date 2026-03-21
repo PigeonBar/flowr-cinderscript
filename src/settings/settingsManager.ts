@@ -87,6 +87,7 @@ export class SettingsManager {
     this.savedSettings[key] = value;
     localStorage.setItem("cinderSettings", JSON.stringify(this.savedSettings));
 
+    // Some more code to make certain things update to settings changes
     if (key === "invertAttack") {
       settingsMap.invertAttack.state = value;
     } else if (key === "invertDefend") {
@@ -95,6 +96,10 @@ export class SettingsManager {
 
     if (key === "specialDropsQuantity" || key === "specialDropsRarity") {
       settingsMap.specialDropsScale.updateTooltip();
+    }
+
+    if (key === "craftingSearchBar") {
+      craftingMenu.updateSearchBarActive();
     }
   }
 }

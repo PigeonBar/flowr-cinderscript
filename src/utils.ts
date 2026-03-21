@@ -1,5 +1,6 @@
 import { unsafeWindow } from "$";
-import { CINDER_COLOUR, KEYBIND_DELETED, MAX_PETAL_RARITY } from "./constants";
+import { CINDER_COLOUR, KEYBIND_DELETED, MAX_PETAL_RARITY } from "./constants/constants";
+import { MENU_LIST } from "./constants/menuLists";
 import { Rarity } from "./enums";
 
 export type nil = null | undefined;
@@ -121,4 +122,41 @@ export function deepCopy<T>(obj: T, depth = 5): T {
   } else {
     return obj;
   }
+}
+
+/**
+ * A helper function that determines whether a menu is a {@linkcode TopMenu}
+ * (which uses the field `active`) or a {@linkcode BottomMenu} (which uses the
+ * field `menuActive`).
+ */
+export function isTopMenu(menu: Menu): menu is TopMenu {
+  return Object.hasOwn(menu, "active");
+}
+
+/**
+ * Determines whether the cursor is currently hovering over any menu.
+ */
+export function mouseOnMenu() {
+  if (unsafeWindow.state !== "menu") {
+    return false;
+  }
+
+  for (let menu of MENU_LIST) {
+    if (mouseInBox(
+      {
+        x: mouse.canvasX,
+        y: mouse.canvasY,
+      },
+      {
+        x: isTopMenu(menu) ? menu.x : 130,
+        y: menu.renderY,
+        w: menu.w,
+        h: menu.h,
+      }
+    )) {
+      return true;
+    }
+  }
+
+  return false;
 }

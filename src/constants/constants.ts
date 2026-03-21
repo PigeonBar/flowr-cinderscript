@@ -1,4 +1,4 @@
-import { Rarity } from "./enums";
+import { Rarity } from "../enums";
 
 // TODO: Move colour and UI consts to separate files
 

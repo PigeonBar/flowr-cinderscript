@@ -1,5 +1,5 @@
 import { unsafeWindow } from "$";
-import { KEYBIND_DELETED } from "../constants";
+import { KEYBIND_DELETED } from "../constants/constants";
 import { cinderSettingsMenu } from "../settings/settingsMenu";
 import { isNil } from "../utils";
 

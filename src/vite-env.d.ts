@@ -38,16 +38,32 @@ declare global {
     rarities: {name: string, color: string, border: string}[];
   }
 
-  class CraftingMenu {
+  /**
+   * The menus at the bottom of the screen (inventory, crafting, gallery)
+   */
+  class BottomMenu {
     w: number;
     h: number;
-    scroll: number;
     menuActive: boolean;
-    lastOpenTime: number;
-    lastCloseTime: number;
+    lastOpenTime?: number;
+    lastCloseTime?: number;
+
+    /**
+     * The y-position of this menu on the canvas. This value changes when the
+     * menu is opened or closed.
+     */
+    renderY: number;
+
+    toggleMenu();
+  }
+
+  class CraftingMenu extends BottomMenu {
+    scroll: number;
     petalContainerSize: number;
     craftingPetalContainers: PetalContainer[];
     previewPetalContainer: PetalContainer | undefined;
+    searchBarActive: boolean;
+    maxRarity: Rarity;
 
     /**
      * A list of owned petals displayed below the crafting area, after applying
@@ -65,12 +81,6 @@ declare global {
      * A search bar that allows for filtering petals by petal type.
      */
     craftSearch: HTMLInputElement;
-
-    /**
-     * The y-position of this crafting menu on the canvas. This value changes
-     * when the menu is opened or closed.
-     */
-    renderY: number;
 
     craftingPetalSlotsDimensions: {
       x: number;
@@ -118,8 +128,6 @@ declare global {
        */
       end: number;
     }
-    
-    toggleMenu();
 
     drawInventory(alpha: number = 1);
 
@@ -157,14 +165,22 @@ declare global {
     recalculateTypeIndexes();
 
     /**
-     * Determines whether the mouse is currently hovering over the search bar.
+     * Updates the search bar to become active/inactive based on the settings,
+     * and also shifts the menu's UI elements to make room for the search bar
+     * as needed.
+     */
+    updateSearchBarActive(): void;
+
+    /**
+     * Returns `true` iff the search bar is toggled on and the mouse is
+     * currently hovering over the search bar.
      */
     mouseInSearchBar(): boolean;
 
     /**
      * Determines whether the player is currently typing in the search bar.
      */
-    searchBarActive(): boolean;
+    searchBarFocused(): boolean;
 
     /**
      * Reapplies the search bar's filter to the list of owned petals.
@@ -176,21 +192,17 @@ declare global {
 
   const petalsearch: HTMLInputElement;
 
-  class GlobalInventory {
-    menuActive: boolean;
-
-    toggleMenu();
-
+  /**
+   * The inventory menu, which stores all owned petals that the user is
+   * currently *not* equipping.
+   */
+  class GlobalInventory extends BottomMenu {
     initInventory(data: any);
   }
 
   const globalInventory: GlobalInventory;
 
-  class MobGallery {
-    menuActive: boolean;
-
-    toggleMenu();
-
+  class MobGallery extends BottomMenu {
     generateEnemyPc(
       type: EnemyType,
       rarity: Rarity,
@@ -205,6 +217,35 @@ declare global {
   }
   
   const deadMenu: DeadMenu;
+
+  /**
+   * The current loadout, which stores petals that the user *is* equipping.
+   */
+  class Inventory {
+    draw(alpha = 1);
+
+    mouseDown({ mouseX, mouseY }: CanvasMouseData2, inv: Inventory);
+
+    /**
+     * If the given petal is close enough to any loadout petal, return the
+     * closest loadout petal. Otherwise, return `false`.
+     */
+    getClosest(p: PetalContainer): PetalContainer | false;
+
+    /**
+     * Adds the currently dragged petal to this loadout at the slot closest to
+     * the player's mouse, if the mouse is close enough (similarly to, but not
+     * exactly the same as, {@linkcode getClosest}).
+     * 
+     * If the loadout slot is already occupied by a petal, that petal is also
+     * sent back to the player's inventory.
+     * 
+     * @returns `true` if and only if the petal was successfully added.
+     */
+    addClosest(p: PetalContainer, globalInv: GlobalInventory): boolean;
+  }
+
+  const menuInventory: Inventory;
 
   class Enemy {
     type: EnemyType;
@@ -384,32 +425,28 @@ declare global {
   /**
    * The menus at the top of the screen (settings, changelog)
    */
-  type TopMenu = {
-    active: boolean;
-
-    toggle();
-  }
-
-  /**
-   * The menus at the bottom of the screen (inventory, crafting, gallery)
-   */
-  type BottomMenu = {
-    menuActive: boolean;
-
-    toggleMenu();
-  }
-
-  type Menu = TopMenu | BottomMenu;
-
-  class SettingsMenu {
+  class TopMenu {
     x: number;
     y: number;
     w: number;
     h: number;
     offset: number;
+    active: boolean;
+
+    /**
+     * The y-position of this menu on the canvas. This value changes when the
+     * menu is opened or closed.
+     */
+    renderY: number;
+
+    toggle();
+  }
+
+  type Menu = TopMenu | BottomMenu;
+
+  class SettingsMenu extends TopMenu {
     targetOffset: number;
     currentHeight: number;
-    active: boolean;
     options: readonly (SettingsOption | SettingsSectionHeading)[];
 
     draw();
@@ -417,8 +454,6 @@ declare global {
     renderOption(option: SettingsOption);
 
     renderToggle(option: BooleanOption);
-
-    toggle();
 
     mouseDown(e: CanvasMouseData);
 
@@ -429,21 +464,19 @@ declare global {
 
   const settingsMenu: SettingsMenu;
 
-  class Changelog {
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-    offset: number;
-    active: boolean;
+  class Changelog extends TopMenu {
     hoveringOverX: boolean;
 
-    toggle();
     generateEntries();
+
     draw();
+
     mouseMove(e: CanvasMouseData2);
+
     mouseDown(e: CanvasMouseData2);
+
     mouseUp(e: CanvasMouseData2);
+
     updateScroll(
       delta: {x: number, y: number}, mouse: CanvasMouseData2
     );
@@ -456,6 +489,17 @@ declare global {
   type ChangelogEntry = {text: string, date: string};
 
   const changeloglist: ChangelogEntry[];
+
+  class SquadUI {
+    render(dt: number);
+
+    /**
+     * Handles the user clicking on the Starting Wave slider.
+     */
+    startSliderDrag(x: number);
+  }
+
+  const squadUI: SquadUI;
 
   const ws: WebSocket;
 

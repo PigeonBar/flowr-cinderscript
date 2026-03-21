@@ -1,4 +1,4 @@
-import { TOOLTIP_BLUE, TOOLTIP_TEXT_HEIGHT, TOOLTIP_WIDTH_CAP } from "../constants";
+import { TOOLTIP_BLUE, TOOLTIP_TEXT_HEIGHT, TOOLTIP_WIDTH_CAP } from "../constants/constants";
 
 export type Tooltip = string | (() => string);
 

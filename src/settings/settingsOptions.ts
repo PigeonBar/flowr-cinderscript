@@ -1,4 +1,4 @@
-import { CINDER_COLOUR, EDIT_ICON_SIZE, KEYBIND_DELETED, SETTINGS_BUTTON_PADDING, SETTINGS_BUTTON_SIZE, SETTINGS_GREEN, SETTINGS_OPTION_HEIGHT, TOOLTIP_BLUE, TOOLTIP_BORDER_BLUE, TOOLTIP_ICON_SIZE } from "../constants";
+import { CINDER_COLOUR, EDIT_ICON_SIZE, KEYBIND_DELETED, SETTINGS_BUTTON_PADDING, SETTINGS_BUTTON_SIZE, SETTINGS_GREEN, SETTINGS_OPTION_HEIGHT, TOOLTIP_BLUE, TOOLTIP_BORDER_BLUE, TOOLTIP_ICON_SIZE } from "../constants/constants";
 import type { Rarity } from "../enums";
 import { isNil, rarityToIndex } from "../utils";
 import { settings, type BooleanSettingsKey, type KeybindSettingsKey, type NumberSettingsKey, type RaritySettingsKey } from "./settingsManager";
