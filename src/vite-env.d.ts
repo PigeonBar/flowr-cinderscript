@@ -280,6 +280,11 @@ declare global {
       w: number;
     }
 
+    /**
+     * Whether or not this petal is being dragged.
+     */
+    isDraggingPetalContainer: boolean;
+
     constructor(
       petals: Petal[],
       args: any,
@@ -288,7 +293,7 @@ declare global {
       attempt?: number,
     )
 
-    draw();
+    draw(inGame?: boolean, number?: number);
 
     drawStatsBox(
       drawBelow: boolean = false,
@@ -301,6 +306,11 @@ declare global {
   class StatsBox {
     draw();
   }
+
+  /**
+   * Handles the user dragging a petal to the given mouse coordinates.
+   */
+  let simulatedraggingPetalContainer: (x: number, y: number) => void;
 
   // Yeah the Flowr devs actually skissued and forgot to capitalize 1st letter
   class enemyBox {

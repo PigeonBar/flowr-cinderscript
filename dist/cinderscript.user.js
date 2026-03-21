@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Flowr - Cinderscript
 // @namespace    npm/vite-plugin-monkey
-// @version      1.0.1
+// @version      1.0.2
 // @author       PigeonBar (original creator)
 // @description  A free, publicly available collection of QoL features for flowr.fun players.
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=flowr.fun
@@ -86,6 +86,11 @@
   const KEYBIND_DELETED = "<None>";
   var _unsafeWindow = /* @__PURE__ */ (() => typeof unsafeWindow != "undefined" ? unsafeWindow : void 0)();
   const cinderChangelogList = [
+    {
+      text: `- Dragged petals now get displayed above the inventory menu and other UI (PR #21)
+- Dragged petals no longer randomly get sent to the shadow realm (PR #21)`,
+      date: "Version 1.0.2"
+    },
     {
       text: `- Clicking on a menu (e.g, Inventory) no longer affects loadout petals behind the menu (PR #20)
 - Some behind-the-scenes changes to how the search bar affects the crafting menu's height (PR #20)`,
@@ -1513,6 +1518,34 @@ Please enter a Rarity.`
       }
     };
   }
+  function prioritizeRenderingDragPetal() {
+    const dragPetalCanvas = document.createElement("canvas");
+    dragPetalCanvas.style = "z-index: 1; pointer-events: none";
+    document.body.appendChild(dragPetalCanvas);
+    const dragPetalCtx = dragPetalCanvas.getContext("2d");
+    const originalPetalDraw = PetalContainer.prototype.draw;
+    PetalContainer.prototype.draw = function(inGame, number) {
+      if (this.isDraggingPetalContainer) {
+        dragPetalCanvas.width = canvas.width;
+        dragPetalCanvas.height = canvas.height;
+        const originalCtx = ctx;
+        if (!isNil(dragPetalCtx)) {
+          ctx = dragPetalCtx;
+          ctx.setTransform(originalCtx.getTransform());
+        }
+        originalPetalDraw.apply(this, [inGame, number]);
+        ctx = originalCtx;
+      } else {
+        originalPetalDraw.apply(this, [inGame, number]);
+      }
+    };
+    const originalDraw = draw;
+    draw = function() {
+      dragPetalCtx?.reset();
+      dragPetalCtx?.clearRect(0, 0, dragPetalCanvas.width, dragPetalCanvas.height);
+      originalDraw();
+    };
+  }
   function enlargeZoomedOutItems() {
     const originalRenderHpBar = renderHpBar;
     renderHpBar = function(data, entity) {
@@ -1547,6 +1580,17 @@ Please enter a Rarity.`
         }
       }
       originalNewPetalContainer(data, _me, _advanced);
+    };
+  }
+  function fixDraggingPetalsOutOfBounds() {
+    const originalSimulateDragging = simulatedraggingPetalContainer;
+    simulatedraggingPetalContainer = (x, y) => {
+      if (x < -1e10 && y < -1e10) {
+        return;
+      }
+      x = Math.max(0, Math.min(canvas.width, x));
+      y = Math.max(0, Math.min(canvas.height, y));
+      originalSimulateDragging(x, y);
     };
   }
   function fixNegativeRadiusFreeze() {
@@ -1863,27 +1907,30 @@ Please enter a Rarity.`
     }
     return hasLetter ? squadCode : randomSquadCode();
   }
-  function unfreezeObjects() {
-    processGameMessageMap = { ...processGameMessageMap };
-  }
-  function refreezeObjects() {
-    Object.freeze(processGameMessageMap);
-  }
-  function initTheoryCraft() {
-    if (theoryCraft.length > 0) {
-      console.warn("theoryCraft already initialized!");
-      return;
-    }
-    for (let rarity = 0; rarity <= MAX_PETAL_RARITY; rarity++) {
-      theoryCraft.push(5);
-      let probFailedSoFar = 1;
-      let attempt = 0;
-      while (probFailedSoFar > 0) {
-        probFailedSoFar *= 1 - calculateChance(attempt, rarity) / 100;
-        theoryCraft[rarity] += probFailedSoFar * 2.5;
-        attempt++;
+  function prioritizeRenderingStatsBoxes() {
+    const statsBoxCanvas = document.createElement("canvas");
+    statsBoxCanvas.style = "z-index: 2; pointer-events: none";
+    document.body.appendChild(statsBoxCanvas);
+    const statsBoxCtx = statsBoxCanvas.getContext("2d");
+    const originalStatsBoxDraw = StatsBox.prototype.draw;
+    StatsBox.prototype.draw = function() {
+      statsBoxCanvas.width = canvas.width;
+      statsBoxCanvas.height = canvas.height;
+      const originalCtx = ctx;
+      if (!isNil(statsBoxCtx)) {
+        ctx = statsBoxCtx;
+        ctx.globalAlpha = originalCtx.globalAlpha;
+        ctx.setTransform(savedRenderTransform);
       }
-    }
+      originalStatsBoxDraw.apply(this);
+      ctx = originalCtx;
+    };
+    const originalDraw = draw;
+    draw = function() {
+      statsBoxCtx?.reset();
+      statsBoxCtx?.clearRect(0, 0, statsBoxCanvas.width, statsBoxCanvas.height);
+      originalDraw();
+    };
   }
   function allowEditingKeybinds() {
     const originalHandleKey = inputHandler.handleKey;
@@ -1926,6 +1973,22 @@ Please enter a Rarity.`
             return canvas.h - this.h - 20 + translate;
           }
         });
+      }
+    }
+  }
+  function initTheoryCraft() {
+    if (theoryCraft.length > 0) {
+      console.warn("theoryCraft already initialized!");
+      return;
+    }
+    for (let rarity = 0; rarity <= MAX_PETAL_RARITY; rarity++) {
+      theoryCraft.push(5);
+      let probFailedSoFar = 1;
+      let attempt = 0;
+      while (probFailedSoFar > 0) {
+        probFailedSoFar *= 1 - calculateChance(attempt, rarity) / 100;
+        theoryCraft[rarity] += probFailedSoFar * 2.5;
+        attempt++;
       }
     }
   }
@@ -2010,65 +2073,6 @@ Please enter a Rarity.`
     styleSheet.textContent = styles;
     document.head.appendChild(styleSheet);
   }
-  function preventMenuOverlap() {
-    for (let menu of MENU_LIST) {
-      if (isTopMenu(menu)) {
-        const originalToggle = menu.toggle;
-        menu.toggle = function() {
-          if (!menu.active) {
-            closeAllMenus();
-          }
-          originalToggle.apply(menu);
-        };
-      } else {
-        const originalToggle = menu.toggleMenu;
-        menu.toggleMenu = function() {
-          if (!menu.menuActive) {
-            closeAllMenus();
-          }
-          originalToggle.apply(menu);
-        };
-      }
-    }
-  }
-  function closeAllMenus() {
-    for (let menu of MENU_LIST) {
-      if (isTopMenu(menu)) {
-        if (menu.active) {
-          menu.toggle();
-        }
-      } else {
-        if (menu.menuActive) {
-          menu.toggleMenu();
-        }
-      }
-    }
-  }
-  function prioritizeRenderingStatsBoxes() {
-    const statsBoxCanvas = document.createElement("canvas");
-    statsBoxCanvas.style = "z-index: 1; pointer-events: none";
-    document.body.appendChild(statsBoxCanvas);
-    const statsBoxCtx = statsBoxCanvas.getContext("2d");
-    const originalStatsBoxDraw = StatsBox.prototype.draw;
-    StatsBox.prototype.draw = function() {
-      statsBoxCanvas.width = canvas.width;
-      statsBoxCanvas.height = canvas.height;
-      const originalCtx = ctx;
-      if (!isNil(statsBoxCtx)) {
-        ctx = statsBoxCtx;
-        ctx.globalAlpha = originalCtx.globalAlpha;
-        ctx.setTransform(savedRenderTransform);
-      }
-      originalStatsBoxDraw.apply(this);
-      ctx = originalCtx;
-    };
-    const originalDraw = draw;
-    draw = function() {
-      statsBoxCtx?.reset();
-      statsBoxCtx?.clearRect(0, 0, statsBoxCanvas.width, statsBoxCanvas.height);
-      originalDraw();
-    };
-  }
   function preventClickingBehindMenu() {
     const originalMouseDown = menuInventory.mouseDown;
     menuInventory.mouseDown = function({ mouseX, mouseY }, inv) {
@@ -2122,6 +2126,46 @@ Please enter a Rarity.`
       }
     };
   }
+  function preventMenuOverlap() {
+    for (let menu of MENU_LIST) {
+      if (isTopMenu(menu)) {
+        const originalToggle = menu.toggle;
+        menu.toggle = function() {
+          if (!menu.active) {
+            closeAllMenus();
+          }
+          originalToggle.apply(menu);
+        };
+      } else {
+        const originalToggle = menu.toggleMenu;
+        menu.toggleMenu = function() {
+          if (!menu.menuActive) {
+            closeAllMenus();
+          }
+          originalToggle.apply(menu);
+        };
+      }
+    }
+  }
+  function closeAllMenus() {
+    for (let menu of MENU_LIST) {
+      if (isTopMenu(menu)) {
+        if (menu.active) {
+          menu.toggle();
+        }
+      } else {
+        if (menu.menuActive) {
+          menu.toggleMenu();
+        }
+      }
+    }
+  }
+  function unfreezeObjects() {
+    processGameMessageMap = { ...processGameMessageMap };
+  }
+  function refreezeObjects() {
+    Object.freeze(processGameMessageMap);
+  }
   unfreezeObjects();
   initTheoryCraft();
   allowWsDataEditing();
@@ -2139,8 +2183,10 @@ Please enter a Rarity.`
   fixNegativeRadiusFreeze();
   addQuickStatsBoxHotkey();
   enableInvertAttackAndDefend();
+  prioritizeRenderingDragPetal();
   prioritizeRenderingStatsBoxes();
   preventClickingBehindMenu();
+  fixDraggingPetalsOutOfBounds();
   addScreenshotMode();
   refreezeObjects();
 
