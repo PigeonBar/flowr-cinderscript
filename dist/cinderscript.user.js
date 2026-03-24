@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Flowr - Cinderscript
 // @namespace    npm/vite-plugin-monkey
-// @version      1.0.2
+// @version      1.1.0
 // @author       PigeonBar (original creator)
 // @description  A free, publicly available collection of QoL features for flowr.fun players.
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=flowr.fun
@@ -86,6 +86,11 @@
   const KEYBIND_DELETED = "<None>";
   var _unsafeWindow = /* @__PURE__ */ (() => typeof unsafeWindow != "undefined" ? unsafeWindow : void 0)();
   const cinderChangelogList = [
+    {
+      text: `- The inventory menu can now be expanded to fullscreen! (PR #22)
+- High Quality Renders are now turned off when too many petals are on-screen (default: 100) (PR #22)`,
+      date: "Version 1.1.0 (Fullscreen Inventory Update)"
+    },
     {
       text: `- Dragged petals now get displayed above the inventory menu and other UI (PR #21)
 - Dragged petals no longer randomly get sent to the shadow realm (PR #21)
@@ -216,10 +221,12 @@
     invertDefend: false,
     settingsTooltips: true,
     craftingSearchBar: true,
+    inventoryExpandButton: true,
     baseReciprocalOfFOV: 3,
     playerHpBarScale: 2.5,
     specialDropsScale: 2.5,
     specialDropsQuantity: 1,
+    petalRenderQualityThreshold: 100,
     specialDropsRarity: Rarity.TRANSCENDENT,
     keybindStatsBox: "KeyG",
     keybindInvertAttack: "Comma",
@@ -857,6 +864,18 @@ Please enter a Rarity.`
           "Petal Craft Preview",
           "petalCraftPreview"
         ),
+        "inventoryExpandButton": new BooleanOption(
+          "Inventory Expansion Button",
+          "inventoryExpandButton"
+        ),
+        "petalRenderQualityThreshold": new NumberOption(
+          "Petal Rendering Quality Threshold",
+          "petalRenderQualityThreshold",
+          -1,
+          1e3,
+          0,
+          "This setting controls how many petals can be on-screen at the same time before the base game's High Quality Renders get disabled to reduce lag. $n $n Set to -1 to keep High Quality Renders enabled at all times."
+        ),
         "missileDrawPriority": new BooleanOption(
           "Missile Rendering Priority",
           "missileDrawPriority",
@@ -920,6 +939,8 @@ Please enter a Rarity.`
         new SettingsSectionHeading("General Display"),
         settingsMap.settingsTooltips,
         settingsMap.petalCraftPreview,
+        settingsMap.inventoryExpandButton,
+        settingsMap.petalRenderQualityThreshold,
         settingsMap.missileDrawPriority,
         new SettingsSectionHeading("Zoom Settings"),
         settingsMap.baseReciprocalOfFOV,
@@ -1336,7 +1357,7 @@ Please enter a Rarity.`
       }
     };
   }
-  const version = "1.0.2";
+  const version = "1.1.0";
   function addScriptVersionToDebugInfo() {
     const originalRenderDebug = renderDebug;
     renderDebug = () => {
@@ -1359,6 +1380,39 @@ Please enter a Rarity.`
       ctx.strokeText(versionText, x, y);
       ctx.fillText(versionText, x, y);
     };
+  }
+  let petalCounter = 0;
+  let disableHqp = false;
+  function autoReducePetalQuality() {
+    _unsafeWindow._hqp = _unsafeWindow.hqp;
+    Object.defineProperty(_unsafeWindow, "hqp", {
+      get: function() {
+        return this._hqp && !disableHqp;
+      },
+      set: function(value) {
+        this._hqp = value;
+      }
+    });
+    const originalDrawPetal = PetalContainer.prototype.draw;
+    PetalContainer.prototype.draw = function(inGame, number) {
+      if (this.petals[0].constructor === Petal) {
+        petalCounter++;
+      }
+      originalDrawPetal.apply(this, [inGame, number]);
+      if (exceededThreshold()) {
+        disableHqp = true;
+      }
+    };
+    const originalDraw = draw;
+    draw = function() {
+      petalCounter = 0;
+      originalDraw();
+      disableHqp = exceededThreshold();
+    };
+  }
+  function exceededThreshold() {
+    const threshold = settings.get("petalRenderQualityThreshold");
+    return threshold >= 0 && petalCounter > threshold;
   }
   function addCraftingSearchBar() {
     craftingMenu.rawPetalContainers = { ...craftingMenu.petalContainers };
@@ -1606,6 +1660,183 @@ Please enter a Rarity.`
       }
       originalNewPetalContainer(data, _me, _advanced);
     };
+  }
+  const expandIcon = new Image();
+  expandIcon.src = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgoKPHN2ZwogICB3aWR0aD0iMjkuOTk5OTkybW0iCiAgIGhlaWdodD0iMzAuMDAwMDExbW0iCiAgIHZpZXdCb3g9IjAgMCAyOS45OTk5OTIgMzAuMDAwMDExIgogICB2ZXJzaW9uPSIxLjEiCiAgIGlkPSJzdmcxIgogICB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciCiAgIHhtbG5zOnN2Zz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxkZWZzCiAgICAgaWQ9ImRlZnMxIiAvPgogIDxnCiAgICAgaWQ9ImxheWVyMSIKICAgICB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtNzQsLTE1NC4wMDAwMSkiPgogICAgPHBhdGgKICAgICAgIHN0eWxlPSJmaWxsOiNmZmZmZmY7ZmlsbC1vcGFjaXR5OjE7c3Ryb2tlOiNmZmZmZmY7c3Ryb2tlLXdpZHRoOjAuMDE7c3Ryb2tlLWxpbmVjYXA6c3F1YXJlO3N0cm9rZS1taXRlcmxpbWl0OjA7cGFpbnQtb3JkZXI6bWFya2VycyBzdHJva2UgZmlsbCIKICAgICAgIGlkPSJwYXRoMSIKICAgICAgIGQ9Ik0gNzcuMTA4NTg4LDExNS40NDI5OSAzMi41NTEzNTgsMTAyLjc2MDQyIDY1LjgxMzQwMSw3MC41MTQwMTUgWiIKICAgICAgIHRyYW5zZm9ybT0ibWF0cml4KDAuMTY2OTA4LC0wLjA2Nzg5NDA2LDAuMTc2MjAyMDEsMC4yMzI0MzMzOCw1Ni41OTE3MzIsMTU2LjMyNDEpIiAvPgogICAgPHBhdGgKICAgICAgIHN0eWxlPSJmaWxsOiNmZmZmZmY7ZmlsbC1vcGFjaXR5OjE7c3Ryb2tlOiNmZmZmZmY7c3Ryb2tlLXdpZHRoOjAuMDE7c3Ryb2tlLWxpbmVjYXA6c3F1YXJlO3N0cm9rZS1taXRlcmxpbWl0OjA7cGFpbnQtb3JkZXI6bWFya2VycyBzdHJva2UgZmlsbCIKICAgICAgIGlkPSJwYXRoMS04IgogICAgICAgZD0iTSA3Ny4xMDg1ODgsMTE1LjQ0Mjk5IDMyLjU1MTM1OCwxMDIuNzYwNDIgNjUuODEzNDAxLDcwLjUxNDAxNSBaIgogICAgICAgdHJhbnNmb3JtPSJtYXRyaXgoLTAuMTY2OTA4LDAuMDY3ODk0MDYsLTAuMTc2MjAyMDEsLTAuMjMyNDMzMzgsMTIxLjQwODAzLDE4MS42NzYxMSkiIC8+CiAgICA8cmVjdAogICAgICAgc3R5bGU9ImZpbGw6I2ZmZmZmZjtmaWxsLW9wYWNpdHk6MTtzdHJva2U6I2ZmZmZmZjtzdHJva2Utd2lkdGg6MC4wMTQwNzQzO3N0cm9rZS1saW5lY2FwOnNxdWFyZTtzdHJva2UtbWl0ZXJsaW1pdDowO3BhaW50LW9yZGVyOm1hcmtlcnMgc3Ryb2tlIGZpbGwiCiAgICAgICBpZD0icmVjdDIiCiAgICAgICB3aWR0aD0iNC4xMTg1NTg0IgogICAgICAgaGVpZ2h0PSIxOC4zNTYzMzMiCiAgICAgICB4PSIxODAuNDYwNDUiCiAgICAgICB5PSI0Ny4xODQyODQiCiAgICAgICB0cmFuc2Zvcm09Im1hdHJpeCgwLjcwNzcyMTA1LDAuNzA2NDkxOTcsLTAuNzA4MTgxMzMsMC43MDYwMzA2LDAsMCkiIC8+CiAgICA8cmVjdAogICAgICAgc3R5bGU9ImZpbGw6I2ZmZmZmZjtmaWxsLW9wYWNpdHk6MDtzdHJva2U6I2ZmZmZmZjtzdHJva2Utd2lkdGg6MC4wMTg3MzQ7c3Ryb2tlLWxpbmVjYXA6c3F1YXJlO3N0cm9rZS1taXRlcmxpbWl0OjA7cGFpbnQtb3JkZXI6bWFya2VycyBzdHJva2UgZmlsbCIKICAgICAgIGlkPSJyZWN0MyIKICAgICAgIHdpZHRoPSIyOS45ODEyNjYiCiAgICAgICBoZWlnaHQ9IjI5Ljk4MTI2NiIKICAgICAgIHg9Ijc0LjAwOTM2OSIKICAgICAgIHk9IjE1NC4wMDkzNyIgLz4KICA8L2c+Cjwvc3ZnPgo=";
+  function addInventoryMenuExpansion() {
+    const petalContainerSize = 65;
+    const petalContainerTotalSpace = petalContainerSize + 10;
+    const menuLeftPadding = 35;
+    const menuRightPadding = 50;
+    const menuTopPadding = 100;
+    const screenLeftPadding = 130;
+    const screenRightPadding = 10;
+    const screenTopPadding = 110;
+    const screenBottomPadding = 20;
+    const buttonSize = 30;
+    const buttonPadding = 7.5 + 3;
+    const originalHeight = globalInventory.h;
+    globalInventory.expanded = false;
+    const nicknameTextbox = document.getElementsByClassName("nickname")[0];
+    const nicknameUI = nicknameTextbox.parentElement;
+    globalInventory.calculatePetalPositions = function() {
+      let petalIndex = 0;
+      for (let group of Object.values(this.petalContainers).reverse()) {
+        for (let pc of group) {
+          if (this.filteredOutBySearch(pc)) {
+            continue;
+          }
+          const row = Math.floor(petalIndex / globalInventory.petalsPerRow);
+          const column = petalIndex % globalInventory.petalsPerRow;
+          Object.defineProperties(pc, {
+            x: {
+              get: () => petalContainerSize / 2 + menuLeftPadding + column * petalContainerTotalSpace,
+              set: () => {
+              },
+              configurable: true
+            },
+            y: {
+              get: () => petalContainerSize / 2 + menuTopPadding + row * petalContainerTotalSpace + globalInventory.render.scroll,
+              set: () => {
+              },
+              configurable: true
+            },
+            relativeY: {
+              get: function() {
+                return this.y - menuTopPadding;
+              },
+              set: () => {
+              },
+              configurable: true
+            }
+          });
+          petalIndex++;
+        }
+      }
+    };
+    globalInventory.recalculateDimensions = function() {
+      if (this.expanded) {
+        this.h = canvas.h - screenTopPadding - screenBottomPadding;
+        const maxInventorySpaceWidth = canvas.w - screenLeftPadding - screenRightPadding - menuLeftPadding - menuRightPadding;
+        this.petalsPerRow = Math.floor(maxInventorySpaceWidth / petalContainerTotalSpace);
+      } else {
+        this.petalsPerRow = 5;
+        this.h = originalHeight;
+      }
+      this.w = petalContainerTotalSpace * this.petalsPerRow + menuLeftPadding + menuRightPadding;
+    };
+    globalInventory.toggleExpansion = function() {
+      if (!settings.get("inventoryExpandButton")) {
+        this.expanded = false;
+        this.recalculateDimensions();
+        nicknameUI?.classList?.remove("hidden");
+      }
+      this.expanded = !this.expanded;
+      this.recalculateDimensions();
+      if (!isNil(nicknameUI)) {
+        if (this.expanded) {
+          nicknameUI.classList.add("hidden");
+        } else {
+          nicknameUI.classList.remove("hidden");
+        }
+      }
+    };
+    const originalToggleMenu = globalInventory.toggleMenu;
+    globalInventory.toggleMenu = function() {
+      originalToggleMenu.apply(this);
+      if (this.expanded) {
+        this.toggleExpansion();
+      }
+      this.lastDragStartTime = void 0;
+      this.lastDragEndTime = void 0;
+    };
+    globalInventory.getExpandButtonDimensions = function() {
+      return {
+        x: screenLeftPadding + this.w - 2 * (buttonSize + buttonPadding),
+        y: this.renderY + buttonPadding,
+        w: buttonSize,
+        h: buttonSize
+      };
+    };
+    globalInventory.hoveringOverExpand = function() {
+      return mouseInBox(
+        { x: mouse.canvasX, y: mouse.canvasY },
+        this.getExpandButtonDimensions()
+      );
+    };
+    const originalDraw = globalInventory.draw;
+    globalInventory.draw = function() {
+      if (!settings.get("inventoryExpandButton")) {
+        originalDraw.apply(this);
+        return;
+      }
+      const originalDrawStatsBox = StatsBox.prototype.draw;
+      if (!isNil(this.lastDragStartTime)) {
+        this.lastCloseTime = time - Math.min(0.2 * (time - this.lastDragStartTime), 159.9);
+        StatsBox.prototype.draw = () => {
+        };
+      }
+      if (!isNil(this.lastDragEndTime)) {
+        this.lastOpenTime = time - 0.5 * (time - this.lastDragEndTime);
+      }
+      this.calculatePetalPositions();
+      originalDraw.apply(this);
+      StatsBox.prototype.draw = originalDrawStatsBox;
+      const buttonDims = this.getExpandButtonDimensions();
+      ctx.strokeStyle = CINDER_BORDER_COLOUR;
+      ctx.fillStyle = CINDER_COLOUR;
+      if (this.hoveringOverExpand()) {
+        setCursor("pointer");
+        ctx.fillStyle = LIGHT_CINDER_COLOUR;
+      }
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.roundRect(buttonDims.x, buttonDims.y, buttonDims.w, buttonDims.h, 6);
+      ctx.fill();
+      ctx.stroke();
+      ctx.closePath();
+      ctx.drawImage(
+        expandIcon,
+        buttonDims.x,
+        buttonDims.y,
+        buttonDims.w,
+        buttonDims.h
+      );
+    };
+    globalInventory.shouldHideFromDraggingPetal = function() {
+      return this.expanded && !isNil(draggingPetalContainer);
+    };
+    const originalMouseDown = globalInventory.mouseDown;
+    globalInventory.mouseDown = function({ mouseX, mouseY }, inv) {
+      if (!settings.get("inventoryExpandButton")) {
+        originalMouseDown.apply(this, [{ mouseX, mouseY }, inv]);
+        return;
+      }
+      originalMouseDown.apply(this, [{ mouseX, mouseY }, inv]);
+      if (this.shouldHideFromDraggingPetal()) {
+        this.lastDragEndTime = void 0;
+        this.lastDragStartTime = time;
+        nicknameUI?.classList?.remove("hidden");
+      }
+      if (this.hoveringOverExpand()) {
+        this.toggleExpansion();
+      }
+    };
+    const originalMouseUp = globalInventory.mouseUp;
+    globalInventory.mouseUp = function({ mouseX, mouseY }, inv, skipFastFlag) {
+      if (this.shouldHideFromDraggingPetal()) {
+        this.lastDragStartTime = void 0;
+        this.lastDragEndTime = time;
+        nicknameUI?.classList?.add("hidden");
+      }
+      originalMouseUp.apply(this, [{ mouseX, mouseY }, inv, skipFastFlag]);
+    };
+    window.addEventListener("resize", function() {
+      if (globalInventory.expanded) {
+        globalInventory.recalculateDimensions();
+      }
+    });
+    globalInventory.recalculateDimensions();
   }
   function fixDraggingPetalsOutOfBounds() {
     const originalSimulateDragging = simulatedraggingPetalContainer;
@@ -2098,7 +2329,7 @@ Please enter a Rarity.`
     styleSheet.textContent = styles;
     document.head.appendChild(styleSheet);
   }
-  function preventClickingBehindMenu() {
+  function preventClickingBehindMenus() {
     const originalMouseDown = menuInventory.mouseDown;
     menuInventory.mouseDown = function({ mouseX, mouseY }, inv) {
       if (!mouseOnMenu()) {
@@ -2148,6 +2379,12 @@ Please enter a Rarity.`
     squadUI.startSliderDrag = function(x) {
       if (!mouseOnMenu()) {
         originalStartSliderDrag.apply(this, [x]);
+      }
+    };
+    const originalBiomeMouseDown = biomeManager.mouseDown;
+    biomeManager.mouseDown = function({ mouseX, mouseY }) {
+      if (!mouseOnMenu()) {
+        originalBiomeMouseDown.apply(this, [{ mouseX, mouseY }]);
       }
     };
   }
@@ -2210,8 +2447,10 @@ Please enter a Rarity.`
   enableInvertAttackAndDefend();
   prioritizeRenderingDragPetal();
   prioritizeRenderingStatsBoxes();
-  preventClickingBehindMenu();
+  preventClickingBehindMenus();
   fixDraggingPetalsOutOfBounds();
+  addInventoryMenuExpansion();
+  autoReducePetalQuality();
   addScreenshotMode();
   addScriptVersionToDebugInfo();
   refreezeObjects();

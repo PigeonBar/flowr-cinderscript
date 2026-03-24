@@ -5,7 +5,7 @@ import { mouseOnMenu } from "../utils";
  * they are behind a menu, since the user is most likely trying to click on the
  * menu instead of the loadout petal.
  */
-export function preventClickingBehindMenu() {
+export function preventClickingBehindMenus() {
   // Prevent clicking on petals behind menus
   const originalMouseDown = menuInventory.mouseDown;
   menuInventory.mouseDown = function(
@@ -84,6 +84,14 @@ export function preventClickingBehindMenu() {
   squadUI.startSliderDrag = function(x: number) {
     if (!mouseOnMenu()) {
       originalStartSliderDrag.apply(this, [x]);
+    }
+  }
+
+  // Prevent clicking on the "swap biome" arrows
+  const originalBiomeMouseDown = biomeManager.mouseDown;
+  biomeManager.mouseDown = function({ mouseX, mouseY }: CanvasMouseData2) {
+    if (!mouseOnMenu()) {
+      originalBiomeMouseDown.apply(this, [{ mouseX, mouseY }]);
     }
   }
 }

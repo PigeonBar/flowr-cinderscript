@@ -14,9 +14,31 @@ import type { BooleanOption, SettingsOption, SettingsSectionHeading } from "./se
  */
 declare global {
   interface Window {
+    /**
+     * Whether or not the client is currently connected to Flowr's servers.
+     */
     connected?: boolean;
+
+    /**
+     * The id of the flower that the player is currently playing as.
+     */
     selfId?: number;
+
+    /**
+     * The client's current state ("menu", "game", "disconnected", etc.).
+     */
     state?: string;
+
+    /**
+     * The base game's raw setting for whether or not petals should be drawn in
+     * high quality.
+     */
+    _hqp: boolean;
+
+    /**
+     * Whether or not petals should be drawn in high quality.
+     */
+    hqp: boolean;
   }
 
   type PetalType = string; // TODO: List of actually existing petal types?
@@ -51,6 +73,9 @@ declare global {
     /**
      * The y-position of this menu on the canvas. This value changes when the
      * menu is opened or closed.
+     * 
+     * Note: This value is only used by this script, and will not affect any of
+     * Flowr's base code operations.
      */
     renderY: number;
 
@@ -197,7 +222,75 @@ declare global {
    * currently *not* equipping.
    */
   class GlobalInventory extends BottomMenu {
+    petalContainers: Record<Rarity, PetalContainer[]>;
+    render: {
+      scroll: number;
+    };
+
+    /**
+     * Whether or not the inventory menu is currently expanded to fullscreen.
+     */
+    expanded: boolean;
+
+    /**
+     * The number of petals to place in each row of this menu. This number
+     * changes when the user expands this menu.
+     */
+    petalsPerRow: number;
+
+    /**
+     * The timestamp for the user starting to drag a petal from this inventory,
+     * or `undefined` if the user is not currently dragging a petal.
+     */
+    lastDragStartTime?: number;
+
+    /**
+     * The timestamp for the user releasing a petal that they were dragging, or
+     * `undefined` if the user has not recently dragged a petal.
+     */
+    lastDragEndTime?: number;
+
     initInventory(data: any);
+    draw();
+    filteredOutBySearch(petalContainer: PetalContainer);
+    mouseDown({ mouseX, mouseY }: CanvasMouseData2, inv: Inventory);
+    mouseUp(
+      { mouseX, mouseY }: CanvasMouseData2,
+      inv: Inventory,
+      skipFastFlag?: boolean,
+    );
+
+    toggleExpansion(): void;
+
+    /**
+     * Recalculates this menu's dimensions based on whether the menu is
+     * currently expanded.
+     */
+    recalculateDimensions(): void;
+
+    /**
+     * Calculates the position that each petal should be placed in this
+     * inventory menu.
+     */
+    calculatePetalPositions(): void;
+
+    /**
+     * Determines whether or not this menu should be hidden due to the player
+     * dragging a petal while this menu is expanded to fullscreen.
+     */
+    shouldHideFromDraggingPetal(): boolean;
+
+    /**
+     * Determines whether or not the user's mouse is hovering over the "Expand"
+     * button.
+     */
+    hoveringOverExpand(): boolean;
+
+    /**
+     * Calculates the position of the "Expand" button relative to the main
+     * canvas, based on whether the menu is currently expanded to fullscreen.
+     */
+    getExpandButtonDimensions(): {x: number, y: number, w: number, h: number};
   }
 
   const globalInventory: GlobalInventory;
@@ -279,6 +372,11 @@ declare global {
       y: number;
       w: number;
     }
+    
+    /**
+     * The y-position of this petal relative to the inventory menu.
+     */
+    relativeY?: number;
 
     /**
      * Whether or not this petal is being dragged.
@@ -307,6 +405,8 @@ declare global {
     draw();
   }
 
+  const draggingPetalContainer: PetalContainer | null;
+
   /**
    * Handles the user dragging a petal to the given mouse coordinates.
    */
@@ -332,6 +432,12 @@ declare global {
   }
 
   let room: Room;
+
+  class BiomeManager {
+    mouseDown({ mouseX, mouseY }: CanvasMouseData2);
+  }
+
+  const biomeManager: BiomeManager;
 
   type MouseData = {
     x: number;
@@ -448,6 +554,9 @@ declare global {
     /**
      * The y-position of this menu on the canvas. This value changes when the
      * menu is opened or closed.
+     * 
+     * Note: This value is only used by this script, and will not affect any of
+     * Flowr's base code operations.
      */
     renderY: number;
 

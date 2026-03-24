@@ -1,6 +1,9 @@
 import { unsafeWindow } from "$";
 
 const cinderChangelogList: ChangelogEntry[] = [
+  {text: `- The inventory menu can now be expanded to fullscreen! (PR #22)
+- High Quality Renders are now turned off when too many petals are on-screen (default: 100) (PR #22)`,
+  date: "Version 1.1.0 (Fullscreen Inventory Update)"},
   {text: `- Dragged petals now get displayed above the inventory menu and other UI (PR #21)
 - Dragged petals no longer randomly get sent to the shadow realm (PR #21)
 - The debug info now also shows this script's version number (PR #21)`,

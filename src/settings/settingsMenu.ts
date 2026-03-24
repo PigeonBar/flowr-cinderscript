@@ -55,6 +55,20 @@ export class CinderSettingsMenu extends SettingsMenu {
       "petalCraftPreview": new BooleanOption(
         "Petal Craft Preview", "petalCraftPreview",
       ),
+      "inventoryExpandButton": new BooleanOption(
+        "Inventory Expansion Button", "inventoryExpandButton",
+      ),
+      "petalRenderQualityThreshold": new NumberOption(
+        "Petal Rendering Quality Threshold",
+        "petalRenderQualityThreshold",
+        -1,
+        1000,
+        0,
+        "This setting controls how many petals can be on-screen at the same " +
+        "time before the base game's High Quality Renders get disabled to " +
+        "reduce lag. $n $n Set to -1 to keep High Quality Renders enabled " +
+        "at all times."
+      ),
       "missileDrawPriority": new BooleanOption(
         "Missile Rendering Priority",
         "missileDrawPriority",
@@ -115,6 +129,8 @@ export class CinderSettingsMenu extends SettingsMenu {
       new SettingsSectionHeading("General Display"),
       settingsMap.settingsTooltips,
       settingsMap.petalCraftPreview,
+      settingsMap.inventoryExpandButton,
+      settingsMap.petalRenderQualityThreshold,
       settingsMap.missileDrawPriority,
       new SettingsSectionHeading("Zoom Settings"),
       settingsMap.baseReciprocalOfFOV,
