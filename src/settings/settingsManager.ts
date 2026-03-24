@@ -8,13 +8,15 @@ export type BooleanSettingsKey =
   "invertAttack" |
   "invertDefend" |
   "settingsTooltips" |
-  "craftingSearchBar";
+  "craftingSearchBar" |
+  "inventoryExpandButton";
 
 export type NumberSettingsKey =
   "baseReciprocalOfFOV" |
   "playerHpBarScale" |
   "specialDropsScale" |
-  "specialDropsQuantity";
+  "specialDropsQuantity" |
+  "petalRenderQualityThreshold";
 
 export type RaritySettingsKey =
   "specialDropsRarity";
@@ -40,10 +42,12 @@ const defaultSettings = Object.freeze({
   invertDefend: false,
   settingsTooltips: true,
   craftingSearchBar: true,
+  inventoryExpandButton: true,
   baseReciprocalOfFOV: 3,
   playerHpBarScale: 2.5,
   specialDropsScale: 2.5,
   specialDropsQuantity: 1,
+  petalRenderQualityThreshold: 100,
   specialDropsRarity: Rarity.TRANSCENDENT,
   keybindStatsBox: "KeyG",
   keybindInvertAttack: "Comma",

@@ -1,9 +1,11 @@
 import { addScreenshotMode } from "./dev/addScreenshotMode";
 import { addScriptVersionToDebugInfo } from "./dev/displayScriptVersion";
+import { autoReducePetalQuality } from "./features/autoReducePetalQuality";
 import { addCraftingSearchBar } from "./features/craftingSearchBar";
 import { displayMissilesAboveEnemies } from "./features/displayMissilesAboveEnemies";
 import { prioritizeRenderingDragPetal } from "./features/draggingPetalRenderingPriority";
 import { enlargeZoomedOutItems } from "./features/enlargeZoomedOutItems";
+import { addInventoryMenuExpansion } from "./features/expandInventoryMenu";
 import { fixDraggingPetalsOutOfBounds } from "./features/fixDraggingOutOfBounds";
 import { fixNegativeRadiusFreeze } from "./features/fixNegativeRadiusFreeze";
 import { enableInvertAttackAndDefend } from "./features/invertAttackDefend";
@@ -17,7 +19,7 @@ import { handleMenuTranslations } from "./inits/handleMenuTranslations";
 import { initTheoryCraft } from "./inits/initTheoryCraft";
 import { initKeybindHandling } from "./inits/keybindHandling";
 import { addNewMenuButtons } from "./inits/newMenuButtons";
-import { preventClickingBehindMenu } from "./inits/preventClickingBehindMenu";
+import { preventClickingBehindMenus } from "./inits/preventClickingBehindMenus";
 import { preventMenuOverlap } from "./inits/preventMenuOverlap";
 import { refreezeObjects, unfreezeObjects } from "./inits/unfreezeObjects";
 import { allowWsDataEditing } from "./inits/wsDataEditing";
@@ -44,8 +46,10 @@ addQuickStatsBoxHotkey();
 enableInvertAttackAndDefend();
 prioritizeRenderingDragPetal();
 prioritizeRenderingStatsBoxes();
-preventClickingBehindMenu();
+preventClickingBehindMenus();
 fixDraggingPetalsOutOfBounds();
+addInventoryMenuExpansion();
+autoReducePetalQuality();
 
 // #region Dev tools
 addScreenshotMode();
