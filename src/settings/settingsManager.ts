@@ -16,7 +16,8 @@ export type NumberSettingsKey =
   "playerHpBarScale" |
   "specialDropsScale" |
   "specialDropsQuantity" |
-  "petalRenderQualityThreshold";
+  "petalRenderQualityThreshold" |
+  "craftAnimationLength";
 
 export type RaritySettingsKey =
   "specialDropsRarity";
@@ -48,6 +49,7 @@ const defaultSettings = Object.freeze({
   specialDropsScale: 2.5,
   specialDropsQuantity: 1,
   petalRenderQualityThreshold: 100,
+  craftAnimationLength: 0,
   specialDropsRarity: Rarity.TRANSCENDENT,
   keybindStatsBox: "KeyG",
   keybindInvertAttack: "Comma",

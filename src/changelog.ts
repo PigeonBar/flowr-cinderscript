@@ -1,6 +1,8 @@
 import { unsafeWindow } from "$";
 
 const cinderChangelogList: ChangelogEntry[] = [
+  {text: `- Crafting animations are now shorter (PR #23)`,
+  date: "Version 1.1.1"},
   {text: `- The inventory menu can now be expanded to fullscreen! (PR #22)
 - High Quality Renders are now turned off when too many petals are on-screen (default: 100) (PR #22)`,
   date: "Version 1.1.0 (Fullscreen Inventory Update)"},

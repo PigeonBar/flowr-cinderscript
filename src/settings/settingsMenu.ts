@@ -43,6 +43,16 @@ export class CinderSettingsMenu extends SettingsMenu {
       "craftingSearchBar": new BooleanOption(
         "Crafting Search Bar", "craftingSearchBar",
       ),
+      "craftAnimationLength": new NumberOption(
+        "Crafting Animation Length (seconds)",
+        "craftAnimationLength",
+        0,
+        5,
+        2,
+        `The base game's default is $c${SETTINGS_GREEN} 3 $cwhite seconds. ` +
+        "The crafting animation may run on for longer while the server is " +
+        "processing the craft request.",
+      ),
       "autoCopyCodes": new BooleanOption(
         "Auto Copy Squad Codes",
         "autoCopyCodes",
@@ -125,6 +135,7 @@ export class CinderSettingsMenu extends SettingsMenu {
       settingsMap.invertAttack,
       settingsMap.invertDefend,
       settingsMap.craftingSearchBar,
+      settingsMap.craftAnimationLength,
       settingsMap.autoCopyCodes,
       new SettingsSectionHeading("General Display"),
       settingsMap.settingsTooltips,
