@@ -109,7 +109,9 @@ export function addInventoryMenuExpansion() {
             configurable: true,
           },
           relativeY: {
-            get: function() { return this.y - menuTopPadding },
+            get: function(this: PetalContainer) {
+              return this.y - menuTopPadding;
+            },
             set: () => {},
             configurable: true,
           },

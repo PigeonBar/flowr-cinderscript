@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Flowr - Cinderscript
 // @namespace    npm/vite-plugin-monkey
-// @version      1.1.0
+// @version      1.1.1
 // @author       PigeonBar (original creator)
 // @description  A free, publicly available collection of QoL features for flowr.fun players.
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=flowr.fun
@@ -86,6 +86,10 @@
   const KEYBIND_DELETED = "<None>";
   var _unsafeWindow = /* @__PURE__ */ (() => typeof unsafeWindow != "undefined" ? unsafeWindow : void 0)();
   const cinderChangelogList = [
+    {
+      text: `- Crafting animations are now shorter (PR #23)`,
+      date: "Version 1.1.1"
+    },
     {
       text: `- The inventory menu can now be expanded to fullscreen! (PR #22)
 - High Quality Renders are now turned off when too many petals are on-screen (default: 100) (PR #22)`,
@@ -227,6 +231,7 @@
     specialDropsScale: 2.5,
     specialDropsQuantity: 1,
     petalRenderQualityThreshold: 100,
+    craftAnimationLength: 0,
     specialDropsRarity: Rarity.TRANSCENDENT,
     keybindStatsBox: "KeyG",
     keybindInvertAttack: "Comma",
@@ -851,6 +856,14 @@ Please enter a Rarity.`
           "Crafting Search Bar",
           "craftingSearchBar"
         ),
+        "craftAnimationLength": new NumberOption(
+          "Crafting Animation Length (seconds)",
+          "craftAnimationLength",
+          0,
+          5,
+          2,
+          `The base game's default is $c${SETTINGS_GREEN} 3 $cwhite seconds. The crafting animation may run on for longer while the server is processing the craft request.`
+        ),
         "autoCopyCodes": new BooleanOption(
           "Auto Copy Squad Codes",
           "autoCopyCodes",
@@ -935,6 +948,7 @@ Please enter a Rarity.`
         settingsMap.invertAttack,
         settingsMap.invertDefend,
         settingsMap.craftingSearchBar,
+        settingsMap.craftAnimationLength,
         settingsMap.autoCopyCodes,
         new SettingsSectionHeading("General Display"),
         settingsMap.settingsTooltips,
@@ -1357,7 +1371,7 @@ Please enter a Rarity.`
       }
     };
   }
-  const version = "1.1.0";
+  const version = "1.1.1";
   function addScriptVersionToDebugInfo() {
     const originalRenderDebug = renderDebug;
     renderDebug = () => {
@@ -1837,6 +1851,30 @@ Please enter a Rarity.`
       }
     });
     globalInventory.recalculateDimensions();
+  }
+  function allowFastCrafting() {
+    craftingMenu._finishedCraft = false;
+    craftingMenu.craftAnimationCountdown = 0;
+    Object.defineProperty(craftingMenu, "finishedCraft", {
+      get: function() {
+        return this._finishedCraft && this.craftAnimationCountdown < 0;
+      },
+      set: function(v) {
+        this._finishedCraft = v;
+      }
+    });
+    const originalStartAnimation = craftingMenu.startCraftingAnimation;
+    craftingMenu.startCraftingAnimation = function() {
+      originalStartAnimation.apply(this);
+      this.craftAnimationCountdown = 1e3 * settings.get("craftAnimationLength");
+      this.finishedCraft = false;
+      this.craftingAnimationTimer = Math.PI * 36288e3;
+    };
+    const originalRunAnimation = craftingMenu.runCraftingAnimation;
+    craftingMenu.runCraftingAnimation = function() {
+      this.craftAnimationCountdown -= dt;
+      originalRunAnimation.apply(this);
+    };
   }
   function fixDraggingPetalsOutOfBounds() {
     const originalSimulateDragging = simulatedraggingPetalContainer;
@@ -2451,6 +2489,7 @@ Please enter a Rarity.`
   fixDraggingPetalsOutOfBounds();
   addInventoryMenuExpansion();
   autoReducePetalQuality();
+  allowFastCrafting();
   addScreenshotMode();
   addScriptVersionToDebugInfo();
   refreezeObjects();

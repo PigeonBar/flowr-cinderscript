@@ -91,6 +91,27 @@ declare global {
     maxRarity: Rarity;
 
     /**
+     * Whether or not the server has finished processing the craft request.
+     */
+    _finishedCraft: boolean;
+
+    /**
+     * Whether or not the current crafting attempt has finished, including its
+     * animation.
+     */
+    finishedCraft: boolean;
+
+    /**
+     * The base game's internal timer for the crafting animation.
+     */
+    craftingAnimationTimer: number;
+
+    /**
+     * A countdown used by this script for the crafting animation.
+     */
+    craftAnimationCountdown: number;
+
+    /**
      * A list of owned petals displayed below the crafting area, after applying
      * filtering from the search bar.
      */
@@ -120,7 +141,7 @@ declare global {
       y: number;
       w: number;
       h: number;
-    }
+    };
     
     previewPetalSlot: {
       x: number;
@@ -161,6 +182,8 @@ declare global {
     getMainFill();
 
     getMainStroke();
+
+    startCraftingAnimation();
 
     runCraftingAnimation();
 

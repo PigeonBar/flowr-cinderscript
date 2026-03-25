@@ -6,6 +6,7 @@ import { displayMissilesAboveEnemies } from "./features/displayMissilesAboveEnem
 import { prioritizeRenderingDragPetal } from "./features/draggingPetalRenderingPriority";
 import { enlargeZoomedOutItems } from "./features/enlargeZoomedOutItems";
 import { addInventoryMenuExpansion } from "./features/expandInventoryMenu";
+import { allowFastCrafting } from "./features/fastCrafting";
 import { fixDraggingPetalsOutOfBounds } from "./features/fixDraggingOutOfBounds";
 import { fixNegativeRadiusFreeze } from "./features/fixNegativeRadiusFreeze";
 import { enableInvertAttackAndDefend } from "./features/invertAttackDefend";
@@ -50,6 +51,7 @@ preventClickingBehindMenus();
 fixDraggingPetalsOutOfBounds();
 addInventoryMenuExpansion();
 autoReducePetalQuality();
+allowFastCrafting();
 
 // #region Dev tools
 addScreenshotMode();

@@ -22,10 +22,10 @@ export function autoReducePetalQuality() {
   // Enforce disabling high quality renders by using a getter function
   unsafeWindow._hqp = unsafeWindow.hqp;
   Object.defineProperty(unsafeWindow, "hqp", {
-    get: function() {
+    get: function(this: Window) {
       return this._hqp && !disableHqp;
     },
-    set: function(value: boolean) {
+    set: function(this: Window, value: boolean) {
       this._hqp = value;
     }
   });
