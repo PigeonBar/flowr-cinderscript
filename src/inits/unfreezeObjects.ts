@@ -3,6 +3,7 @@
  */
 export function unfreezeObjects(): void {
   processGameMessageMap = {...processGameMessageMap};
+  Colors.rarities = structuredClone(Colors.rarities);
 }
 
 /**

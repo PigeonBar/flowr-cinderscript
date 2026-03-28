@@ -1,6 +1,9 @@
 import { unsafeWindow } from "$";
 
 const cinderChangelogList: ChangelogEntry[] = [
+  {text: `- High Quality Renders have been optimized significantly for petals (PR #24)
+- Added settings for more fine-grained control over petal rendering quality (PR #24)`,
+  date: "Version 1.2.0 (Petal Renders Optimization)"},
   {text: `- Crafting animations are now shorter (PR #23)`,
   date: "Version 1.1.1"},
   {text: `- The inventory menu can now be expanded to fullscreen! (PR #22)

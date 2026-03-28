@@ -23,7 +23,8 @@ export function autoReducePetalQuality() {
   unsafeWindow._hqp = unsafeWindow.hqp;
   Object.defineProperty(unsafeWindow, "hqp", {
     get: function(this: Window) {
-      return this._hqp && !disableHqp;
+      return this._hqp
+        && (!disableHqp || settings.get("disableAllOptimizations"));
     },
     set: function(this: Window, value: boolean) {
       this._hqp = value;
@@ -33,6 +34,12 @@ export function autoReducePetalQuality() {
   // Count number of petals being drawn
   const originalDrawPetal = PetalContainer.prototype.draw;
   PetalContainer.prototype.draw = function(inGame?: boolean, number?: number) {
+    // If optimizations are disabled, just draw the petal as usual
+    if (settings.get("disableAllOptimizations")) {
+      originalDrawPetal.apply(this, [inGame, number]);
+      return;
+    }
+
     if (this.petals[0].constructor === Petal) {
       petalCounter++;
     }
@@ -45,6 +52,12 @@ export function autoReducePetalQuality() {
 
   const originalDraw = draw;
   draw = function() {
+    // If optimizations are disabled, just render the game as usual
+    if (settings.get("disableAllOptimizations")) {
+      originalDraw();
+      return;
+    }
+
     // Reset the counter for the next frame that will be drawn
     petalCounter = 0;
 

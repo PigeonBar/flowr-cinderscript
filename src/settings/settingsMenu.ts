@@ -38,12 +38,12 @@ export class CinderSettingsMenu extends SettingsMenu {
     this.draggingScrollbarOffset = undefined;
 
     initOptions({
-      "invertAttack": new BooleanOption("Invert Attack", "invertAttack"),
-      "invertDefend": new BooleanOption("Invert Defend", "invertDefend"),
-      "craftingSearchBar": new BooleanOption(
+      invertAttack: new BooleanOption("Invert Attack", "invertAttack"),
+      invertDefend: new BooleanOption("Invert Defend", "invertDefend"),
+      craftingSearchBar: new BooleanOption(
         "Crafting Search Bar", "craftingSearchBar",
       ),
-      "craftAnimationLength": new NumberOption(
+      craftAnimationLength: new NumberOption(
         "Crafting Animation Length (seconds)",
         "craftAnimationLength",
         0,
@@ -53,45 +53,34 @@ export class CinderSettingsMenu extends SettingsMenu {
         "The crafting animation may run on for longer while the server is " +
         "processing the craft request.",
       ),
-      "autoCopyCodes": new BooleanOption(
+      autoCopyCodes: new BooleanOption(
         "Auto Copy Squad Codes",
         "autoCopyCodes",
         "If this is turned on and you generate a random squad code, it " +
         "automatically copies the squad code to your clipboard.",
       ),
-      "settingsTooltips": new BooleanOption(
+      settingsTooltips: new BooleanOption(
         "Settings Tooltips", "settingsTooltips",
       ),
-      "petalCraftPreview": new BooleanOption(
+      petalCraftPreview: new BooleanOption(
         "Petal Craft Preview", "petalCraftPreview",
       ),
-      "inventoryExpandButton": new BooleanOption(
+      inventoryExpandButton: new BooleanOption(
         "Inventory Expansion Button", "inventoryExpandButton",
       ),
-      "petalRenderQualityThreshold": new NumberOption(
-        "Petal Rendering Quality Threshold",
-        "petalRenderQualityThreshold",
-        -1,
-        1000,
-        0,
-        "This setting controls how many petals can be on-screen at the same " +
-        "time before the base game's High Quality Renders get disabled to " +
-        "reduce lag. $n $n Set to -1 to keep High Quality Renders enabled " +
-        "at all times."
-      ),
-      "missileDrawPriority": new BooleanOption(
+      missileDrawPriority: new BooleanOption(
         "Missile Rendering Priority",
         "missileDrawPriority",
         "If turned on, all enemy missiles will be rendered above all actual " +
         "enemies.",
       ),
-      "baseReciprocalOfFOV": new NumberOption(
+      baseReciprocalOfFOV: new NumberOption(
         "Base Zoom Out", "baseReciprocalOfFOV", 0.33, 5, 2,
       ),
-      "playerHpBarScale": new NumberOption(
+      playerHpBarScale: new NumberOption(
         "Player HP Bar Scale", "playerHpBarScale", 0.5, 5, 2,
       ),
-      "specialDropsScale": new NumberOption(
+      specialDropsScale: new NumberOption(
         "Special Drops Scale",
         "specialDropsScale",
         1,
@@ -106,19 +95,54 @@ export class CinderSettingsMenu extends SettingsMenu {
         `${settings.get("specialDropsQuantity") === 1 ? "petal" : "petals"}, ` +
         `as configured below.`,
       ),
-      "specialDropsRarity": new RarityOption(
+      specialDropsRarity: new RarityOption(
         "Special Drops Threshold Rarity", "specialDropsRarity",
       ),
-      "specialDropsQuantity": new NumberOption(
+      specialDropsQuantity: new NumberOption(
         "Special Drops Threshold Amount", "specialDropsQuantity", 0.1, 999, 1,
       ),
-      "keybindInvertAttack": new KeybindOption(
+      disableAllOptimizations: new BooleanOption(
+        "Disable All Optimizations",
+        "disableAllOptimizations",
+        "Turning this setting ON will disable ALL of this script's " +
+        "optimizations, including the ones configured below. It is strongly " +
+        "recommended to leave this setting OFF, unless it causes unexpected " +
+        "rendering issues.",
+      ),
+      petalStarCaching: new BooleanOption(
+        "Petal Star Caching",
+        "petalStarCaching",
+        "This setting affects the stars that travel across fancy petal " +
+        "backgrounds. Turning this setting OFF will allow stars to twinkle " +
+        "independently of each other, but at a performance cost. ",
+      ),
+      disablePetalStars: new BooleanOption(
+        "Disable Petal Stars", "disablePetalStars",
+      ),
+      disablePetalAnimations: new BooleanOption(
+        "Disable Petal Animations",
+        "disablePetalAnimations",
+        "This setting disables animations for all petals displayed inside " +
+        "petal containers. All fancy petal backgrounds still remain enabled.",
+      ),
+      petalRenderQualityThreshold: new NumberOption(
+        "Petal Rendering Quality Threshold",
+        "petalRenderQualityThreshold",
+        -1,
+        1000,
+        0,
+        "This setting controls how many petals can be on-screen at the same " +
+        "time before the base game's High Quality Renders get disabled to " +
+        "reduce lag. $n $n Set to -1 to keep High Quality Renders enabled " +
+        "at all times."
+      ),
+      keybindInvertAttack: new KeybindOption(
         "Invert Attack", "keybindInvertAttack",
       ),
-      "keybindInvertDefend": new KeybindOption(
+      keybindInvertDefend: new KeybindOption(
         "Invert Defend", "keybindInvertDefend",
       ),
-      "keybindStatsBox": new KeybindOption(
+      keybindStatsBox: new KeybindOption(
         "Quick Stats Box",
         "keybindStatsBox",
         "This hotkey toggles the stats box of the highest-rarity mob " +
@@ -141,7 +165,6 @@ export class CinderSettingsMenu extends SettingsMenu {
       settingsMap.settingsTooltips,
       settingsMap.petalCraftPreview,
       settingsMap.inventoryExpandButton,
-      settingsMap.petalRenderQualityThreshold,
       settingsMap.missileDrawPriority,
       new SettingsSectionHeading("Zoom Settings"),
       settingsMap.baseReciprocalOfFOV,
@@ -149,6 +172,12 @@ export class CinderSettingsMenu extends SettingsMenu {
       settingsMap.specialDropsScale,
       settingsMap.specialDropsRarity,
       settingsMap.specialDropsQuantity,
+      new SettingsSectionHeading("Performance"),
+      settingsMap.disableAllOptimizations,
+      settingsMap.petalStarCaching,
+      settingsMap.disablePetalAnimations,
+      settingsMap.disablePetalStars,
+      settingsMap.petalRenderQualityThreshold,
       new SettingsSectionHeading(
         "Keybinds",
         "To edit a keybind, click its 'Edit' button and then enter a new " +

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Flowr - Cinderscript
 // @namespace    npm/vite-plugin-monkey
-// @version      1.1.1
+// @version      1.2.0
 // @author       PigeonBar (original creator)
 // @description  A free, publicly available collection of QoL features for flowr.fun players.
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=flowr.fun
@@ -74,6 +74,7 @@
   const TOOLTIP_BLUE = "#7f7fff";
   const TOOLTIP_BORDER_BLUE = "#3f3fff";
   const MAX_PETAL_RARITY = Rarity.CHAOS;
+  const MAX_RARITY = Rarity.UNREAL;
   const SETTINGS_OPTION_HEIGHT = 50;
   const SETTINGS_BUTTON_SIZE = 28;
   const SETTINGS_BUTTON_PADDING = 13;
@@ -84,8 +85,130 @@
   const SETTINGS_SCROLLBAR_MIN_POS = 120;
   const TOOLTIP_TEXT_HEIGHT = 22.5;
   const KEYBIND_DELETED = "<None>";
+  const NON_ANIM_PETALS = Object.freeze([
+    "Basic",
+    "Rubber",
+    "Husk",
+    "Horn",
+    "Blood Horn",
+    "Clover",
+    "Dark Spine",
+    "Coral",
+    "Bubble",
+    "Air",
+    "Starfish",
+    "Claw",
+    "Lightning",
+    "Shiny Lightning",
+    "Blood Jolt",
+    "Jolt",
+    "Fangs",
+    "Jelly",
+    "Pearl",
+    "Sponge",
+    "Shell",
+    "Bloodshot Eye",
+    "Third Eye",
+    "Blood Mandible",
+    "Mandible",
+    "Light",
+    "Blood Light",
+    "Rog456",
+    "Heavy",
+    "Rice",
+    "Iris",
+    "Shiny Iris",
+    "Faster",
+    "Stalk",
+    "Stinger",
+    "Blood Stinger",
+    "Sand",
+    "Spore",
+    "Missile",
+    "Homing Missile",
+    "Fire Missile",
+    "Bud",
+    "Bloom",
+    "Ruby",
+    "Shiny Ruby",
+    "Sapphire",
+    "Amulet of Divergence",
+    "Amulet of Grace",
+    "Amulet of Time",
+    "Emerald",
+    "Rock",
+    "Soil",
+    "Salt",
+    "Powder",
+    "Leaf",
+    "Blade",
+    "Cinderleaf",
+    "Shiny Leaf",
+    "Blood Leaf",
+    "Toxin",
+    "Neurotoxin",
+    "Batrachotoxin",
+    "Yucca",
+    "Shiny Yucca",
+    "Pincer",
+    "Yin Yang",
+    "Rose",
+    "Blood Rose",
+    "Trident",
+    "Dahlia",
+    "Corn",
+    "Blood Corn",
+    "Bone",
+    "Wing",
+    "Shiny Wing",
+    "Coconut",
+    "Fig",
+    "Watermelon",
+    "Blood Watermelon",
+    "Oranges",
+    "Blood Oranges",
+    "Neutron Star",
+    "Honey",
+    "Royal Serum",
+    "Peas",
+    "Grapes",
+    "Blueberries",
+    "Pomegranate",
+    "Cactus",
+    "Shiny Cactus",
+    "Dandelion",
+    "Egg",
+    "Bauble of the Honeycomb",
+    "Hornet Egg",
+    "Shiny Egg",
+    "Jellyfish Egg",
+    "Neuroflare Egg",
+    "Plastic Egg",
+    "Web",
+    "Pollen",
+    "Magnet",
+    "Root",
+    "Stick",
+    "Card",
+    "Cash",
+    "Ant Egg",
+    "Lilypad",
+    "Blossom",
+    "Carapace",
+    "Thorax",
+    "Trinket of the Hivemind",
+    "Trinket of the Sea",
+    "Trinket of the Wild",
+    "Plank",
+    "Carrot"
+  ]);
   var _unsafeWindow = /* @__PURE__ */ (() => typeof unsafeWindow != "undefined" ? unsafeWindow : void 0)();
   const cinderChangelogList = [
+    {
+      text: `- High Quality Renders have been optimized significantly for petals (PR #24)
+- Added settings for more fine-grained control over petal rendering quality (PR #24)`,
+      date: "Version 1.2.0 (Petal Renders Optimization)"
+    },
     {
       text: `- Crafting animations are now shorter (PR #23)`,
       date: "Version 1.1.1"
@@ -226,11 +349,15 @@
     settingsTooltips: true,
     craftingSearchBar: true,
     inventoryExpandButton: true,
+    disableAllOptimizations: false,
+    petalStarCaching: true,
+    disablePetalStars: false,
+    disablePetalAnimations: false,
     baseReciprocalOfFOV: 3,
     playerHpBarScale: 2.5,
     specialDropsScale: 2.5,
     specialDropsQuantity: 1,
-    petalRenderQualityThreshold: 100,
+    petalRenderQualityThreshold: 400,
     craftAnimationLength: 0,
     specialDropsRarity: Rarity.TRANSCENDENT,
     keybindStatsBox: "KeyG",
@@ -850,13 +977,13 @@ Please enter a Rarity.`
       this._scroll = 0;
       this.draggingScrollbarOffset = void 0;
       initOptions({
-        "invertAttack": new BooleanOption("Invert Attack", "invertAttack"),
-        "invertDefend": new BooleanOption("Invert Defend", "invertDefend"),
-        "craftingSearchBar": new BooleanOption(
+        invertAttack: new BooleanOption("Invert Attack", "invertAttack"),
+        invertDefend: new BooleanOption("Invert Defend", "invertDefend"),
+        craftingSearchBar: new BooleanOption(
           "Crafting Search Bar",
           "craftingSearchBar"
         ),
-        "craftAnimationLength": new NumberOption(
+        craftAnimationLength: new NumberOption(
           "Crafting Animation Length (seconds)",
           "craftAnimationLength",
           0,
@@ -864,51 +991,43 @@ Please enter a Rarity.`
           2,
           `The base game's default is $c${SETTINGS_GREEN} 3 $cwhite seconds. The crafting animation may run on for longer while the server is processing the craft request.`
         ),
-        "autoCopyCodes": new BooleanOption(
+        autoCopyCodes: new BooleanOption(
           "Auto Copy Squad Codes",
           "autoCopyCodes",
           "If this is turned on and you generate a random squad code, it automatically copies the squad code to your clipboard."
         ),
-        "settingsTooltips": new BooleanOption(
+        settingsTooltips: new BooleanOption(
           "Settings Tooltips",
           "settingsTooltips"
         ),
-        "petalCraftPreview": new BooleanOption(
+        petalCraftPreview: new BooleanOption(
           "Petal Craft Preview",
           "petalCraftPreview"
         ),
-        "inventoryExpandButton": new BooleanOption(
+        inventoryExpandButton: new BooleanOption(
           "Inventory Expansion Button",
           "inventoryExpandButton"
         ),
-        "petalRenderQualityThreshold": new NumberOption(
-          "Petal Rendering Quality Threshold",
-          "petalRenderQualityThreshold",
-          -1,
-          1e3,
-          0,
-          "This setting controls how many petals can be on-screen at the same time before the base game's High Quality Renders get disabled to reduce lag. $n $n Set to -1 to keep High Quality Renders enabled at all times."
-        ),
-        "missileDrawPriority": new BooleanOption(
+        missileDrawPriority: new BooleanOption(
           "Missile Rendering Priority",
           "missileDrawPriority",
           "If turned on, all enemy missiles will be rendered above all actual enemies."
         ),
-        "baseReciprocalOfFOV": new NumberOption(
+        baseReciprocalOfFOV: new NumberOption(
           "Base Zoom Out",
           "baseReciprocalOfFOV",
           0.33,
           5,
           2
         ),
-        "playerHpBarScale": new NumberOption(
+        playerHpBarScale: new NumberOption(
           "Player HP Bar Scale",
           "playerHpBarScale",
           0.5,
           5,
           2
         ),
-        "specialDropsScale": new NumberOption(
+        specialDropsScale: new NumberOption(
           "Special Drops Scale",
           "specialDropsScale",
           1,
@@ -916,26 +1035,53 @@ Please enter a Rarity.`
           2,
           () => `For this setting, a drop is considered 'Special' if it is worth at least $c${SETTINGS_GREEN} ${settings.get("specialDropsQuantity")} $c${Colors.rarities[settings.get("specialDropsRarity")].color} ${Colors.rarities[settings.get("specialDropsRarity")].name} $cwhite ${settings.get("specialDropsQuantity") === 1 ? "petal" : "petals"}, as configured below.`
         ),
-        "specialDropsRarity": new RarityOption(
+        specialDropsRarity: new RarityOption(
           "Special Drops Threshold Rarity",
           "specialDropsRarity"
         ),
-        "specialDropsQuantity": new NumberOption(
+        specialDropsQuantity: new NumberOption(
           "Special Drops Threshold Amount",
           "specialDropsQuantity",
           0.1,
           999,
           1
         ),
-        "keybindInvertAttack": new KeybindOption(
+        disableAllOptimizations: new BooleanOption(
+          "Disable All Optimizations",
+          "disableAllOptimizations",
+          "Turning this setting ON will disable ALL of this script's optimizations, including the ones configured below. It is strongly recommended to leave this setting OFF, unless it causes unexpected rendering issues."
+        ),
+        petalStarCaching: new BooleanOption(
+          "Petal Star Caching",
+          "petalStarCaching",
+          "This setting affects the stars that travel across fancy petal backgrounds. Turning this setting OFF will allow stars to twinkle independently of each other, but at a performance cost. "
+        ),
+        disablePetalStars: new BooleanOption(
+          "Disable Petal Stars",
+          "disablePetalStars"
+        ),
+        disablePetalAnimations: new BooleanOption(
+          "Disable Petal Animations",
+          "disablePetalAnimations",
+          "This setting disables animations for all petals displayed inside petal containers. All fancy petal backgrounds still remain enabled."
+        ),
+        petalRenderQualityThreshold: new NumberOption(
+          "Petal Rendering Quality Threshold",
+          "petalRenderQualityThreshold",
+          -1,
+          1e3,
+          0,
+          "This setting controls how many petals can be on-screen at the same time before the base game's High Quality Renders get disabled to reduce lag. $n $n Set to -1 to keep High Quality Renders enabled at all times."
+        ),
+        keybindInvertAttack: new KeybindOption(
           "Invert Attack",
           "keybindInvertAttack"
         ),
-        "keybindInvertDefend": new KeybindOption(
+        keybindInvertDefend: new KeybindOption(
           "Invert Defend",
           "keybindInvertDefend"
         ),
-        "keybindStatsBox": new KeybindOption(
+        keybindStatsBox: new KeybindOption(
           "Quick Stats Box",
           "keybindStatsBox",
           "This hotkey toggles the stats box of the highest-rarity mob currently alive in your room."
@@ -954,7 +1100,6 @@ Please enter a Rarity.`
         settingsMap.settingsTooltips,
         settingsMap.petalCraftPreview,
         settingsMap.inventoryExpandButton,
-        settingsMap.petalRenderQualityThreshold,
         settingsMap.missileDrawPriority,
         new SettingsSectionHeading("Zoom Settings"),
         settingsMap.baseReciprocalOfFOV,
@@ -962,6 +1107,12 @@ Please enter a Rarity.`
         settingsMap.specialDropsScale,
         settingsMap.specialDropsRarity,
         settingsMap.specialDropsQuantity,
+        new SettingsSectionHeading("Performance"),
+        settingsMap.disableAllOptimizations,
+        settingsMap.petalStarCaching,
+        settingsMap.disablePetalAnimations,
+        settingsMap.disablePetalStars,
+        settingsMap.petalRenderQualityThreshold,
         new SettingsSectionHeading(
           "Keybinds",
           "To edit a keybind, click its 'Edit' button and then enter a new key to bind it to. You can also delete a keybind by pressing the 'Delete' key on your keyboard. $n $n Caution: If you set multiple keybinds to the same key, all of your keybinds will still remain active!"
@@ -1371,7 +1522,7 @@ Please enter a Rarity.`
       }
     };
   }
-  const version = "1.1.1";
+  const version = "1.2.0";
   function addScriptVersionToDebugInfo() {
     const originalRenderDebug = renderDebug;
     renderDebug = () => {
@@ -1401,7 +1552,7 @@ Please enter a Rarity.`
     _unsafeWindow._hqp = _unsafeWindow.hqp;
     Object.defineProperty(_unsafeWindow, "hqp", {
       get: function() {
-        return this._hqp && !disableHqp;
+        return this._hqp && (!disableHqp || settings.get("disableAllOptimizations"));
       },
       set: function(value) {
         this._hqp = value;
@@ -1409,6 +1560,10 @@ Please enter a Rarity.`
     });
     const originalDrawPetal = PetalContainer.prototype.draw;
     PetalContainer.prototype.draw = function(inGame, number) {
+      if (settings.get("disableAllOptimizations")) {
+        originalDrawPetal.apply(this, [inGame, number]);
+        return;
+      }
       if (this.petals[0].constructor === Petal) {
         petalCounter++;
       }
@@ -1419,6 +1574,10 @@ Please enter a Rarity.`
     };
     const originalDraw = draw;
     draw = function() {
+      if (settings.get("disableAllOptimizations")) {
+        originalDraw();
+        return;
+      }
       petalCounter = 0;
       originalDraw();
       disableHqp = exceededThreshold();
@@ -2022,6 +2181,229 @@ Please enter a Rarity.`
       fov = 1 / settings.get("baseReciprocalOfFOV");
     };
   }
+  function optimizeHighQualityRenders() {
+    const airCachedThisFrame = [];
+    const airCanvases = [];
+    const airCtx = [];
+    const airPetals = [];
+    initializeCachedAir();
+    const starCanvas = new OffscreenCanvas(30, 30);
+    const starCtx = starCanvas.getContext("2d");
+    let simStarX = 0;
+    let simStarY = 0;
+    const originalDraw = draw;
+    draw = function() {
+      if (settings.get("disableAllOptimizations")) {
+        originalDraw();
+        return;
+      }
+      starCtx?.reset();
+      if (settings.get("petalStarCaching") && !isNil(starCtx)) {
+        const originalCtx = ctx;
+        ctx = starCtx;
+        simStarX += 0.1;
+        simStarY += 0.1;
+        ctx.translate(15, 15);
+        drawStar(0, 0);
+        ctx.translate(-15, -15);
+        ctx = originalCtx;
+      }
+      for (let rarity = 0; rarity <= MAX_RARITY; rarity++) {
+        airCachedThisFrame[rarity] = false;
+        airCtx[rarity]?.reset();
+      }
+      originalDraw();
+    };
+    const originalDrawPetal = PetalContainer.prototype.draw;
+    PetalContainer.prototype.draw = function(inGame, number) {
+      if (settings.get("disablePetalStars") && !settings.get("disableAllOptimizations") && !isNil(this.stars)) {
+        for (let star of this.stars) {
+          star.x = Infinity;
+          star.y = Infinity;
+        }
+      }
+      if (settings.get("disableAllOptimizations") || this === airPetals[this.rarity] || !_unsafeWindow.hqp || this.shouldAnimate() || inGame && !isNil(number) && !isNil(petalReloadData[number])) {
+        originalDrawPetal.apply(this, [inGame, number]);
+        return;
+      } else {
+        this.shouldDrawCachedAir = true;
+        const originalGradient = staticGradients[this.rarity];
+        const originalBorder = Colors.rarities[this.rarity].border;
+        const originalFill = ctx.fill;
+        originalDrawPetal.apply(this, [inGame, number]);
+        this.shouldDrawCachedAir = false;
+        staticGradients[this.rarity] = originalGradient;
+        Colors.rarities[this.rarity].border = originalBorder;
+        _unsafeWindow.hqp = true;
+        ctx.fill = originalFill;
+      }
+    };
+    const originalInterpolate = PetalContainer.prototype.updateInterpolate;
+    PetalContainer.prototype.updateInterpolate = function() {
+      originalInterpolate.apply(this);
+      if (settings.get("disableAllOptimizations")) {
+        return;
+      }
+      if (this.shouldDrawCachedAir) {
+        if (this.toOscillate && !toRender(
+          { x: this.render.x, y: this.render.y, radius: this.radius },
+          window.camera
+        ) && !this.toSkipCulling) {
+          return;
+        }
+        ctx.save();
+        ctx.translate(this.render.x, this.render.y);
+        let scale = this.getScale();
+        let rotation = this.getRotation();
+        if (rotation !== 0) {
+          ctx.rotate(rotation);
+        }
+        if (scale !== 1) {
+          ctx.scale(scale, scale);
+        }
+        if (this.toOscillate && !this.isDisplayPetalContainer) {
+          ctx.globalAlpha = 0.3;
+          ctx.fillStyle = "black";
+          ctx.beginPath();
+          ctx.roundRect(-30, -30, 60, 60, 5);
+          ctx.fill();
+          ctx.closePath();
+          ctx.globalAlpha = 1;
+          const originalFill = ctx.fill;
+          ctx.fill = function() {
+            if (ctx.globalAlpha < 0.5 && (ctx.fillStyle === "black" || ctx.fillStyle === "#000000")) {
+              ctx.fill = originalFill;
+              return;
+            }
+            originalFill.apply(this);
+          };
+        }
+        const newCtx = airCtx[this.rarity];
+        if (!airCachedThisFrame[this.rarity] && !isNil(newCtx)) {
+          const oldCtx = ctx;
+          ctx = newCtx;
+          airPetals[this.rarity].stars = [];
+          airPetals[this.rarity].draw();
+          ctx = oldCtx;
+          airCachedThisFrame[this.rarity] = true;
+        }
+        ctx.drawImage(airCanvases[this.rarity], -50, -50, 100, 100);
+        this.drawStars();
+        staticGradients[this.rarity] = "transparent";
+        Colors.rarities[this.rarity].border = "transparent";
+        _unsafeWindow.hqp = false;
+        ctx.restore();
+      }
+    };
+    function drawStar(x, y) {
+      ctx.beginPath();
+      let twinkleTime = Date.now() / 600;
+      if (ctx === starCtx) {
+        twinkleTime += simStarX / 30 + simStarY / 30;
+      } else {
+        twinkleTime += x / 30 + y / 30;
+      }
+      const grad = ctx.createRadialGradient(x, y, 15, x, y, 0);
+      grad.addColorStop(0, "transparent");
+      grad.addColorStop(0.8, `rgba(255,255,255,${(Math.cos(twinkleTime) + 1) * 0.8})`);
+      grad.addColorStop(1, "white");
+      ctx.fillStyle = grad;
+      ctx.globalAlpha = 0.3;
+      ctx.fillRect(-25, -25, 50, 50);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = "#fff";
+      ctx.arc(x, y, 1, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.closePath();
+    }
+    PetalContainer.prototype.drawStars = function() {
+      const totalStars = Colors.rarities[this.rarity].fancy?.stars;
+      if (!isNil(totalStars) && _unsafeWindow.hqp) {
+        if (isNil(this.stars)) {
+          this.stars = [];
+          for (let starnum = 0; starnum < totalStars; starnum++) {
+            this.stars.push(
+              { x: Math.random() * 50 - 25, y: Math.random() * 50 - 25 }
+            );
+          }
+        }
+        ctx.beginPath();
+        ctx.roundRect(-22.75, -22.75, 45.5, 45.5, 0.25);
+        ctx.clip();
+        ctx.closePath();
+        for (let star of this.stars) {
+          star.x += 0.1;
+          star.y += 0.1;
+          if (star.x > 25 || star.y > 25) {
+            star.x = Math.random() * 800 - 20 - 30;
+            star.y = -30;
+          }
+          if (star.x < 25 && star.x > -25 && star.y < 25 && star.y > -25) {
+            if (settings.get("petalStarCaching")) {
+              ctx.drawImage(starCanvas, star.x - 15, star.y - 15, 30, 30);
+            } else {
+              drawStar(star.x, star.y);
+            }
+          }
+        }
+      }
+    };
+    PetalContainer.prototype.getScale = function() {
+      let scale = this.render.w / 50;
+      const renderAnimationTimer = smoothstep(this.spawnAnimation);
+      scale *= renderAnimationTimer;
+      if (this.toOscillate) {
+        scale *= 1 + Math.sin(performance.now() / 1e3 / 0.076) / 52;
+      }
+      return scale;
+    };
+    PetalContainer.prototype.getRotation = function() {
+      let rotation = 0;
+      const renderAnimationTimer = smoothstep(this.spawnAnimation);
+      rotation -= (1 - renderAnimationTimer) * Math.PI * 3;
+      if (this.isDraggingPetalContainer) {
+        this.draggingTimer ??= 0;
+        const nextFrameTimer = this.draggingTimer + 1e3 / 30 * dt / 16.66;
+        rotation += Math.sin(nextFrameTimer / 280) * 0.28;
+      } else if (!isNil(this.undraggingPetalContainerTimer)) {
+        if (isNil(this.interval)) {
+          this.lastDraggingAngle ??= 0;
+          rotation += interpolate(this.lastDraggingAngle, 0, 0.15);
+        }
+      }
+      if (this.toOscillate === true) {
+        this.angleOffset ??= 0;
+        rotation += this.angleOffset;
+      }
+      return rotation;
+    };
+    PetalContainer.prototype.shouldAnimate = function() {
+      return !NON_ANIM_PETALS.includes(this.type) && !settings.get("disablePetalAnimations");
+    };
+    function initializeCachedAir() {
+      for (let rarity = 0; rarity <= MAX_RARITY; rarity++) {
+        const newCanvas = new OffscreenCanvas(120, 120);
+        airCanvases.push(newCanvas);
+        airCtx.push(newCanvas.getContext("2d"));
+        const airPetal = new PetalContainer(
+          [new Petal({ type: "Air", rarity })],
+          {
+            x: 60,
+            y: 60,
+            w: 60,
+            h: 60,
+            toOscillate: false
+          },
+          Math.random(),
+          1
+        );
+        airPetal.nameless = true;
+        airPetal.spawnAnimation = 1;
+        airPetals.push(airPetal);
+        airCachedThisFrame.push(false);
+      }
+    }
+  }
   function addPetalCraftPreview() {
     craftingMenu.previewPetalSlot = {
       x: craftingMenu.w * 0.83,
@@ -2462,6 +2844,7 @@ Please enter a Rarity.`
   }
   function unfreezeObjects() {
     processGameMessageMap = { ...processGameMessageMap };
+    Colors.rarities = structuredClone(Colors.rarities);
   }
   function refreezeObjects() {
     Object.freeze(processGameMessageMap);
@@ -2483,15 +2866,16 @@ Please enter a Rarity.`
   fixNegativeRadiusFreeze();
   addQuickStatsBoxHotkey();
   enableInvertAttackAndDefend();
-  prioritizeRenderingDragPetal();
   prioritizeRenderingStatsBoxes();
   preventClickingBehindMenus();
   fixDraggingPetalsOutOfBounds();
   addInventoryMenuExpansion();
   autoReducePetalQuality();
   allowFastCrafting();
+  optimizeHighQualityRenders();
   addScreenshotMode();
   addScriptVersionToDebugInfo();
+  prioritizeRenderingDragPetal();
   refreezeObjects();
 
 })();
