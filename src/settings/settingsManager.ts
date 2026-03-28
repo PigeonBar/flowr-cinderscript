@@ -9,7 +9,11 @@ export type BooleanSettingsKey =
   "invertDefend" |
   "settingsTooltips" |
   "craftingSearchBar" |
-  "inventoryExpandButton";
+  "inventoryExpandButton" |
+  "disableAllOptimizations" |
+  "petalStarCaching" |
+  "disablePetalStars" |
+  "disablePetalAnimations";
 
 export type NumberSettingsKey =
   "baseReciprocalOfFOV" |
@@ -44,11 +48,15 @@ const defaultSettings = Object.freeze({
   settingsTooltips: true,
   craftingSearchBar: true,
   inventoryExpandButton: true,
+  disableAllOptimizations: false,
+  petalStarCaching: true,
+  disablePetalStars: false,
+  disablePetalAnimations: false,
   baseReciprocalOfFOV: 3,
   playerHpBarScale: 2.5,
   specialDropsScale: 2.5,
   specialDropsQuantity: 1,
-  petalRenderQualityThreshold: 100,
+  petalRenderQualityThreshold: 400,
   craftAnimationLength: 0,
   specialDropsRarity: Rarity.TRANSCENDENT,
   keybindStatsBox: "KeyG",

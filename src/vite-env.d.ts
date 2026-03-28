@@ -39,6 +39,14 @@ declare global {
      * Whether or not petals should be drawn in high quality.
      */
     hqp: boolean;
+
+    /**
+     * Camera data that is used to determine whether objects are currently
+     * off-screen, which can cause them to not be rendered. An x-coordinate of
+     * `"pass"` means that objects will always be rendered, regardless of their
+     * current position.
+     */
+    camera: CameraData;
   }
 
   type PetalType = string; // TODO: List of actually existing petal types?
@@ -57,8 +65,14 @@ declare global {
   };
 
   const Colors: {
-    rarities: {name: string, color: string, border: string}[];
+    rarities: {name: string, color: string, border: string, fancy?: any}[];
   }
+
+  /**
+   * A list of non-animated gradients that are used when displaying fancy
+   * petal gradients while High Quality Renders is turned off.
+   */
+  const staticGradients: Partial<Record<Rarity, CanvasGradient | string>>;
 
   /**
    * The menus at the bottom of the screen (inventory, crafting, gallery)
@@ -388,13 +402,33 @@ declare global {
     y: number;
     w: number;
     h: number;
+    radius: number;
     isHovered: boolean;
     statsBoxAlpha: number;
     render: {
       x: number;
       y: number;
       w: number;
-    }
+    };
+    nameless: boolean;
+    stars?: {x: number, y: number}[];
+    toOscillate: boolean;
+    toSkipCulling: boolean;
+    draggingTimer?: number;
+    undraggingPetalContainerTimer?: number;
+    lastDraggingAngle?: number;
+    angleOffset?: number;
+
+    /**
+     * A number from 0 to 1 indicating the petal's progress through its
+     * spawning animation.
+     */
+    spawnAnimation: number;
+
+    /**
+     * Unclear what this is supposed to be (seems to be currently unused)
+     */
+    interval?: any;
     
     /**
      * The y-position of this petal relative to the inventory menu.
@@ -406,6 +440,18 @@ declare global {
      */
     isDraggingPetalContainer: boolean;
 
+    /**
+     * Whether or not this petal is a crafted petal being displayed in the
+     * crafting menu.
+     */
+    isDisplayPetalContainer: boolean;
+
+    /**
+     * Whether or not to draw the cached Air petal in order to draw this
+     * petal's background gradients.
+     */
+    shouldDrawCachedAir: boolean;
+
     constructor(
       petals: Petal[],
       args: any,
@@ -413,6 +459,12 @@ declare global {
       amount: number,
       attempt?: number,
     )
+
+    /**
+     * Updates this petal's displayed location to make it smoothly approach the
+     * petal's actual location.
+     */
+    updateInterpolate();
 
     draw(inGame?: boolean, number?: number);
 
@@ -422,6 +474,39 @@ declare global {
       x: number = this.render.x,
       y: number = this.render.y
     );
+
+    /**
+     * Determines whether or not this petal should be animated, based on
+     * whether it has an animation, and based on whether animations are
+     * disabled in the settings.
+     */
+    shouldAnimate(): boolean;
+
+    /**
+     * Generates an image of this petal. For petals with animations, this is
+     * called every frame in order to advance the animation.
+     * @param quality The desired quality (affects resolution). Default: 62.5.
+     * @param map Some data for drawing the image.
+     * @param livePath Whether or not to also draw the image. Default: false.
+     */
+    generatePetalImage(quality: number, map: any, livePath?: boolean);
+
+    /**
+     * A helper function to draw this petal's shiny stars.
+     * 
+     * This code is copied from Flowr's base code.
+     */
+    drawStars();
+
+    /**
+     * Determines the scale at which to draw this petal. (1x scale = 50 units)
+     */
+    getScale(): number;
+
+    /**
+     * Determines the rotation at which to draw this petal, in radians.
+     */
+    getRotation(): number;
   }
 
   class StatsBox {
@@ -434,6 +519,12 @@ declare global {
    * Handles the user dragging a petal to the given mouse coordinates.
    */
   let simulatedraggingPetalContainer: (x: number, y: number) => void;
+
+  /**
+   * In-game data for the length of time that each unloaded petal has been
+   * reloading for.
+   */
+  const petalReloadData: Record<number, any>;
 
   // Yeah the Flowr devs actually skissued and forgot to capitalize 1st letter
   class enemyBox {
@@ -496,7 +587,7 @@ declare global {
 
   const inputHandler: InputHandler;
 
-  let ctx: CanvasRenderingContext2D;
+  let ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
   const canvas: HTMLCanvasElement & {
     // New fields added by flowr devs
@@ -511,11 +602,19 @@ declare global {
 
   let fov: number;
 
+  type ObjectRenderData = {x: number, y: number, radius: number};
+
+  type CameraData = {x: number | "pass", y: number, disableCulling?: boolean};
+
+  function toRender(obj1: ObjectRenderData, cam: CameraData);
+
   function easeOutCubic(x: number);
 
   function blendColor(color1: string, color2: string, ratio: number): string;
 
   function interpolate(start: number, end: number, time: number): number;
+  
+  function smoothstep(t: number);
 
   function setCursor(state: string);
 

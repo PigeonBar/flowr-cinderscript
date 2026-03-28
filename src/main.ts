@@ -11,6 +11,7 @@ import { fixDraggingPetalsOutOfBounds } from "./features/fixDraggingOutOfBounds"
 import { fixNegativeRadiusFreeze } from "./features/fixNegativeRadiusFreeze";
 import { enableInvertAttackAndDefend } from "./features/invertAttackDefend";
 import { modifyBaseFOV } from "./features/modifyBaseFov";
+import { optimizeHighQualityRenders } from "./features/optimizeHqp";
 import { addPetalCraftPreview } from "./features/petalCraftPreview";
 import { addQuickStatsBoxHotkey } from "./features/quickStatsBoxHotkey";
 import { addRandomizedSquadCodes } from "./features/randomizedSquadCode";
@@ -45,17 +46,18 @@ enlargeZoomedOutItems();
 fixNegativeRadiusFreeze();
 addQuickStatsBoxHotkey();
 enableInvertAttackAndDefend();
-prioritizeRenderingDragPetal();
 prioritizeRenderingStatsBoxes();
 preventClickingBehindMenus();
 fixDraggingPetalsOutOfBounds();
 addInventoryMenuExpansion();
 autoReducePetalQuality();
 allowFastCrafting();
+optimizeHighQualityRenders();
 
 // #region Dev tools
 addScreenshotMode();
 addScriptVersionToDebugInfo();
 
 // #region Ending
+prioritizeRenderingDragPetal();
 refreezeObjects();
