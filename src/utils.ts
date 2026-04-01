@@ -1,5 +1,5 @@
 import { unsafeWindow } from "$";
-import { CINDER_COLOUR, KEYBIND_DELETED, MAX_PETAL_RARITY } from "./constants/constants";
+import { CINDER_COLOUR, MAX_PETAL_RARITY } from "./constants/constants";
 import { MENU_LIST } from "./constants/menuLists";
 import { Rarity } from "./enums";
 
@@ -60,26 +60,6 @@ export function convertPetalValue(
  */
 export function rarityToIndex(rarity: string): Rarity {
   return Rarity[rarity.toUpperCase() as keyof typeof Rarity];
-}
-
-/**
- * Determines whether or not the user is making an in-game input (i.e., the
- * player is currently in-game and is not typing in the chat).
- */
-export function isInGameInput(
-  e: KeyboardEvent
-): boolean {
-  if (e.repeat) {
-    e.preventDefault();
-  }
-  // If the key's code somehow equals our special token that indicates a
-  // deleted keybind, ignore it.
-  if (e.code === KEYBIND_DELETED) {
-    console.warn(`Keypress code somehow equal to ${KEYBIND_DELETED}!`);
-    console.warn(e);
-    return false;
-  }
-  return unsafeWindow.state === "game" && !inputHandler.chatOpen && !e.repeat;
 }
 
 /**

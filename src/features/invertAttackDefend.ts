@@ -71,7 +71,7 @@ export function enableInvertAttackAndDefend() {
 
   // Add keybind instructions for invert attack/defend inputs in-game
   addKeybindInstruction(
-    {type: "settings", key: "keybindInvertAttack", fn: () => {
+    {type: "settings", settingsKey: "keybindInvertAttack", fn: () => {
       const newInvertAttack = !settings.get("invertAttack");
       settings.set("invertAttack", newInvertAttack);
       chatAnnounce(
@@ -82,7 +82,7 @@ export function enableInvertAttackAndDefend() {
     }}
   );
   addKeybindInstruction(
-    {type: "settings", key: "keybindInvertDefend", fn: () => {
+    {type: "settings", settingsKey: "keybindInvertDefend", fn: () => {
       const newInvertDefend = !settings.get("invertDefend");
       settings.set("invertDefend", newInvertDefend);
       chatAnnounce(

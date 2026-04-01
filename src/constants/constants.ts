@@ -89,6 +89,13 @@ export const SETTINGS_SCROLLBAR_MIN_POS = 120;
 export const TOOLTIP_TEXT_HEIGHT = 22.5;
 
 /**
+ * The ratio of a petal's border width to the side length of the petal. The
+ * border is drawn 0.09 side lengths outwards and 0.09 side lengths inwards
+ * from the petal's sides.
+ */
+export const PETAL_BORDER_RATIO = 0.18;
+
+/**
  * A special key to indicate that a keybind setting was deleted by the user.
  */
 export const KEYBIND_DELETED = "<None>";
