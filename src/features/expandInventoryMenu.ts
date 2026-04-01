@@ -288,7 +288,11 @@ export function addInventoryMenuExpansion() {
       this.lastDragEndTime = time;
       nicknameUI?.classList?.add("hidden");
     }
-    originalMouseUp.apply(this, [{ mouseX, mouseY }, inv, skipFastFlag]);
+    if (isNil(skipFastFlag)) {
+      originalMouseUp.apply(this, [{ mouseX, mouseY }, inv]);
+    } else {
+      originalMouseUp.apply(this, [{ mouseX, mouseY }, inv, skipFastFlag]);
+    }
   }
 
   // When the player resizes the window, also resize the inventory menu.

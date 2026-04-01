@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Flowr - Cinderscript
 // @namespace    npm/vite-plugin-monkey
-// @version      1.3.0
+// @version      1.3.1
 // @author       PigeonBar (original creator)
 // @description  A free, publicly available collection of QoL features for flowr.fun players.
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=flowr.fun
@@ -330,6 +330,10 @@
     }
   }
   const cinderChangelogList = [
+    {
+      text: `- Fixed a bug where the UI breaks if you click on an equipped petal without a petal below (PR #26)`,
+      date: "Version 1.3.1"
+    },
     {
       text: `- You can lock petal slots (default keybind: [L]) (PR #25)
 - Major behind-the-scenes changes for keybind handling, hope it doesn't break anything (PR #25)`,
@@ -1601,7 +1605,7 @@ Please enter a Rarity.`
       fn: toggleScreenshotMode
     });
   }
-  const version = "1.3.0";
+  const version = "1.3.1";
   function addScriptVersionToDebugInfo() {
     const originalRenderDebug = renderDebug;
     renderDebug = () => {
@@ -2279,7 +2283,11 @@ Please enter a Rarity.`
         this.lastDragEndTime = time;
         nicknameUI?.classList?.add("hidden");
       }
-      originalMouseUp.apply(this, [{ mouseX, mouseY }, inv, skipFastFlag]);
+      if (isNil(skipFastFlag)) {
+        originalMouseUp.apply(this, [{ mouseX, mouseY }, inv]);
+      } else {
+        originalMouseUp.apply(this, [{ mouseX, mouseY }, inv, skipFastFlag]);
+      }
     };
     window.addEventListener("resize", function() {
       if (globalInventory.expanded) {
