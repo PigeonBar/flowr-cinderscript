@@ -1,6 +1,8 @@
 import { unsafeWindow } from "$";
 
 const cinderChangelogList: ChangelogEntry[] = [
+  {text: `- Fixed a bug where the UI breaks if you click on an equipped petal without a petal below (PR #26)`,
+  date: "Version 1.3.1"},
   {text: `- You can lock petal slots (default keybind: [L]) (PR #25)
 - Major behind-the-scenes changes for keybind handling, hope it doesn't break anything (PR #25)`,
   date: "Version 1.3.0 (Petal Lock Update)"},
