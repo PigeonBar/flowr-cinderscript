@@ -59,6 +59,12 @@ export class CinderSettingsMenu extends SettingsMenu {
         "If this is turned on and you generate a random squad code, it " +
         "automatically copies the squad code to your clipboard.",
       ),
+      allowLockSlotsOneToFive: new BooleanOption(
+        "Allow Locking Petal Slots 1 to 5",
+        "allowLockSlotsOneToFive",
+        "Tip: It is recommended not to lock petal slots 1 to 5, since the " +
+        "Plastic boss's Mania could force you to swap those slots.",
+      ),
       settingsTooltips: new BooleanOption(
         "Settings Tooltips", "settingsTooltips",
       ),
@@ -67,6 +73,13 @@ export class CinderSettingsMenu extends SettingsMenu {
       ),
       inventoryExpandButton: new BooleanOption(
         "Inventory Expansion Button", "inventoryExpandButton",
+      ),
+      petalLockShakeIntensity: new NumberOption(
+        "Petal Lock Shake Intensity",
+        "petalLockShakeIntensity",
+        0,
+        3,
+        2,
       ),
       missileDrawPriority: new BooleanOption(
         "Missile Rendering Priority",
@@ -148,6 +161,16 @@ export class CinderSettingsMenu extends SettingsMenu {
         "This hotkey toggles the stats box of the highest-rarity mob " +
         "currently alive in your room.",
       ),
+      keybindLockSlot: new KeybindOption(
+        "Lock Petal Slot",
+        "keybindLockSlot",
+        "You can lock/unlock petal slots while holding down this key. " +
+        "When a slot is locked, you cannot swap it with its bottom petal " +
+        "until you unlock it. $n $n " +
+        "By default, you cannot lock petal slots 1 to 5. You can change " +
+        "this behaviour at Settings > General Gameplay > Allow Locking " +
+        "Petal Slots 1 to 5.",
+      ),
     });
 
     // The height is intentionally not a multiple of SETTINGS_OPTION_HEIGHT, to
@@ -161,10 +184,12 @@ export class CinderSettingsMenu extends SettingsMenu {
       settingsMap.craftingSearchBar,
       settingsMap.craftAnimationLength,
       settingsMap.autoCopyCodes,
+      settingsMap.allowLockSlotsOneToFive,
       new SettingsSectionHeading("General Display"),
       settingsMap.settingsTooltips,
       settingsMap.petalCraftPreview,
       settingsMap.inventoryExpandButton,
+      settingsMap.petalLockShakeIntensity,
       settingsMap.missileDrawPriority,
       new SettingsSectionHeading("Zoom Settings"),
       settingsMap.baseReciprocalOfFOV,
@@ -189,6 +214,7 @@ export class CinderSettingsMenu extends SettingsMenu {
       settingsMap.keybindInvertAttack,
       settingsMap.keybindInvertDefend,
       settingsMap.keybindStatsBox,
+      settingsMap.keybindLockSlot,
     ]);
     this.totalHeight = SETTINGS_OPTION_HEIGHT * this.options.length;
 

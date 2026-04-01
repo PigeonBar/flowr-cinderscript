@@ -4,6 +4,7 @@ import { autoReducePetalQuality } from "./features/autoReducePetalQuality";
 import { addCraftingSearchBar } from "./features/craftingSearchBar";
 import { displayMissilesAboveEnemies } from "./features/displayMissilesAboveEnemies";
 import { prioritizeRenderingDragPetal } from "./features/draggingPetalRenderingPriority";
+import { addPetalSlotLocking } from "./features/petalSlotLocking";
 import { enlargeZoomedOutItems } from "./features/enlargeZoomedOutItems";
 import { addInventoryMenuExpansion } from "./features/expandInventoryMenu";
 import { allowFastCrafting } from "./features/fastCrafting";
@@ -53,6 +54,7 @@ addInventoryMenuExpansion();
 autoReducePetalQuality();
 allowFastCrafting();
 optimizeHighQualityRenders();
+addPetalSlotLocking();
 
 // #region Dev tools
 addScreenshotMode();

@@ -1,5 +1,6 @@
 import { CINDER_COLOUR } from "../constants/constants";
-import { deepCopy, isInGameInput, isNil } from "../utils";
+import { addKeybindInstruction } from "../inits/keybindHandling";
+import { deepCopy, isNil } from "../utils";
 
 /**
  * This feature lets the script developer enter Screenshot Mode. This works by
@@ -83,19 +84,9 @@ export function addScreenshotMode() {
   }
   
   // Toggle screenshot mode when user presses the corresponding key
-  const originalHandleKey = inputHandler.handleKey;
-  inputHandler.handleKey = function(e) {
-    // First, run all the usual code for handling inputs
-    originalHandleKey.apply(inputHandler, [e]);
-    if (!isInGameInput(e)) {
-      return;
-    }
-
-    if (e.code === localStorage.getItem("cinderDevScreenshotMode") &&
-        e.code.length > 0 &&
-        e.type === "keydown"
-    ) {
-      toggleScreenshotMode();
-    }
-  }
+  addKeybindInstruction({
+    type: "localStorage",
+    storageKey: "cinderDevScreenshotMode",
+    fn: toggleScreenshotMode,
+  });
 }

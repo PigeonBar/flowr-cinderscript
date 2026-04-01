@@ -352,9 +352,17 @@ declare global {
    * The current loadout, which stores petals that the user *is* equipping.
    */
   class Inventory {
+    topPetalSlots: PetalSlot[];
+    bottomPetalSlots: PetalSlot[];
+    topPetalContainers: Record<number, PetalContainer | undefined>;
+    bottomPetalContainers: Record<number, PetalContainer | undefined>;
+    translateY: number;
+
     draw(alpha = 1);
 
     mouseDown({ mouseX, mouseY }: CanvasMouseData2, inv: Inventory);
+
+    swapPetals(index: number, toSend?: boolean);
 
     /**
      * If the given petal is close enough to any loadout petal, return the
@@ -375,7 +383,15 @@ declare global {
     addClosest(p: PetalContainer, globalInv: GlobalInventory): boolean;
   }
 
+  /**
+   * The loadout object used on the menu screen.
+   */
   const menuInventory: Inventory;
+
+  /**
+   * The loadout object used during runs.
+   */
+  const inventory: Inventory;
 
   class Enemy {
     type: EnemyType;
@@ -386,6 +402,15 @@ declare global {
   class Flower {
     attacking: boolean;
     defending: boolean;
+  }
+  
+  /**
+   * A slot that can be empty or occupied by a petal.
+   */
+  class PetalSlot {
+    x: number;
+    y: number;
+    size: number;
   }
 
   class Petal {

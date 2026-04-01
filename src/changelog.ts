@@ -1,6 +1,9 @@
 import { unsafeWindow } from "$";
 
 const cinderChangelogList: ChangelogEntry[] = [
+  {text: `- You can lock petal slots (default keybind: [L]) (PR #25)
+- Major behind-the-scenes changes for keybind handling, hope it doesn't break anything (PR #25)`,
+  date: "Version 1.3.0 (Petal Lock Update)"},
   {text: `- High Quality Renders have been optimized significantly for petals (PR #24)
 - Added settings for more fine-grained control over petal rendering quality (PR #24)`,
   date: "Version 1.2.0 (Petal Renders Optimization)"},

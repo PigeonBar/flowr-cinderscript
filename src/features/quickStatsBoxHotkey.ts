@@ -9,9 +9,13 @@ export function addQuickStatsBoxHotkey() {
   // The stats box is always off by default when reloading the page
   let showQuickStatsBox = false;
 
-  addKeybindInstruction({type: "settings", key: "keybindStatsBox", fn: () => {
-    showQuickStatsBox = !showQuickStatsBox;
-  }});
+  addKeybindInstruction({
+    type: "settings",
+    settingsKey: "keybindStatsBox",
+    fn: () => {
+      showQuickStatsBox = !showQuickStatsBox;
+    }
+  });
 
   const originalRenderGame = renderGame;
   const originalDrawStatsBox = PetalContainer.prototype.drawStatsBox;

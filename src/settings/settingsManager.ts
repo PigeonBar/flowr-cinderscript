@@ -13,7 +13,8 @@ export type BooleanSettingsKey =
   "disableAllOptimizations" |
   "petalStarCaching" |
   "disablePetalStars" |
-  "disablePetalAnimations";
+  "disablePetalAnimations" |
+  "allowLockSlotsOneToFive";
 
 export type NumberSettingsKey =
   "baseReciprocalOfFOV" |
@@ -21,7 +22,8 @@ export type NumberSettingsKey =
   "specialDropsScale" |
   "specialDropsQuantity" |
   "petalRenderQualityThreshold" |
-  "craftAnimationLength";
+  "craftAnimationLength" |
+  "petalLockShakeIntensity";
 
 export type RaritySettingsKey =
   "specialDropsRarity";
@@ -29,7 +31,8 @@ export type RaritySettingsKey =
 export type KeybindSettingsKey =
   "keybindStatsBox" |
   "keybindInvertAttack" |
-  "keybindInvertDefend";
+  "keybindInvertDefend" |
+  "keybindLockSlot";
 
 type CinderSettings =
   Record<BooleanSettingsKey, boolean> &
@@ -39,7 +42,7 @@ type CinderSettings =
 
 export type SettingsKey = keyof CinderSettings;
 
-const defaultSettings = Object.freeze({
+const defaultSettings: CinderSettings = Object.freeze({
   petalCraftPreview: true,
   autoCopyCodes: true,
   missileDrawPriority: true,
@@ -52,17 +55,20 @@ const defaultSettings = Object.freeze({
   petalStarCaching: true,
   disablePetalStars: false,
   disablePetalAnimations: false,
+  allowLockSlotsOneToFive: false,
   baseReciprocalOfFOV: 3,
   playerHpBarScale: 2.5,
   specialDropsScale: 2.5,
   specialDropsQuantity: 1,
   petalRenderQualityThreshold: 400,
   craftAnimationLength: 0,
+  petalLockShakeIntensity: 2,
   specialDropsRarity: Rarity.TRANSCENDENT,
   keybindStatsBox: "KeyG",
   keybindInvertAttack: "Comma",
   keybindInvertDefend: "Period",
-}) as CinderSettings;
+  keybindLockSlot: "KeyL",
+});
 
 export class SettingsManager {
   savedSettings: CinderSettings = {...defaultSettings};

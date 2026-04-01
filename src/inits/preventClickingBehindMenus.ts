@@ -29,8 +29,8 @@ export function preventClickingBehindMenus() {
   }
   
   // Prevent hovering over petals behind menus for stat boxes
-  const originalDraw = menuInventory.draw;
-  menuInventory.draw = function(alpha?: number) {
+  const originalDraw = Inventory.prototype.draw;
+  Inventory.prototype.draw = function(alpha?: number) {
     // While drawing the loadout petals, treat all petals as not being hovered
     // if the user's mouse is hovering over a menu
     const originalDrawStatsBox = PetalContainer.prototype.drawStatsBox;
