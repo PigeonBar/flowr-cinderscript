@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Flowr - Cinderscript
 // @namespace    npm/vite-plugin-monkey
-// @version      1.3.1
+// @version      1.4.0
 // @author       PigeonBar (original creator)
 // @description  A free, publicly available collection of QoL features for flowr.fun players.
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=flowr.fun
@@ -73,6 +73,8 @@
   const SETTINGS_GREEN = "#3fff3f";
   const TOOLTIP_BLUE = "#7f7fff";
   const TOOLTIP_BORDER_BLUE = "#3f3fff";
+  const TEXT_LIGHT_RED = "#ffbfbf";
+  const TEXT_LIGHT_BLUE = "#bfbfff";
   const MAX_PETAL_RARITY = Rarity.CHAOS;
   const MAX_RARITY = Rarity.UNREAL;
   const SETTINGS_OPTION_HEIGHT = 50;
@@ -222,6 +224,7 @@
     disablePetalStars: false,
     disablePetalAnimations: false,
     allowLockSlotsOneToFive: false,
+    mobGalleryKillCounter: true,
     baseReciprocalOfFOV: 3,
     playerHpBarScale: 2.5,
     specialDropsScale: 2.5,
@@ -259,6 +262,9 @@
       }
       if (key === "craftingSearchBar") {
         craftingMenu.updateSearchBarActive();
+      }
+      if (key === "mobGalleryKillCounter") {
+        mobGallery.setCountMode(value ? "Kills" : "None");
       }
     }
   }
@@ -330,6 +336,12 @@
     }
   }
   const cinderChangelogList = [
+    {
+      text: `- The mob gallery now tracks how many times you have killed each kind of mob (PR #27)
+- It is also tracking mob spawns, but cannot display those until an upcoming UI update (PR #27)
+- To reduce lag, the game no longer tries to render off-screen mob gallery entries (PR #27)`,
+      date: "Version 1.4.0 (Mob Kill Counter)"
+    },
     {
       text: `- Fixed a bug where the UI breaks if you click on an equipped petal without a petal below (PR #26)`,
       date: "Version 1.3.1"
@@ -1092,6 +1104,10 @@ Please enter a Rarity.`
           "Inventory Expansion Button",
           "inventoryExpandButton"
         ),
+        mobGalleryKillCounter: new BooleanOption(
+          "Display Gallery Kill Counter",
+          "mobGalleryKillCounter"
+        ),
         petalLockShakeIntensity: new NumberOption(
           "Petal Lock Shake Intensity",
           "petalLockShakeIntensity",
@@ -1197,6 +1213,7 @@ Please enter a Rarity.`
         settingsMap.settingsTooltips,
         settingsMap.petalCraftPreview,
         settingsMap.inventoryExpandButton,
+        settingsMap.mobGalleryKillCounter,
         settingsMap.petalLockShakeIntensity,
         settingsMap.missileDrawPriority,
         new SettingsSectionHeading("Zoom Settings"),
@@ -1605,7 +1622,7 @@ Please enter a Rarity.`
       fn: toggleScreenshotMode
     });
   }
-  const version = "1.3.1";
+  const version = "1.4.0";
   function addScriptVersionToDebugInfo() {
     const originalRenderDebug = renderDebug;
     renderDebug = () => {
@@ -1629,7 +1646,7 @@ Please enter a Rarity.`
       ctx.fillText(versionText, x, y);
     };
   }
-  let petalCounter = 0;
+  let renderCounter = 0;
   let disableHqp = false;
   function autoReducePetalQuality() {
     _unsafeWindow._hqp = _unsafeWindow.hqp;
@@ -1647,9 +1664,7 @@ Please enter a Rarity.`
         originalDrawPetal.apply(this, [inGame, number]);
         return;
       }
-      if (this.petals[0].constructor === Petal) {
-        petalCounter++;
-      }
+      renderCounter++;
       originalDrawPetal.apply(this, [inGame, number]);
       if (exceededThreshold()) {
         disableHqp = true;
@@ -1661,14 +1676,14 @@ Please enter a Rarity.`
         originalDraw();
         return;
       }
-      petalCounter = 0;
+      renderCounter = 0;
       originalDraw();
       disableHqp = exceededThreshold();
     };
   }
   function exceededThreshold() {
     const threshold = settings.get("petalRenderQualityThreshold");
-    return threshold >= 0 && petalCounter > threshold;
+    return threshold >= 0 && renderCounter > threshold;
   }
   function addCraftingSearchBar() {
     craftingMenu.rawPetalContainers = { ...craftingMenu.petalContainers };
@@ -2407,8 +2422,7 @@ Please enter a Rarity.`
         settings.set("invertAttack", newInvertAttack);
         chatAnnounce(
           "Invert Attack set to " + (newInvertAttack ? "ON" : "OFF") + "!",
-          "#ffbfbf"
-          // Pink
+          TEXT_LIGHT_RED
         );
         send({ attack: rawAttacking });
       } }
@@ -2419,8 +2433,7 @@ Please enter a Rarity.`
         settings.set("invertDefend", newInvertDefend);
         chatAnnounce(
           "Invert Defend set to " + (newInvertDefend ? "ON" : "OFF") + "!",
-          "#bfbfff"
-          // Light blue
+          TEXT_LIGHT_BLUE
         );
         send({ defend: rawDefending });
       } }
@@ -2608,38 +2621,6 @@ Please enter a Rarity.`
           }
         }
       }
-    };
-    PetalContainer.prototype.getScale = function() {
-      let scale = this.render.w / 50;
-      const renderAnimationTimer = smoothstep(this.spawnAnimation);
-      scale *= renderAnimationTimer;
-      if (this.toOscillate) {
-        scale *= 1 + Math.sin(performance.now() / 1e3 / 0.076) / 52;
-      }
-      return scale;
-    };
-    PetalContainer.prototype.getRotation = function() {
-      let rotation = 0;
-      const renderAnimationTimer = smoothstep(this.spawnAnimation);
-      rotation -= (1 - renderAnimationTimer) * Math.PI * 3;
-      if (this.isDraggingPetalContainer) {
-        this.draggingTimer ??= 0;
-        const nextFrameTimer = this.draggingTimer + 1e3 / 30 * dt / 16.66;
-        rotation += Math.sin(nextFrameTimer / 280) * 0.28;
-      } else if (!isNil(this.undraggingPetalContainerTimer)) {
-        if (isNil(this.interval)) {
-          this.lastDraggingAngle ??= 0;
-          rotation += interpolate(this.lastDraggingAngle, 0, 0.15);
-        }
-      }
-      if (this.toOscillate === true) {
-        this.angleOffset ??= 0;
-        rotation += this.angleOffset;
-      }
-      return rotation;
-    };
-    PetalContainer.prototype.shouldAnimate = function() {
-      return !NON_ANIM_PETALS.includes(this.type) && !settings.get("disablePetalAnimations");
     };
     function initializeCachedAir() {
       for (let rarity = 0; rarity <= MAX_RARITY; rarity++) {
@@ -3114,6 +3095,332 @@ Please enter a Rarity.`
   function refreezeObjects() {
     Object.freeze(processGameMessageMap);
   }
+  function displayMobGalleryOutsideMenu() {
+    mobGallery.activeOutsideMenu = false;
+    addKeybindInstruction({
+      type: "localStorage",
+      storageKey: "cinderDevGalleryOutsideMenu",
+      fn: toggleMobGalleryOutsideMenu
+    });
+    const originalRenderGame = renderGame;
+    renderGame = function(dt2) {
+      originalRenderGame(dt2);
+      if (mobGallery.activeOutsideMenu && mobGallery.menuActive) {
+        mobGallery.draw();
+      }
+    };
+    const originalDraw = PetalContainer.prototype.draw;
+    PetalContainer.prototype.draw = function(inGame, number) {
+      const scrolledPos = {
+        x: mobGallery.x + mobGallery.scrollExcess.x * mobGallery.scroll.render.x,
+        y: mobGallery.renderY + mobGallery.scrollExcess.y * mobGallery.scroll.render.y
+      };
+      if (this === mobGallery.rows[this.type]?.[this.rarity] && (this.render.x > scrolledPos.x + mobGallery.w || this.render.x + this.render.w < scrolledPos.x || this.render.y > scrolledPos.y + mobGallery.h || this.render.y + this.render.w < scrolledPos.y)) {
+        this.updateInterpolate();
+        return;
+      }
+      originalDraw.apply(this, [inGame, number]);
+    };
+    const originalDiscoverEnemy = addDiscoveredEnemy;
+    addDiscoveredEnemy = function(type = "Ladybug", rarity = Rarity.COMMON) {
+      if (!discoveredEnemies[type]?.[rarity]) {
+        originalDiscoverEnemy(type, rarity);
+      }
+    };
+  }
+  function toggleMobGalleryOutsideMenu() {
+    if (_unsafeWindow.state !== "game") {
+      return;
+    }
+    if (mobGallery.menuActive && mobGallery.activeOutsideMenu) {
+      mobGallery.activeOutsideMenu = false;
+    } else {
+      mobGallery.activeOutsideMenu = true;
+    }
+    if (mobGallery.menuActive !== mobGallery.activeOutsideMenu) {
+      mobGallery.toggleMenu();
+    }
+  }
+  function addMobGalleryKillCounter() {
+    mobGallery.setCountMode = function(value) {
+      this.countMode = value;
+      for (let type in this.rows) {
+        for (let rarity = 0; rarity < this.rows[type].length; rarity++) {
+          this.updateStat(type, rarity);
+        }
+      }
+      cachedImages.statBoxes.enemies = {};
+    };
+    mobGallery.getStatCounter = function() {
+      switch (this.countMode.toLowerCase()) {
+        case "kills":
+          return killCounter;
+        case "spawns":
+          return spawnCounter;
+        case "kills+":
+          return killPlusCounter;
+        case "spawns+":
+          return spawnPlusCounter;
+        default:
+          return void 0;
+      }
+    };
+    mobGallery.getStatTextColour = function() {
+      if (["kills", "kills+"].includes(this.countMode.toLowerCase())) {
+        return TEXT_LIGHT_RED;
+      } else if (["spawns", "spawns+"].includes(this.countMode.toLowerCase())) {
+        return TEXT_LIGHT_BLUE;
+      } else {
+        return "white";
+      }
+    };
+    mobGallery.updateStat = function(type, rarity) {
+      if (isNonLootableEnemyType(type)) {
+        return 1;
+      }
+      const stat = this.getStatCounter()?.getStat(type, rarity) ?? 1;
+      const mobContainer = mobGallery.rows[type][rarity];
+      if (typeof mobContainer === "object") {
+        mobContainer.amount = stat;
+        mobContainer.lastAmountChangedTime = time;
+        cachedImages.statBoxes.enemies[`${type}${rarity}`] = void 0;
+      }
+      return stat;
+    };
+    mobGallery.setCountMode(
+      settings.get("mobGalleryKillCounter") ? "Kills" : "None"
+    );
+    let nextMobDroppedLoot = false;
+    const originalAddPetal = processGameMessageMap.newPetalContainer;
+    processGameMessageMap.newPetalContainer = function(data, _me, _advanced) {
+      originalAddPetal(data, _me, _advanced);
+      if (_unsafeWindow.spectating) {
+        return;
+      }
+      nextMobDroppedLoot = true;
+    };
+    const originalRemoveEnemy = processGameMessageMap.removeEnemy;
+    processGameMessageMap.removeEnemy = function(data, _me, _advanced) {
+      const enemy = room.enemies[data.removeEnemy];
+      originalRemoveEnemy(data, _me, _advanced);
+      if (_unsafeWindow.spectating) {
+        return;
+      }
+      if (localStorage.getItem("cinderDevMobCounterWarnings")) {
+        if (nextMobDroppedLoot && enemy.lootMultiplier === 0) {
+          console.warn("Unexpected loot!", time);
+          console.warn(enemy);
+        } else if (!nextMobDroppedLoot && enemy.lootMultiplier > 0) {
+          console.warn("Unexpected loot!", time);
+          console.warn(enemy);
+        }
+      }
+      if (nextMobDroppedLoot && !enemy.isBoss && enemy.lootMultiplier > 0) {
+        killCounter.incrementStat(enemy.type, enemy.rarity, 1);
+        killPlusCounter.incrementStat(
+          enemy.type,
+          enemy.rarity,
+          enemy.lootMultiplier
+        );
+      }
+      nextMobDroppedLoot = false;
+    };
+    const originalAddEnemy = processGameMessageMap.newEnemy;
+    processGameMessageMap.newEnemy = function(data, _me, _advanced) {
+      originalAddEnemy(data, _me, _advanced);
+      if (_unsafeWindow.spectating) {
+        return;
+      }
+      const enemy = room.enemies[data.id];
+      enemy.lootMultiplier = 1 + (room.shinyWave ?? 0);
+      if (expectNoLoot(enemy)) {
+        enemy.lootMultiplier = 0;
+      }
+      if (enemy.lootMultiplier > 0 && !enemy.isBoss) {
+        spawnCounter.incrementStat(enemy.type, enemy.rarity, 1);
+        spawnPlusCounter.incrementStat(
+          enemy.type,
+          enemy.rarity,
+          enemy.lootMultiplier
+        );
+      }
+    };
+    const originalGenerate = mobGallery.generateEnemyPc;
+    mobGallery.generateEnemyPc = function(type, rarity, dimensions) {
+      const container = originalGenerate.apply(this, [type, rarity, dimensions]);
+      if (!isNonLootableEnemyType(type)) {
+        container.amount = mobGallery.updateStat(type, rarity);
+      }
+      return container;
+    };
+    const originalDraw = PetalContainer.prototype.draw;
+    PetalContainer.prototype.draw = function(inGame, number) {
+      originalDraw.apply(this, [inGame, number]);
+      if (this === mobGallery.rows[this.type]?.[this.rarity] && !isNonLootableEnemyType(this.type) && !isNil(mobGallery.getStatCounter())) {
+        this.drawAmount(mobGallery.getStatTextColour());
+      }
+    };
+    const originalGenEcBox = StatsBox.prototype.genEcBox;
+    StatsBox.prototype.genEcBox = function() {
+      const canvas2 = originalGenEcBox.apply(this);
+      const statsBoxCtx = canvas2.getContext("2d");
+      if (this.isGallery && !isNonLootableEnemyType(this.name) && !isNil(mobGallery.getStatCounter()) && !isNil(statsBoxCtx)) {
+        statsBoxCtx.resetTransform();
+        statsBoxCtx.letterSpacing = "0px";
+        statsBoxCtx.font = `900 ${1.2 * 22.5}px Ubuntu`;
+        const x = 10 + 7.5 + statsBoxCtx.measureText(this.name).width;
+        const y = 10 + 4 + 4;
+        statsBoxCtx.font = `900 ${0.75 * 22.5}px Ubuntu`;
+        statsBoxCtx.lineWidth = 0.75 * 3.25;
+        statsBoxCtx.fillStyle = mobGallery.getStatTextColour();
+        statsBoxCtx.strokeStyle = "black";
+        statsBoxCtx.textAlign = "left";
+        statsBoxCtx.textBaseline = "top";
+        statsBoxCtx.strokeText("x" + this.amount.toLocaleString(), x, y);
+        statsBoxCtx.fillText("x" + this.amount.toLocaleString(), x, y);
+      }
+      return canvas2;
+    };
+    const originalDrawStatsBox = Enemy.prototype.drawStatsBox;
+    Enemy.prototype.drawStatsBox = function(drawBelow, rarityOverride) {
+      let isGallery = false;
+      const galleryEntry = mobGallery.rows[this.type]?.[this.rarity];
+      if (typeof galleryEntry === "object" && this === galleryEntry.petals[0]) {
+        isGallery = true;
+      }
+      let cache = cachedImages.statBoxes.enemies[`${this.type}${this.rarity}`];
+      if (isGallery !== cache?.isGallery) {
+        cachedImages.statBoxes.enemies[`${this.type}${this.rarity}`] = void 0;
+      }
+      originalDrawStatsBox.apply(this, [drawBelow, rarityOverride]);
+      cache = cachedImages.statBoxes.enemies[`${this.type}${this.rarity}`];
+      if (isGallery && !isNil(cache) && !cache.isGallery && typeof galleryEntry === "object") {
+        cache.amount = galleryEntry.amount;
+        if (!isNil(cache.image)) {
+          cache.image = cache.genEcBox();
+        }
+      }
+      if (!isNil(cache)) {
+        cache.isGallery = isGallery;
+      }
+      return canvas;
+    };
+  }
+  function isNonLootableEnemyType(type) {
+    return type.includes("Missile") || type.includes("Egg");
+  }
+  function expectNoLoot(enemy) {
+    return isNonLootableEnemyType(enemy.type) || enemy.type.includes("Eel") && !enemy.isHead || enemy.type.includes("Leech") && !enemy.isHead || bosses.length > 0;
+  }
+  class MobCounter {
+    /**
+     * The local storage key to store the tracked stats in.
+     */
+    storageKey;
+    /**
+     * The stats being tracked by this tracker. The format is:
+     * `savedStats[playerName][enemyType][enemyRarity]`.
+     */
+    savedStats;
+    /**
+     * Constructs a new tracker using stats saved at the given storage key.
+     */
+    constructor(storageKey) {
+      this.storageKey = storageKey;
+      this.savedStats = JSON.parse(
+        localStorage.getItem(storageKey) ?? "{}"
+      );
+    }
+    /**
+     * Retrieves the tracked stat for the given mob of the given rarity. If the
+     * given mob does not have a tracked stat yet, return `0` instead.
+     */
+    getStat(type, rarity) {
+      return this.savedStats[username]?.[type]?.[rarity] ?? 0;
+    }
+    /**
+     * Increment the tracked stat for the given mob of the given rarity.
+     */
+    incrementStat(type, rarity, amount) {
+      if (isNil(this.savedStats[username])) {
+        this.savedStats[username] = {};
+      }
+      if (isNil(this.savedStats[username][type])) {
+        this.savedStats[username][type] = {};
+      }
+      if (isNil(this.savedStats[username][type][rarity])) {
+        this.savedStats[username][type][rarity] = 0;
+      }
+      this.savedStats[username][type][rarity] += amount;
+      localStorage.setItem(this.storageKey, JSON.stringify(this.savedStats));
+      if (this === mobGallery.getStatCounter()) {
+        mobGallery.updateStat(type, rarity);
+      }
+    }
+  }
+  const killCounter = new MobCounter("cinderKillCounter");
+  const killPlusCounter = new MobCounter("cinderKillPlusCounter");
+  const spawnCounter = new MobCounter("cinderSpawnCounter");
+  const spawnPlusCounter = new MobCounter("cinderSpawnPlusCounter");
+  function initPetalDrawingUtils() {
+    PetalContainer.prototype.getScale = function() {
+      let scale = this.render.w / 50;
+      const renderAnimationTimer = smoothstep(this.spawnAnimation);
+      scale *= renderAnimationTimer;
+      if (this.toOscillate) {
+        scale *= 1 + Math.sin(performance.now() / 1e3 / 0.076) / 52;
+      }
+      return scale;
+    };
+    PetalContainer.prototype.getRotation = function() {
+      let rotation = 0;
+      const renderAnimationTimer = smoothstep(this.spawnAnimation);
+      rotation -= (1 - renderAnimationTimer) * Math.PI * 3;
+      if (this.isDraggingPetalContainer) {
+        this.draggingTimer ??= 0;
+        const nextFrameTimer = this.draggingTimer + 1e3 / 30 * dt / 16.66;
+        rotation += Math.sin(nextFrameTimer / 280) * 0.28;
+      } else if (!isNil(this.undraggingPetalContainerTimer)) {
+        if (isNil(this.interval)) {
+          this.lastDraggingAngle ??= 0;
+          rotation += interpolate(this.lastDraggingAngle, 0, 0.15);
+        }
+      }
+      if (this.toOscillate === true) {
+        this.angleOffset ??= 0;
+        rotation += this.angleOffset;
+      }
+      return rotation;
+    };
+    PetalContainer.prototype.shouldAnimate = function() {
+      return !NON_ANIM_PETALS.includes(this.type) && !settings.get("disablePetalAnimations");
+    };
+    PetalContainer.prototype.drawAmount = function(textColour = "white") {
+      ctx.save();
+      const scale = this.getScale();
+      ctx.translate(this.render.x, this.render.y);
+      if (performance.now() - this.lastAmountChangedTime < 240) {
+        ctx.globalAlpha = smoothstep(
+          (performance.now() - this.lastAmountChangedTime) / 240
+        );
+      }
+      ctx.font = `600 ${13 * scale}px Ubuntu`;
+      ctx.letterSpacing = "1px";
+      ctx.textBaseline = "middle";
+      ctx.textAlign = "right";
+      ctx.fillStyle = textColour;
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 2;
+      ctx.translate((70 / 2.5 + 0.5) * scale, (-42 / 2.5 + 0.5) * scale);
+      ctx.rotate(Math.PI / 9.1);
+      if (this.greyed) {
+        ctx.globalAlpha *= 0.3;
+      }
+      ctx.strokeText("x" + formatAmount(this.amount), 0, 0);
+      ctx.fillText("x" + formatAmount(this.amount), 0, 0);
+      ctx.restore();
+    };
+  }
   unfreezeObjects();
   initTheoryCraft();
   allowWsDataEditing();
@@ -3122,6 +3429,7 @@ Please enter a Rarity.`
   initKeybindHandling();
   addNewMenuButtons();
   handleMenuTranslations();
+  initPetalDrawingUtils();
   addPetalCraftPreview();
   addCraftingSearchBar();
   addRandomizedSquadCodes();
@@ -3139,8 +3447,10 @@ Please enter a Rarity.`
   allowFastCrafting();
   optimizeHighQualityRenders();
   addPetalSlotLocking();
+  addMobGalleryKillCounter();
   addScreenshotMode();
   addScriptVersionToDebugInfo();
+  displayMobGalleryOutsideMenu();
   prioritizeRenderingDragPetal();
   refreezeObjects();
 

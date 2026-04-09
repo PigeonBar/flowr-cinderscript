@@ -14,7 +14,8 @@ export type BooleanSettingsKey =
   "petalStarCaching" |
   "disablePetalStars" |
   "disablePetalAnimations" |
-  "allowLockSlotsOneToFive";
+  "allowLockSlotsOneToFive" |
+  "mobGalleryKillCounter";
 
 export type NumberSettingsKey =
   "baseReciprocalOfFOV" |
@@ -56,6 +57,7 @@ const defaultSettings: CinderSettings = Object.freeze({
   disablePetalStars: false,
   disablePetalAnimations: false,
   allowLockSlotsOneToFive: false,
+  mobGalleryKillCounter: true,
   baseReciprocalOfFOV: 3,
   playerHpBarScale: 2.5,
   specialDropsScale: 2.5,
@@ -120,6 +122,10 @@ export class SettingsManager {
 
     if (key === "craftingSearchBar") {
       craftingMenu.updateSearchBarActive();
+    }
+    
+    if (key === "mobGalleryKillCounter") {
+      mobGallery.setCountMode(value ? "Kills" : "None");
     }
   }
 }

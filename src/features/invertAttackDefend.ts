@@ -1,4 +1,5 @@
 import { unsafeWindow } from "$";
+import { TEXT_LIGHT_BLUE, TEXT_LIGHT_RED } from "../constants/constants";
 import { addKeybindInstruction } from "../inits/keybindHandling";
 import { addWsDataEditing } from "../inits/wsDataEditing";
 import { settings } from "../settings/settingsManager";
@@ -76,7 +77,7 @@ export function enableInvertAttackAndDefend() {
       settings.set("invertAttack", newInvertAttack);
       chatAnnounce(
         "Invert Attack set to " + (newInvertAttack ? "ON" : "OFF") + "!",
-        "#ffbfbf", // Pink
+        TEXT_LIGHT_RED,
       );
       send({attack: rawAttacking});
     }}
@@ -87,7 +88,7 @@ export function enableInvertAttackAndDefend() {
       settings.set("invertDefend", newInvertDefend);
       chatAnnounce(
         "Invert Defend set to " + (newInvertDefend ? "ON" : "OFF") + "!",
-        "#bfbfff", // Light blue
+        TEXT_LIGHT_BLUE,
       );
       send({defend: rawDefending});
     }}

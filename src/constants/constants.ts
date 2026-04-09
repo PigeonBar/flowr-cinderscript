@@ -33,6 +33,16 @@ export const TOOLTIP_BLUE = "#7f7fff";
 export const TOOLTIP_BORDER_BLUE = "#3f3fff";
 
 /**
+ * A colour for light red text.
+ */
+export const TEXT_LIGHT_RED = "#ffbfbf";
+
+/**
+ * A colour for light blue text.
+ */
+export const TEXT_LIGHT_BLUE = "#bfbfff";
+
+/**
  * The maximum rarity whose petal stats have been configured by the Flowr devs.
  */
 export const MAX_PETAL_RARITY = Rarity.CHAOS;

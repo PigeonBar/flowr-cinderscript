@@ -1,6 +1,10 @@
 import { unsafeWindow } from "$";
 
 const cinderChangelogList: ChangelogEntry[] = [
+  {text: `- The mob gallery now tracks how many times you have killed each kind of mob (PR #27)
+- It is also tracking mob spawns, but cannot display those until an upcoming UI update (PR #27)
+- To reduce lag, the game no longer tries to render off-screen mob gallery entries (PR #27)`,
+  date: "Version 1.4.0 (Mob Kill Counter)"},
   {text: `- Fixed a bug where the UI breaks if you click on an equipped petal without a petal below (PR #26)`,
   date: "Version 1.3.1"},
   {text: `- You can lock petal slots (default keybind: [L]) (PR #25)

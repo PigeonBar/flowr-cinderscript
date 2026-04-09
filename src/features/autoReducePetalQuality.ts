@@ -4,7 +4,7 @@ import { settings } from "../settings/settingsManager";
 /**
  * Tracks the number of petals that have been drawn during the current frame.
  */
-let petalCounter = 0;
+let renderCounter = 0;
 
 /**
  * Whether or not high quality should be disabled because of the threshold.
@@ -15,8 +15,8 @@ let disableHqp = false;
  * This feature reduces lag by automatically disabling the base game's High
  * Quality Renders if there are too many petals on-screen at the same time.
  * 
- * Note: We only count petals, since it seems to be far easier for the game to
- * handle rendering PetalContainers that hold mobs instead of petals.
+ * This now also counts mob entries, since the mob gallery no longer attempts
+ * to render off-screen gallery entries.
  */
 export function autoReducePetalQuality() {
   // Enforce disabling high quality renders by using a getter function
@@ -40,9 +40,8 @@ export function autoReducePetalQuality() {
       return;
     }
 
-    if (this.petals[0].constructor === Petal) {
-      petalCounter++;
-    }
+    renderCounter++;
+
     originalDrawPetal.apply(this, [inGame, number]);
 
     if (exceededThreshold()) {
@@ -59,7 +58,7 @@ export function autoReducePetalQuality() {
     }
 
     // Reset the counter for the next frame that will be drawn
-    petalCounter = 0;
+    renderCounter = 0;
 
     originalDraw();
 
@@ -69,7 +68,7 @@ export function autoReducePetalQuality() {
 }
 
 /**
- * A helper function to check if {@linkcode petalCounter} is above the chosen
+ * A helper function to check if {@linkcode renderCounter} is above the chosenc
  * threshold.
  * 
  * Note that a threshold of -1 means disabling the threshold.
@@ -78,5 +77,5 @@ export function autoReducePetalQuality() {
  */
 function exceededThreshold() {
   const threshold = settings.get("petalRenderQualityThreshold");
-  return threshold >= 0 && petalCounter > threshold;
+  return threshold >= 0 && renderCounter > threshold;
 }

@@ -33,9 +33,7 @@ export function enlargeZoomedOutItems(): void {
   // Function that gets called when a petal drops from a mob
   const originalNewPetalContainer = processGameMessageMap.newPetalContainer;
   processGameMessageMap.newPetalContainer = function(
-    data: any,
-    _me?: any,
-    _advanced?: any
+    data: any, _me?: any, _advanced?: any
   ) {
     const scale = settings.get("specialDropsScale");
 
