@@ -59,7 +59,7 @@ export function addMobGalleryKillCounter(): void {
     const stat = this.getStatCounter()?.getStat(type, rarity) ?? 1;
 
     // Update the gallery entry's amount
-    const mobContainer = mobGallery.rows[type][rarity];
+    const mobContainer = mobGallery.rows[type]?.[rarity];
     if (typeof mobContainer === "object") {
       mobContainer.amount = stat;
       mobContainer.lastAmountChangedTime = time;

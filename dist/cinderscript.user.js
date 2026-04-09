@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Flowr - Cinderscript
 // @namespace    npm/vite-plugin-monkey
-// @version      1.4.0
+// @version      1.4.1
 // @author       PigeonBar (original creator)
 // @description  A free, publicly available collection of QoL features for flowr.fun players.
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=flowr.fun
@@ -336,6 +336,10 @@
     }
   }
   const cinderChangelogList = [
+    {
+      text: `- Fixed a rendering crash when hovering over an EnemyBox in-game (PR #29)`,
+      date: "Version 1.4.1"
+    },
     {
       text: `- The mob gallery now tracks how many times you have killed each kind of mob (PR #27)
 - It is also tracking mob spawns, but cannot display those until an upcoming UI update (PR #27)
@@ -1622,7 +1626,7 @@ Please enter a Rarity.`
       fn: toggleScreenshotMode
     });
   }
-  const version = "1.4.0";
+  const version = "1.4.1";
   function addScriptVersionToDebugInfo() {
     const originalRenderDebug = renderDebug;
     renderDebug = () => {
@@ -3179,7 +3183,7 @@ Please enter a Rarity.`
         return 1;
       }
       const stat = this.getStatCounter()?.getStat(type, rarity) ?? 1;
-      const mobContainer = mobGallery.rows[type][rarity];
+      const mobContainer = mobGallery.rows[type]?.[rarity];
       if (typeof mobContainer === "object") {
         mobContainer.amount = stat;
         mobContainer.lastAmountChangedTime = time;
