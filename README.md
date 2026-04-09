@@ -1,3 +1,11 @@
+# Quick start guide
+
+If you are using a userscript manager such as Tampermonkey, it should let you install the script directly using this link: [Install](https://github.com/PigeonBar/flowr-cinderscript/raw/refs/heads/main/dist/cinderscript.user.js).
+
+After this initial installation, your userscript manager should automatically take care of detecting and applying updates to your installed script. Please also give yourself some time to configure the script's new settings, especially its **keybinds**.
+
+There are also more detailed installation steps below.
+
 # About
 
 Welcome! This is a free, publicly available script containing a collection of QoL features that I have written for flowr.fun players. This is a very new project right now, so you can look forward to many additional features being added in the future. If you have any feedback or any features/ideas that you want to be added, please feel free to message me on Discord (username: pigeonbar) or submit a feature request on this GitHub repository!
@@ -14,9 +22,13 @@ The userscript is stored at [dist/cinderscript.user.js](https://github.com/Pigeo
 
 This script is meant to be installed using a userscript manager, such as Tampermonkey. If needed, you can install Tampermonkey itself through their [official website](https://www.tampermonkey.net/).
 
-Once you have installed a userscript manager, navigate to the raw script file (e.g., [dist/cinderscript.user.js](https://github.com/PigeonBar/flowr-cinderscript/raw/refs/heads/main/dist/cinderscript.user.js)) on GitHub, and then your userscript manager should automatically prompt you to install the script. (This is my first time publishing a userscript, so please let me know if you encounter any issues at this step.)
+Once you have installed a userscript manager, navigate to the raw script file (e.g., [dist/cinderscript.user.js](https://github.com/PigeonBar/flowr-cinderscript/raw/refs/heads/main/dist/cinderscript.user.js)) on GitHub, and then your userscript manager should automatically prompt you to install the script. If this does not work, you can instead manually install the script using the following steps:
 
-After this initial installation, your userscript manager should automatically take care of detecting and applying updates to your installed script.
+1. Copy the script's contents (Ctrl+A then Ctrl+C).
+2. Click on your userscript manager's "Create a new script" button to open up a script editor.
+3. Paste the script's contents into the editor (Ctrl+A then Ctrl+V), then save the script (Ctrl+S).
+
+After this initial installation, your userscript manager should automatically take care of detecting and applying updates to your installed script. Please also give yourself some time to configure the script's new settings, especially its **keybinds**.
 
 # Security notice
 
