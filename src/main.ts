@@ -26,6 +26,9 @@ import { preventClickingBehindMenus } from "./inits/preventClickingBehindMenus";
 import { preventMenuOverlap } from "./inits/preventMenuOverlap";
 import { refreezeObjects, unfreezeObjects } from "./inits/unfreezeObjects";
 import { allowWsDataEditing } from "./inits/wsDataEditing";
+import { displayMobGalleryOutsideMenu } from "./dev/mobGalleryOutsideMenu";
+import { addMobGalleryKillCounter } from "./features/mobGalleryKillCounter";
+import { initPetalDrawingUtils } from "./inits/petalDrawingUtils";
 
 // #region Inits
 unfreezeObjects();
@@ -36,6 +39,7 @@ allowEditingKeybinds();
 initKeybindHandling();
 addNewMenuButtons();
 handleMenuTranslations();
+initPetalDrawingUtils();
 
 // #region Features
 addPetalCraftPreview();
@@ -55,10 +59,12 @@ autoReducePetalQuality();
 allowFastCrafting();
 optimizeHighQualityRenders();
 addPetalSlotLocking();
+addMobGalleryKillCounter();
 
 // #region Dev tools
 addScreenshotMode();
 addScriptVersionToDebugInfo();
+displayMobGalleryOutsideMenu();
 
 // #region Ending
 prioritizeRenderingDragPetal();

@@ -2,6 +2,7 @@
 /// <reference types="vite-plugin-monkey/client" />
 
 import type { Rarity } from "./enums";
+import type { MobCounter } from "./features/mobGalleryKillCounter";
 import type { BooleanOption, SettingsOption, SettingsSectionHeading } from "./settings/settingsOptions";
 
 //// <reference types="vite-plugin-monkey/global" />
@@ -18,6 +19,11 @@ declare global {
      * Whether or not the client is currently connected to Flowr's servers.
      */
     connected?: boolean;
+
+    /**
+     * Whether or not the user is spectating a different player's room.
+     */
+    spectating: boolean;
 
     /**
      * The id of the flower that the player is currently playing as.
@@ -47,6 +53,11 @@ declare global {
      * current position.
      */
     camera: CameraData;
+
+    /**
+     * The timestamp for the most recent message received via the WebSocket.
+     */
+    lastMessageTimeReceived: number;
   }
 
   type PetalType = string; // TODO: List of actually existing petal types?
@@ -333,14 +344,98 @@ declare global {
   const globalInventory: GlobalInventory;
 
   class MobGallery extends BottomMenu {
+    x: number;
+
+    /**
+     * The percentages that this gallery is scrolled horizontally and
+     * vertically, as numbers between 0 and 1.
+     */
+    scroll: {render: {x: number, y: number}};
+
+    /**
+     * The total dimensions of the gallery's entries, minus the gallery's own
+     * dimensions. This is multiplied by {@linkcode scroll scroll.render} to
+     * determine the gallery entries' translations due to scrolling.
+     */
+    scrollExcess: {x: number, y: number};
+
+    /**
+     * The mob gallery's contents, as follows:
+     * - `PetalContainer`: A container displaying a mob as usual.
+     * - `false`: An empty tile because the player has not discovered the mob.
+     * - `true`: An empty tile that still needs to generate the mob's image.
+     */
+    rows: Record<EnemyType, (PetalContainer | boolean)[]>;
+
+    /**
+     * Whether or not the gallery should regenerate all of its entries the next
+     * time it is drawn.
+     */
+    toRegenerate: boolean;
+
+    /**
+     * Whether or not the mob gallery can be displayed outside the menu screen.
+     * Specifically, when outside the menu screen, the mob gallery is displayed
+     * iff {@linkcode activeOutsideMenu} and {@linkcode menuActive} are both
+     * `true`.
+     * 
+     * Currently, this field can only be toggled using dev tools.
+     */
+    activeOutsideMenu: boolean;
+
+    /**
+     * The stat that this mob gallery is currently counting. Available options
+     * are "Kills", "Kills+", "Spawns", and "Spawns+". Setting this field to
+     * any other value will disable counting.
+     */
+    countMode: string;
+
+    draw();
+
     generateEnemyPc(
       type: EnemyType,
       rarity: Rarity,
       dimensions: number,
     ): PetalContainer;
+
+    /**
+     * Returns the stat counter currently being used, based on
+     * {@linkcode countMode}.
+     */
+    getStatCounter(): MobCounter | undefined;
+
+    /**
+     * Determines the colour that should be used to display the currectly
+     * displayed stat, based on {@linkcode countMode}.
+     */
+    getStatTextColour(): string;
+
+    /**
+     * Set the stat that this mob gallery is currently counting, and also
+     * updates all of the gallery entries to display the new stat. Available
+     * options are "Kills", "Kills+", "Spawns", and "Spawns+". Using any other
+     * value will disable counting.
+     */
+    setCountMode(value: string);
+
+    /**
+     * Updates this gallery's displayed stat for the given mob of the given
+     * rarity, based on {@linkcode getStatCounter}, and also returns the stat.
+     */
+    updateStat(type: EnemyType, rarity: Rarity): number;
   }
 
   const mobGallery: MobGallery;
+
+  /**
+   * A record of whether the user has encountered each mob of each rarity.
+   */
+  const discoveredEnemies: Partial<Record<EnemyType, (boolean | null)[]>>;
+
+  /**
+   * Records the user as having encountered the given mob of the given rarity.
+   */
+  let addDiscoveredEnemy: (type?: EnemyType, rarity?: Rarity) => void;
 
   class DeadMenu {
     draw();
@@ -395,8 +490,25 @@ declare global {
 
   class Enemy {
     type: EnemyType;
+    rarity: Rarity;
+    xp: number;
+    isBoss?: boolean;
+    statsBoxAlpha: number;
+
+    /**
+     * Whether or not this mob is the head segment of a Leech-like mob.
+     */
+    isHead?: boolean;
+
+    /**
+     * The multiplier applied to this mob's loot, based on whether it spawned
+     * during a lucky wave, etc..
+     */
+    lootMultiplier: number;
 
     draw();
+
+    drawStatsBox(drawBelow?: boolean, rarityOverride?: boolean);
   }
 
   class Flower {
@@ -472,6 +584,18 @@ declare global {
     isDisplayPetalContainer: boolean;
 
     /**
+     * Whether or not this petal is greyed out (e.g., due to being a petal from
+     * an unofficial biome).
+     */
+    greyed: boolean;
+
+    /**
+     * The timestamp for the most recent time that this container's
+     * {@linkcode amount} was changed.
+     */
+    lastAmountChangedTime: number;
+
+    /**
      * Whether or not to draw the cached Air petal in order to draw this
      * petal's background gradients.
      */
@@ -524,6 +648,15 @@ declare global {
     drawStars();
 
     /**
+     * A helper function to draw this petal's amount counter.
+     * 
+     * This code is copied from Flowr's base code.
+     * 
+     * @param textColour The text colour to use.
+     */
+    drawAmount(textColour?: string);
+
+    /**
      * Determines the scale at which to draw this petal. (1x scale = 50 units)
      */
     getScale(): number;
@@ -535,7 +668,40 @@ declare global {
   }
 
   class StatsBox {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    amount: number;
+    image?: OffscreenCanvas;
+    name: string;
+    rarity: Rarity;
+    
+    /**
+     * Whether or not this stats box is being displayed for a gallery entry, in
+     * which case it also displays the stat being tracked by the gallery.
+     */
+    isGallery: boolean;
+
     draw();
+
+    /**
+     * Generates and returns the stats box's image.
+     * 
+     * Only use this function if this stats box is for an {@linkcode Enemy}.
+     * If this stats box is for a {@linkcode Petal}, use {@linkcode genPcBox}
+     * instead.
+     */
+    genEcBox(): OffscreenCanvas;
+
+    /**
+     * Generates and returns the stats box's image.
+     * 
+     * Only use this function if this stats box is for a {@linkcode Petal}.
+     * If this stats box is for an {@linkcode Enemy}, use {@linkcode genEcBox}
+     * instead.
+     */
+    genPcBox(): OffscreenCanvas;
   }
 
   const draggingPetalContainer: PetalContainer | null;
@@ -568,9 +734,20 @@ declare global {
     enemies: Record<number, Enemy>;
     enemyBoxes: enemyBox[];
     flowers: Record<number, Flower>;
+
+    /**
+     * The number of "lucky" stacks applied to the current wave, if it is
+     * lucky; `undefined` otherwise.
+     */
+    shinyWave?: number;
   }
 
   let room: Room;
+
+  /**
+   * A list of all boss mobs that are currently alive.
+   */
+  const bosses: Enemy[];
 
   class BiomeManager {
     mouseDown({ mouseX, mouseY }: CanvasMouseData2);
@@ -641,15 +818,29 @@ declare global {
   
   function smoothstep(t: number);
 
+  /**
+   * Returns a string representing the given amount after formatting it using
+   * abbreviations (e.g., 6700 = 6.7k).
+   */
+  function formatAmount(amount: number): string;
+
   function setCursor(state: string);
 
   let draw: () => void;
+
+  let renderMenu: (dt: number) => void;
 
   let renderGame: (dt: number) => void;
 
   let renderDebug: () => void;
 
   let savedRenderTransform: DOMMatrix;
+
+  const cachedImages: {
+    statBoxes: {
+      enemies: Partial<Record<string, StatsBox>>;
+    }
+  }
 
   type HpBarData = {
     x: number;
@@ -781,7 +972,7 @@ declare global {
   function send(data: any, forceSend?: boolean);
 
   let processGameMessageMap: Record<
-    "newPetalContainer",
+    "newEnemy" | "newPetalContainer" | "removeEnemy" ,
     (data: any, _me?: any, _advanced?: any) => void
   >;
 
@@ -791,6 +982,11 @@ declare global {
    * The current version of Flowr's client code.
    */
   let ver: string;
+
+  /**
+   * The user's current account username.
+   */
+  let username: string;
 }
 
 export {};
