@@ -1,6 +1,8 @@
 import { unsafeWindow } from "$";
 
 const cinderChangelogList: ChangelogEntry[] = [
+  {text: `- Fixed a rendering crash when hovering over an EnemyBox in-game (PR #29)`,
+  date: "Version 1.4.1"},
   {text: `- The mob gallery now tracks how many times you have killed each kind of mob (PR #27)
 - It is also tracking mob spawns, but cannot display those until an upcoming UI update (PR #27)
 - To reduce lag, the game no longer tries to render off-screen mob gallery entries (PR #27)`,
