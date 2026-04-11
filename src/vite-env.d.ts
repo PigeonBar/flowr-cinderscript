@@ -676,6 +676,13 @@ declare global {
     image?: OffscreenCanvas;
     name: string;
     rarity: Rarity;
+
+    /**
+     * A list of rows of text for this stats box's description. Each row may be
+     * further split into blocks of text with different colours. `written`
+     * refers to the physical width of each block of text.
+     */
+    finalDesc: {text: string, color: string, written: number}[][];
     
     /**
      * Whether or not this stats box is being displayed for a gallery entry, in
@@ -702,6 +709,12 @@ declare global {
      * instead.
      */
     genPcBox(): OffscreenCanvas;
+
+    /**
+     * Generates this stats box's {@linkcode finalDesc}, and then returns the
+     * required dimensions to contain the text.
+     */
+    generateDesc(min: number, max: number): { width: number, height: number };
   }
 
   const draggingPetalContainer: PetalContainer | null;

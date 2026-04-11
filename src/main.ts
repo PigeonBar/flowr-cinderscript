@@ -29,6 +29,7 @@ import { allowWsDataEditing } from "./inits/wsDataEditing";
 import { displayMobGalleryOutsideMenu } from "./dev/mobGalleryOutsideMenu";
 import { addMobGalleryKillCounter } from "./features/mobGalleryKillCounter";
 import { initPetalDrawingUtils } from "./inits/petalDrawingUtils";
+import { widerMobStatsBoxes } from "./features/widerMobStatsBoxes";
 
 // #region Inits
 unfreezeObjects();
@@ -60,6 +61,7 @@ allowFastCrafting();
 optimizeHighQualityRenders();
 addPetalSlotLocking();
 addMobGalleryKillCounter();
+widerMobStatsBoxes();
 
 // #region Dev tools
 addScreenshotMode();

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Flowr - Cinderscript
 // @namespace    npm/vite-plugin-monkey
-// @version      1.4.1
+// @version      1.4.2
 // @author       PigeonBar (original creator)
 // @description  A free, publicly available collection of QoL features for flowr.fun players.
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=flowr.fun
@@ -336,6 +336,10 @@
     }
   }
   const cinderChangelogList = [
+    {
+      text: `- Fixed an issue where some stats boxes were not wide enough to fit the kill counter (PR #30)`,
+      date: "Version 1.4.2"
+    },
     {
       text: `- Fixed a rendering crash when hovering over an EnemyBox in-game (PR #29)`,
       date: "Version 1.4.1"
@@ -1626,7 +1630,7 @@ Please enter a Rarity.`
       fn: toggleScreenshotMode
     });
   }
-  const version = "1.4.1";
+  const version = "1.4.2";
   function addScriptVersionToDebugInfo() {
     const originalRenderDebug = renderDebug;
     renderDebug = () => {
@@ -3187,8 +3191,8 @@ Please enter a Rarity.`
       if (typeof mobContainer === "object") {
         mobContainer.amount = stat;
         mobContainer.lastAmountChangedTime = time;
-        cachedImages.statBoxes.enemies[`${type}${rarity}`] = void 0;
       }
+      cachedImages.statBoxes.enemies[`${type}${rarity}`] = void 0;
       return stat;
     };
     mobGallery.setCountMode(
@@ -3211,11 +3215,17 @@ Please enter a Rarity.`
         return;
       }
       if (localStorage.getItem("cinderDevMobCounterWarnings")) {
-        if (nextMobDroppedLoot && enemy.lootMultiplier === 0) {
+        let usingHorn = false;
+        for (let petal of Object.values(inventory.topPetalContainers)) {
+          if (petal?.type === "Horn") {
+            usingHorn = true;
+          }
+        }
+        if (nextMobDroppedLoot && enemy.lootMultiplier === 0 && !enemy.isBoss) {
           console.warn("Unexpected loot!", time);
           console.warn(enemy);
-        } else if (!nextMobDroppedLoot && enemy.lootMultiplier > 0) {
-          console.warn("Unexpected loot!", time);
+        } else if (!nextMobDroppedLoot && enemy.lootMultiplier > 0 && !usingHorn) {
+          console.warn("No loot!", time);
           console.warn(enemy);
         }
       }
@@ -3425,6 +3435,17 @@ Please enter a Rarity.`
       ctx.restore();
     };
   }
+  function widerMobStatsBoxes() {
+    const originalGenerateDesc = StatsBox.prototype.generateDesc;
+    StatsBox.prototype.generateDesc = function(min, max) {
+      const dimensions = originalGenerateDesc.apply(this, [min, max]);
+      ctx.font = `900 ${1.2 * 22.5}px Ubuntu`;
+      const textWidth = ctx.measureText(this.name).width;
+      dimensions.width = Math.max(dimensions.width, textWidth + 175);
+      dimensions.width = Math.max(Math.min(dimensions.width, max), min);
+      return dimensions;
+    };
+  }
   unfreezeObjects();
   initTheoryCraft();
   allowWsDataEditing();
@@ -3452,6 +3473,7 @@ Please enter a Rarity.`
   optimizeHighQualityRenders();
   addPetalSlotLocking();
   addMobGalleryKillCounter();
+  widerMobStatsBoxes();
   addScreenshotMode();
   addScriptVersionToDebugInfo();
   displayMobGalleryOutsideMenu();
