@@ -63,8 +63,8 @@ export function addMobGalleryKillCounter(): void {
     if (typeof mobContainer === "object") {
       mobContainer.amount = stat;
       mobContainer.lastAmountChangedTime = time;
-      cachedImages.statBoxes.enemies[`${type}${rarity}`] = undefined;
     }
+    cachedImages.statBoxes.enemies[`${type}${rarity}`] = undefined;
 
     return stat;
   }
@@ -106,11 +106,17 @@ export function addMobGalleryKillCounter(): void {
     }
 
     if (localStorage.getItem("cinderDevMobCounterWarnings")) {
-      if (nextMobDroppedLoot && enemy.lootMultiplier === 0) {
+      let usingHorn = false;
+      for (let petal of Object.values(inventory.topPetalContainers)) {
+        if (petal?.type === "Horn") {
+          usingHorn = true;
+        }
+      }
+      if (nextMobDroppedLoot && enemy.lootMultiplier === 0 && !enemy.isBoss) {
         console.warn("Unexpected loot!", time);
         console.warn(enemy);
-      } else if (!nextMobDroppedLoot && enemy.lootMultiplier > 0) {
-        console.warn("Unexpected loot!", time);
+      } else if (!nextMobDroppedLoot && enemy.lootMultiplier > 0 && !usingHorn) {
+        console.warn("No loot!", time);
         console.warn(enemy);
       }
     }

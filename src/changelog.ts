@@ -1,6 +1,8 @@
 import { unsafeWindow } from "$";
 
 const cinderChangelogList: ChangelogEntry[] = [
+  {text: `- Fixed an issue where some stats boxes were not wide enough to fit the kill counter (PR #30)`,
+  date: "Version 1.4.2"},
   {text: `- Fixed a rendering crash when hovering over an EnemyBox in-game (PR #29)`,
   date: "Version 1.4.1"},
   {text: `- The mob gallery now tracks how many times you have killed each kind of mob (PR #27)
