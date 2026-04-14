@@ -74,9 +74,6 @@ export class CinderSettingsMenu extends SettingsMenu {
       inventoryExpandButton: new BooleanOption(
         "Inventory Expansion Button", "inventoryExpandButton",
       ),
-      mobGalleryKillCounter: new BooleanOption(
-        "Display Gallery Kill Counter", "mobGalleryKillCounter",
-      ),
       petalLockShakeIntensity: new NumberOption(
         "Petal Lock Shake Intensity",
         "petalLockShakeIntensity",
@@ -192,7 +189,6 @@ export class CinderSettingsMenu extends SettingsMenu {
       settingsMap.settingsTooltips,
       settingsMap.petalCraftPreview,
       settingsMap.inventoryExpandButton,
-      settingsMap.mobGalleryKillCounter,
       settingsMap.petalLockShakeIntensity,
       settingsMap.missileDrawPriority,
       new SettingsSectionHeading("Zoom Settings"),

@@ -30,16 +30,21 @@ export function displayMobGalleryOutsideMenu() {
   const originalDraw = PetalContainer.prototype.draw;
   PetalContainer.prototype.draw = function(inGame?: boolean, number?: number) {
     const scrolledPos = {
-      x: mobGallery.x + mobGallery.scrollExcess.x * mobGallery.scroll.render.x,
-      y: mobGallery.renderY
+      x: mobGallery.inventorySpace.x
+        + mobGallery.scrollExcess.x * mobGallery.scroll.render.x,
+      y: mobGallery.renderY + mobGallery.inventorySpace.y - mobGallery.y
         + mobGallery.scrollExcess.y * mobGallery.scroll.render.y,
+    };
+    const petalPos = {
+      x: this.render.x - this.render.w / 2,
+      y: this.render.y - this.render.w / 2,
     };
 
     if (this === mobGallery.rows[this.type]?.[this.rarity] && (
-        this.render.x > scrolledPos.x + mobGallery.w
-        || this.render.x + this.render.w < scrolledPos.x
-        || this.render.y > scrolledPos.y + mobGallery.h
-        || this.render.y + this.render.w < scrolledPos.y
+        petalPos.x > scrolledPos.x + mobGallery.inventorySpace.w
+        || petalPos.x + this.render.w < scrolledPos.x
+        || petalPos.y > scrolledPos.y + mobGallery.inventorySpace.h
+        || petalPos.y + this.render.w < scrolledPos.y
     )) {
       this.updateInterpolate();
       return;

@@ -1,6 +1,9 @@
 import { unsafeWindow } from "$";
 
 const cinderChangelogList: ChangelogEntry[] = [
+  {text: `- The mob gallery now has more types of mob counters, such as a spawn counter! (PR #31)
+- Tooltip text boxes are now fully opaque (PR #31)`,
+  date: "Version 1.5.0 (More Mob Counters)"},
   {text: `- Fixed an issue where some stats boxes were not wide enough to fit the kill counter (PR #30)`,
   date: "Version 1.4.2"},
   {text: `- Fixed a rendering crash when hovering over an EnemyBox in-game (PR #29)`,

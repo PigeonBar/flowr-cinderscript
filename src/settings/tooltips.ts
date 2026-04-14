@@ -1,4 +1,4 @@
-import { TOOLTIP_BLUE, TOOLTIP_TEXT_HEIGHT, TOOLTIP_WIDTH_CAP } from "../constants/constants";
+import { SETTINGS_BUTTON_SIZE, TOOLTIP_BLUE, TOOLTIP_BORDER_BLUE, TOOLTIP_ICON_SIZE, TOOLTIP_TEXT_HEIGHT, TOOLTIP_WIDTH_CAP } from "../constants/constants";
 
 export type Tooltip = string | (() => string);
 
@@ -6,10 +6,8 @@ export type Tooltip = string | (() => string);
  * A text box that displays tooltips for settings.
  * 
  * Some of this code is adapted from Flowr's base code for StatBoxes.
- * 
- * TODO: Implement caching if needed.
  */
-export class TooltipBox {
+class TooltipBox {
   w: number;
   h: number;
   text: Tooltip;
@@ -64,15 +62,13 @@ export class TooltipBox {
 
     ctx.globalAlpha = this.alpha;
 
-    // Display a translucent blue rectangle to contain the text
-    ctx.globalAlpha *= 0.8;
+    // Display a blue rectangle to contain the text
     ctx.fillStyle = TOOLTIP_BLUE;
     ctx.lineWidth = 10;
     ctx.beginPath();
     ctx.rect(x - this.w / 2, y, this.w, this.h);
     ctx.fill();
     ctx.closePath();
-    ctx.globalAlpha /= 0.8;
 
     // Display the text
     ctx.font = "900 15px Ubuntu";
@@ -147,5 +143,75 @@ export class TooltipBox {
 
     // Also add the final line before concluding
     addLine();
+  }
+}
+
+/**
+ * A (?) icon that the user can hover to display a corresponding
+ * {@linkcode TooltipBox}.
+ */
+export class TooltipIcon {
+  /**
+   * The {@linkcode TooltipBox} that gets displayed when the user hovers over
+   * this tooltip icon.
+   */
+  tooltipBox: TooltipBox;
+
+  constructor(text: Tooltip) {
+    this.tooltipBox = new TooltipBox(text);
+  }
+
+  /**
+   * Draws the (?) icon centred at the given coordinates.
+   */
+  drawIcon(pos: { x: number, y: number }): void {
+    // Draw the blue circle containing the ? symbol
+    const {x, y} = pos;
+    ctx.strokeStyle = TOOLTIP_BORDER_BLUE;
+    ctx.fillStyle = TOOLTIP_BLUE;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(x, y, TOOLTIP_ICON_SIZE / 2, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.fill();
+    ctx.closePath();
+  
+    // Draw the ? symbol
+    ctx.font = "900 17px Ubuntu";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "white";
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 2;
+    ctx.strokeText("?", x, y + 1);
+    ctx.fillText("?", x, y + 1);
+  }
+
+  /**
+   * Draws the text box for this tooltip. Also handles fading it in/out
+   * depending on whether the user is currently hovering over the (?) icon.
+   * @param pos The position of the *tooltip icon* (not the tooltip box itself).
+   * @param e The position of the mouse.
+   */
+  drawText(
+    pos: {x: number, y: number},
+    e: CanvasMouseData,
+  ): void {
+    const {x, y} = pos;
+
+    // Check whether the mouse is hovering over this icon
+    const isHovered = mouseInBox(
+      e,
+      // We intentionally make the tooltip icon's "hitbox" larger
+      {
+        x: x - SETTINGS_BUTTON_SIZE / 2,
+        y: y - SETTINGS_BUTTON_SIZE / 2,
+        w: SETTINGS_BUTTON_SIZE,
+        h: SETTINGS_BUTTON_SIZE,
+      }
+    );
+    
+    // Draw the tooltip box
+    this.tooltipBox.draw(x, y + TOOLTIP_ICON_SIZE / 2 + 10, isHovered);
   }
 }

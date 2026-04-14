@@ -1,9 +1,9 @@
-import { CINDER_COLOUR, EDIT_ICON_SIZE, KEYBIND_DELETED, SETTINGS_BUTTON_PADDING, SETTINGS_BUTTON_SIZE, SETTINGS_GREEN, SETTINGS_OPTION_HEIGHT, TOOLTIP_BLUE, TOOLTIP_BORDER_BLUE, TOOLTIP_ICON_SIZE } from "../constants/constants";
+import { CINDER_COLOUR, EDIT_ICON_SIZE, KEYBIND_DELETED, SETTINGS_BUTTON_PADDING, SETTINGS_BUTTON_SIZE, SETTINGS_GREEN, SETTINGS_OPTION_HEIGHT, TOOLTIP_ICON_SIZE } from "../constants/constants";
 import type { Rarity } from "../enums";
 import { isNil, rarityToIndex } from "../utils";
 import { settings, type BooleanSettingsKey, type KeybindSettingsKey, type NumberSettingsKey, type RaritySettingsKey } from "./settingsManager";
 import { type CinderSettingsMenu } from "./settingsMenu";
-import { TooltipBox, type Tooltip } from "./tooltipBox";
+import { TooltipIcon, type Tooltip } from "./tooltips";
 
 // icons/settings-edit.svg
 const editIcon = new Image();
@@ -17,7 +17,7 @@ export abstract class SettingsOption {
   state: any;
   changeTime: number;
   screenPosition: {x: number, y: number, w: number, h: number};
-  _tooltipBox?: TooltipBox;
+  _tooltipIcon?: TooltipIcon;
 
   /**
    * A legacy field that is used for the settings menu to handle
@@ -28,7 +28,7 @@ export abstract class SettingsOption {
   constructor(name: string, tooltip?: Tooltip) {
     this.name = name;
     if (!isNil(tooltip)) {
-      this._tooltipBox = new TooltipBox(tooltip);
+      this._tooltipIcon = new TooltipIcon(tooltip);
     }
     this.changeTime = 0;
     this.screenPosition = {x: 0, y: 0, w: 0, h: 0};
@@ -39,9 +39,9 @@ export abstract class SettingsOption {
     this.toggleFn = () => {};
   }
 
-  get tooltipBox(): TooltipBox | undefined {
+  get tooltipIcon(): TooltipIcon | undefined {
     // Tooltips only exist if the setting for displaying tooltips is turned on.
-    return settings.get("settingsTooltips") ? this._tooltipBox : undefined;
+    return settings.get("settingsTooltips") ? this._tooltipIcon : undefined;
   }
 
   /**
@@ -97,25 +97,21 @@ export abstract class SettingsOption {
    * Draws this option's tooltip icon.
    */
   drawTooltipIcon(): void {
-    if (!isNil(this.tooltipBox)) {
-      drawTooltipIcon(this.tooltipPos);
-    }
+    this.tooltipIcon?.drawIcon(this.tooltipPos);
   }
 
   /**
    * Draws this option's tooltip box.
    */
   drawTooltipBox(e: CanvasMouseData): void {
-    if (!isNil(this.tooltipBox)) {
-      drawTooltipBox(this.tooltipPos, this.tooltipBox, e);
-    }
+    this.tooltipIcon?.drawText(this.tooltipPos, e);
   }
 
   /**
    * Updates the text for this setting's tooltip.
    */
   updateTooltip(): void {
-    this._tooltipBox?.generateDesc();
+    this._tooltipIcon?.tooltipBox?.generateDesc();
   }
 };
 
@@ -463,19 +459,19 @@ export class KeybindOption extends DisplayValueOption {
 export class SettingsSectionHeading {
   text: string;
   tooltipPos: {x: number, y: number};
-  _tooltipBox?: TooltipBox;
+  _tooltipIcon?: TooltipIcon;
 
   constructor(text: string, tooltip?: Tooltip) {
     this.text = text;
     if (!isNil(tooltip)) {
-      this._tooltipBox = new TooltipBox(tooltip);
+      this._tooltipIcon = new TooltipIcon(tooltip);
     }
     this.tooltipPos = {x: 0, y: 0};
   }
 
-  get tooltipBox(): TooltipBox | undefined {
+  get tooltipIcon(): TooltipIcon | undefined {
     // Tooltips only exist if the setting for displaying tooltips is turned on.
-    return settings.get("settingsTooltips") ? this._tooltipBox : undefined;
+    return settings.get("settingsTooltips") ? this._tooltipIcon : undefined;
   }
 
   /**
@@ -496,7 +492,7 @@ export class SettingsSectionHeading {
     const textWidth = ctx.measureText(this.text).width;
     let textLeftPos = menu.w / 2 - textWidth / 2;
     let textRightPos = menu.w / 2 + textWidth / 2;
-    if (!isNil(this.tooltipBox)) {
+    if (!isNil(this.tooltipIcon)) {
       // Make space for the tooltip icon
       const extraSpace = TOOLTIP_ICON_SIZE + SETTINGS_BUTTON_PADDING;
       textLeftPos -= extraSpace / 2;
@@ -542,71 +538,13 @@ export class SettingsSectionHeading {
    * Draws this section's tooltip icon.
    */
   drawTooltipIcon(): void {
-    if (!isNil(this.tooltipBox)) {
-      drawTooltipIcon(this.tooltipPos);
-    }
+    this.tooltipIcon?.drawIcon(this.tooltipPos);
   }
 
   /**
    * Draws this section's tooltip box.
    */
   drawTooltipBox(e: CanvasMouseData): void {
-    if (!isNil(this.tooltipBox)) {
-      drawTooltipBox(this.tooltipPos, this.tooltipBox, e);
-    }
+    this.tooltipIcon?.drawText(this.tooltipPos, e);
   }
-}
-
-/**
- * A helper function to draw a ? tooltip icon centred at the given coordinates.
- */
-function drawTooltipIcon(pos: {x: number, y: number}): void {
-  // Draw the blue circle containing the ? symbol
-  const {x, y} = pos;
-  ctx.strokeStyle = TOOLTIP_BORDER_BLUE;
-  ctx.fillStyle = TOOLTIP_BLUE;
-  ctx.lineWidth = 4;
-  ctx.beginPath();
-  ctx.arc(x, y, TOOLTIP_ICON_SIZE / 2, 0, 2 * Math.PI);
-  ctx.stroke();
-  ctx.fill();
-  ctx.closePath();
-
-  // Draw the ? symbol
-  ctx.font = "900 17px Ubuntu";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillStyle = "white";
-  ctx.strokeStyle = "black";
-  ctx.lineWidth = 2;
-  ctx.strokeText("?", x, y + 1);
-  ctx.fillText("?", x, y + 1);
-}
-
-/**
- * A helper function to draw a setting's tooltip box.
- * @param pos The position of the *tooltip icon* (not the tooltip box itself).
- * @param tooltipBox The tooltip box to display.
- * @param e The position of the mouse.
- */
-function drawTooltipBox(
-  pos: {x: number, y: number},
-  tooltipBox: TooltipBox,
-  e: CanvasMouseData,
-): void {
-  const {x, y} = pos;
-  // Check whether the mouse is hovering over this icon
-  const isHovered = mouseInBox(
-    e,
-    // We intentionally make the tooltip icon's "hitbox" larger
-    {
-      x: x - SETTINGS_BUTTON_SIZE / 2,
-      y: y - SETTINGS_BUTTON_SIZE / 2,
-      w: SETTINGS_BUTTON_SIZE,
-      h: SETTINGS_BUTTON_SIZE,
-    }
-  );
-  
-  // Draw the tooltip box
-  tooltipBox.draw(x, y + TOOLTIP_ICON_SIZE / 2 + 10, isHovered);
 }

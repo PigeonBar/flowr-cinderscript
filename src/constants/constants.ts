@@ -99,6 +99,28 @@ export const SETTINGS_SCROLLBAR_MIN_POS = 120;
 export const TOOLTIP_TEXT_HEIGHT = 22.5;
 
 /**
+ * Extra height given to the mob gallery to make space for the dropdown menu.
+ */
+export const GALLERY_EXTRA_HEIGHT = 100;
+
+/**
+ * The amount of padding above the top row of gallery entries, to ensure there
+ * is enough space to display the mob counter.
+ */
+export const GALLERY_TOP_PADDING = 5;
+
+/**
+ * The amount of extra horizontal space given to `mobGallery.inventorySpace`,
+ * since it is no longer constrained by the X button.
+ */
+export const GALLERY_EXTRA_HOR_SPACE = 27;
+
+/**
+ * The amount of padding used by the dropdown UI.
+ */
+export const DROPDOWN_UI_PADDING = 13;
+
+/**
  * The ratio of a petal's border width to the side length of the petal. The
  * border is drawn 0.09 side lengths outwards and 0.09 side lengths inwards
  * from the petal's sides.
