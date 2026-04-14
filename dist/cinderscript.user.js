@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Flowr - Cinderscript
 // @namespace    npm/vite-plugin-monkey
-// @version      1.4.2
+// @version      1.5.0
 // @author       PigeonBar (original creator)
 // @description  A free, publicly available collection of QoL features for flowr.fun players.
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=flowr.fun
@@ -86,6 +86,10 @@
   const SCROLLBAR_LENGTH = 200;
   const SETTINGS_SCROLLBAR_MIN_POS = 120;
   const TOOLTIP_TEXT_HEIGHT = 22.5;
+  const GALLERY_EXTRA_HEIGHT = 100;
+  const GALLERY_TOP_PADDING = 5;
+  const GALLERY_EXTRA_HOR_SPACE = 27;
+  const DROPDOWN_UI_PADDING = 13;
   const PETAL_BORDER_RATIO = 0.18;
   const KEYBIND_DELETED = "<None>";
   const NON_ANIM_PETALS = Object.freeze([
@@ -224,7 +228,6 @@
     disablePetalStars: false,
     disablePetalAnimations: false,
     allowLockSlotsOneToFive: false,
-    mobGalleryKillCounter: true,
     baseReciprocalOfFOV: 3,
     playerHpBarScale: 2.5,
     specialDropsScale: 2.5,
@@ -262,9 +265,6 @@
       }
       if (key === "craftingSearchBar") {
         craftingMenu.updateSearchBarActive();
-      }
-      if (key === "mobGalleryKillCounter") {
-        mobGallery.setCountMode(value ? "Kills" : "None");
       }
     }
   }
@@ -336,6 +336,11 @@
     }
   }
   const cinderChangelogList = [
+    {
+      text: `- The mob gallery now has more types of mob counters, such as a spawn counter! (PR #31)
+- Tooltip text boxes are now fully opaque (PR #31)`,
+      date: "Version 1.5.0 (More Mob Counters)"
+    },
     {
       text: `- Fixed an issue where some stats boxes were not wide enough to fit the kill counter (PR #30)`,
       date: "Version 1.4.2"
@@ -536,14 +541,12 @@
       }
       ctx.save();
       ctx.globalAlpha = this.alpha;
-      ctx.globalAlpha *= 0.8;
       ctx.fillStyle = TOOLTIP_BLUE;
       ctx.lineWidth = 10;
       ctx.beginPath();
       ctx.rect(x - this.w / 2, y, this.w, this.h);
       ctx.fill();
       ctx.closePath();
-      ctx.globalAlpha /= 0.8;
       ctx.font = "900 15px Ubuntu";
       ctx.lineWidth = 2;
       ctx.strokeStyle = "black";
@@ -605,6 +608,58 @@
       addLine();
     }
   }
+  class TooltipIcon {
+    /**
+     * The {@linkcode TooltipBox} that gets displayed when the user hovers over
+     * this tooltip icon.
+     */
+    tooltipBox;
+    constructor(text) {
+      this.tooltipBox = new TooltipBox(text);
+    }
+    /**
+     * Draws the (?) icon centred at the given coordinates.
+     */
+    drawIcon(pos) {
+      const { x, y } = pos;
+      ctx.strokeStyle = TOOLTIP_BORDER_BLUE;
+      ctx.fillStyle = TOOLTIP_BLUE;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(x, y, TOOLTIP_ICON_SIZE / 2, 0, 2 * Math.PI);
+      ctx.stroke();
+      ctx.fill();
+      ctx.closePath();
+      ctx.font = "900 17px Ubuntu";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "white";
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 2;
+      ctx.strokeText("?", x, y + 1);
+      ctx.fillText("?", x, y + 1);
+    }
+    /**
+     * Draws the text box for this tooltip. Also handles fading it in/out
+     * depending on whether the user is currently hovering over the (?) icon.
+     * @param pos The position of the *tooltip icon* (not the tooltip box itself).
+     * @param e The position of the mouse.
+     */
+    drawText(pos, e) {
+      const { x, y } = pos;
+      const isHovered = mouseInBox(
+        e,
+        // We intentionally make the tooltip icon's "hitbox" larger
+        {
+          x: x - SETTINGS_BUTTON_SIZE / 2,
+          y: y - SETTINGS_BUTTON_SIZE / 2,
+          w: SETTINGS_BUTTON_SIZE,
+          h: SETTINGS_BUTTON_SIZE
+        }
+      );
+      this.tooltipBox.draw(x, y + TOOLTIP_ICON_SIZE / 2 + 10, isHovered);
+    }
+  }
   const editIcon = new Image();
   editIcon.src = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgoKPHN2ZwogICB3aWR0aD0iMTAwLjAwMDA1bW0iCiAgIGhlaWdodD0iMTAwLjAwMDA2bW0iCiAgIHZpZXdCb3g9IjAgMCAxMDAuMDAwMDUgMTAwLjAwMDA2IgogICB2ZXJzaW9uPSIxLjEiCiAgIGlkPSJzdmcxIgogICB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciCiAgIHhtbG5zOnN2Zz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxkZWZzCiAgICAgaWQ9ImRlZnMxIiAvPgogIDxnCiAgICAgaWQ9ImxheWVyMSIKICAgICB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtODkuNTI0OTc3LC0zNS42MzI2MDUpIj4KICAgIDxyZWN0CiAgICAgICBzdHlsZT0iZmlsbDojZmZmZmZmO2ZpbGwtb3BhY2l0eToxO3N0cm9rZTojZmZmZmZmO3N0cm9rZS13aWR0aDowLjI4MjEzNztzdHJva2UtZGFzaGFycmF5Om5vbmU7c3Ryb2tlLW9wYWNpdHk6MSIKICAgICAgIGlkPSJyZWN0MS04IgogICAgICAgd2lkdGg9IjMxLjEyMTQyOSIKICAgICAgIGhlaWdodD0iMTguNTYwMDA3IgogICAgICAgeD0iLTE3NC43NzIyMyIKICAgICAgIHk9Ijc0LjQxNzAyMyIKICAgICAgIHRyYW5zZm9ybT0ibWF0cml4KC0wLjcwNzEwMDA4LC0wLjcwNzExMzQ5LDAuNzA3MTAwMDgsLTAuNzA3MTEzNDksMCwwKSIgLz4KICAgIDxyZWN0CiAgICAgICBzdHlsZT0iZmlsbDojZmZmZmZmO2ZpbGwtb3BhY2l0eToxO3N0cm9rZTojZmZmZmZmO3N0cm9rZS13aWR0aDowLjUxNDk0NTtzdHJva2UtZGFzaGFycmF5Om5vbmU7c3Ryb2tlLW9wYWNpdHk6MSIKICAgICAgIGlkPSJyZWN0MS04LTEiCiAgICAgICB3aWR0aD0iMzAuODg4NjI4IgogICAgICAgaGVpZ2h0PSI2Mi4yOTIxOTQiCiAgICAgICB4PSItMTc0LjY1NTg3IgogICAgICAgeT0iNS40NDUxNTA0IgogICAgICAgdHJhbnNmb3JtPSJtYXRyaXgoLTAuNzA3MTAwMDgsLTAuNzA3MTEzNDksMC43MDcxMDAwOCwtMC43MDcxMTM0OSwwLDApIiAvPgogICAgPHBhdGgKICAgICAgIHN0eWxlPSJmaWxsOiNmZmZmZmY7ZmlsbC1vcGFjaXR5OjE7c3Ryb2tlOiNmZmZmZmY7c3Ryb2tlLXdpZHRoOjAuMDE7c3Ryb2tlLWxpbmVjYXA6c3F1YXJlO3N0cm9rZS1taXRlcmxpbWl0OjA7c3Ryb2tlLWRhc2hhcnJheTpub25lO3N0cm9rZS1vcGFjaXR5OjE7cGFpbnQtb3JkZXI6bWFya2VycyBzdHJva2UgZmlsbCIKICAgICAgIGlkPSJwYXRoNCIKICAgICAgIGQ9Im0gNzQuMzU4OTk5LDEzMy44ODE1OSAtMS4yNzY3NzUsMCAwLjYzODM4OCwtMS4xMDU3MiB6IgogICAgICAgdHJhbnNmb3JtPSJtYXRyaXgoLTE3LjI0NDI0MiwtMTcuMjQ0NTcsMTkuODY3Mjg2LC0xOS44Njc2NjMsLTEyNzYuOTkwOCw0MDQ0LjczNDgpIiAvPgogIDwvZz4KPC9zdmc+Cg==";
   class SettingsOption {
@@ -612,7 +667,7 @@
     state;
     changeTime;
     screenPosition;
-    _tooltipBox;
+    _tooltipIcon;
     /**
      * A legacy field that is used for the settings menu to handle
      * {@linkcode BooleanOption BooleanOptions}.
@@ -621,7 +676,7 @@
     constructor(name, tooltip) {
       this.name = name;
       if (!isNil(tooltip)) {
-        this._tooltipBox = new TooltipBox(tooltip);
+        this._tooltipIcon = new TooltipIcon(tooltip);
       }
       this.changeTime = 0;
       this.screenPosition = { x: 0, y: 0, w: 0, h: 0 };
@@ -629,8 +684,8 @@
       this.toggleFn = () => {
       };
     }
-    get tooltipBox() {
-      return settings.get("settingsTooltips") ? this._tooltipBox : void 0;
+    get tooltipIcon() {
+      return settings.get("settingsTooltips") ? this._tooltipIcon : void 0;
     }
     /**
      * The position of the centre of the ? tooltip icon for this option.
@@ -677,23 +732,19 @@
      * Draws this option's tooltip icon.
      */
     drawTooltipIcon() {
-      if (!isNil(this.tooltipBox)) {
-        drawTooltipIcon(this.tooltipPos);
-      }
+      this.tooltipIcon?.drawIcon(this.tooltipPos);
     }
     /**
      * Draws this option's tooltip box.
      */
     drawTooltipBox(e) {
-      if (!isNil(this.tooltipBox)) {
-        drawTooltipBox(this.tooltipPos, this.tooltipBox, e);
-      }
+      this.tooltipIcon?.drawText(this.tooltipPos, e);
     }
     /**
      * Updates the text for this setting's tooltip.
      */
     updateTooltip() {
-      this._tooltipBox?.generateDesc();
+      this._tooltipIcon?.tooltipBox?.generateDesc();
     }
   }
   class BooleanOption extends SettingsOption {
@@ -946,16 +997,16 @@ Please enter a Rarity.`
   class SettingsSectionHeading {
     text;
     tooltipPos;
-    _tooltipBox;
+    _tooltipIcon;
     constructor(text, tooltip) {
       this.text = text;
       if (!isNil(tooltip)) {
-        this._tooltipBox = new TooltipBox(tooltip);
+        this._tooltipIcon = new TooltipIcon(tooltip);
       }
       this.tooltipPos = { x: 0, y: 0 };
     }
-    get tooltipBox() {
-      return settings.get("settingsTooltips") ? this._tooltipBox : void 0;
+    get tooltipIcon() {
+      return settings.get("settingsTooltips") ? this._tooltipIcon : void 0;
     }
     /**
      * @returns `true` iff this is a {@linkcode SettingsSectionHeading}.
@@ -973,7 +1024,7 @@ Please enter a Rarity.`
       const textWidth = ctx.measureText(this.text).width;
       let textLeftPos = menu.w / 2 - textWidth / 2;
       let textRightPos = menu.w / 2 + textWidth / 2;
-      if (!isNil(this.tooltipBox)) {
+      if (!isNil(this.tooltipIcon)) {
         const extraSpace = TOOLTIP_ICON_SIZE + SETTINGS_BUTTON_PADDING;
         textLeftPos -= extraSpace / 2;
         textRightPos += extraSpace / 2;
@@ -1008,51 +1059,14 @@ Please enter a Rarity.`
      * Draws this section's tooltip icon.
      */
     drawTooltipIcon() {
-      if (!isNil(this.tooltipBox)) {
-        drawTooltipIcon(this.tooltipPos);
-      }
+      this.tooltipIcon?.drawIcon(this.tooltipPos);
     }
     /**
      * Draws this section's tooltip box.
      */
     drawTooltipBox(e) {
-      if (!isNil(this.tooltipBox)) {
-        drawTooltipBox(this.tooltipPos, this.tooltipBox, e);
-      }
+      this.tooltipIcon?.drawText(this.tooltipPos, e);
     }
-  }
-  function drawTooltipIcon(pos) {
-    const { x, y } = pos;
-    ctx.strokeStyle = TOOLTIP_BORDER_BLUE;
-    ctx.fillStyle = TOOLTIP_BLUE;
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(x, y, TOOLTIP_ICON_SIZE / 2, 0, 2 * Math.PI);
-    ctx.stroke();
-    ctx.fill();
-    ctx.closePath();
-    ctx.font = "900 17px Ubuntu";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillStyle = "white";
-    ctx.strokeStyle = "black";
-    ctx.lineWidth = 2;
-    ctx.strokeText("?", x, y + 1);
-    ctx.fillText("?", x, y + 1);
-  }
-  function drawTooltipBox(pos, tooltipBox, e) {
-    const { x, y } = pos;
-    const isHovered = mouseInBox(
-      e,
-      // We intentionally make the tooltip icon's "hitbox" larger
-      {
-        x: x - SETTINGS_BUTTON_SIZE / 2,
-        y: y - SETTINGS_BUTTON_SIZE / 2,
-        w: SETTINGS_BUTTON_SIZE,
-        h: SETTINGS_BUTTON_SIZE
-      }
-    );
-    tooltipBox.draw(x, y + TOOLTIP_ICON_SIZE / 2 + 10, isHovered);
   }
   class CinderSettingsMenu extends SettingsMenu {
     /**
@@ -1111,10 +1125,6 @@ Please enter a Rarity.`
         inventoryExpandButton: new BooleanOption(
           "Inventory Expansion Button",
           "inventoryExpandButton"
-        ),
-        mobGalleryKillCounter: new BooleanOption(
-          "Display Gallery Kill Counter",
-          "mobGalleryKillCounter"
         ),
         petalLockShakeIntensity: new NumberOption(
           "Petal Lock Shake Intensity",
@@ -1221,7 +1231,6 @@ Please enter a Rarity.`
         settingsMap.settingsTooltips,
         settingsMap.petalCraftPreview,
         settingsMap.inventoryExpandButton,
-        settingsMap.mobGalleryKillCounter,
         settingsMap.petalLockShakeIntensity,
         settingsMap.missileDrawPriority,
         new SettingsSectionHeading("Zoom Settings"),
@@ -1630,7 +1639,7 @@ Please enter a Rarity.`
       fn: toggleScreenshotMode
     });
   }
-  const version = "1.4.2";
+  const version = "1.5.0";
   function addScriptVersionToDebugInfo() {
     const originalRenderDebug = renderDebug;
     renderDebug = () => {
@@ -3120,10 +3129,14 @@ Please enter a Rarity.`
     const originalDraw = PetalContainer.prototype.draw;
     PetalContainer.prototype.draw = function(inGame, number) {
       const scrolledPos = {
-        x: mobGallery.x + mobGallery.scrollExcess.x * mobGallery.scroll.render.x,
-        y: mobGallery.renderY + mobGallery.scrollExcess.y * mobGallery.scroll.render.y
+        x: mobGallery.inventorySpace.x + mobGallery.scrollExcess.x * mobGallery.scroll.render.x,
+        y: mobGallery.renderY + mobGallery.inventorySpace.y - mobGallery.y + mobGallery.scrollExcess.y * mobGallery.scroll.render.y
       };
-      if (this === mobGallery.rows[this.type]?.[this.rarity] && (this.render.x > scrolledPos.x + mobGallery.w || this.render.x + this.render.w < scrolledPos.x || this.render.y > scrolledPos.y + mobGallery.h || this.render.y + this.render.w < scrolledPos.y)) {
+      const petalPos = {
+        x: this.render.x - this.render.w / 2,
+        y: this.render.y - this.render.w / 2
+      };
+      if (this === mobGallery.rows[this.type]?.[this.rarity] && (petalPos.x > scrolledPos.x + mobGallery.inventorySpace.w || petalPos.x + this.render.w < scrolledPos.x || petalPos.y > scrolledPos.y + mobGallery.inventorySpace.h || petalPos.y + this.render.w < scrolledPos.y)) {
         this.updateInterpolate();
         return;
       }
@@ -3165,18 +3178,18 @@ Please enter a Rarity.`
           return killCounter;
         case "spawns":
           return spawnCounter;
-        case "kills+":
+        case "kills +":
           return killPlusCounter;
-        case "spawns+":
+        case "spawns +":
           return spawnPlusCounter;
         default:
           return void 0;
       }
     };
     mobGallery.getStatTextColour = function() {
-      if (["kills", "kills+"].includes(this.countMode.toLowerCase())) {
+      if (["kills", "kills +"].includes(this.countMode.toLowerCase())) {
         return TEXT_LIGHT_RED;
-      } else if (["spawns", "spawns+"].includes(this.countMode.toLowerCase())) {
+      } else if (["spawns", "spawns +"].includes(this.countMode.toLowerCase())) {
         return TEXT_LIGHT_BLUE;
       } else {
         return "white";
@@ -3190,14 +3203,15 @@ Please enter a Rarity.`
       const mobContainer = mobGallery.rows[type]?.[rarity];
       if (typeof mobContainer === "object") {
         mobContainer.amount = stat;
-        mobContainer.lastAmountChangedTime = time;
+        if (!isNil(this.getStatCounter())) {
+          mobContainer.lastAmountChangedTime = time;
+        } else {
+          mobContainer.lastAmountChangedTime = time - 1e4;
+        }
       }
       cachedImages.statBoxes.enemies[`${type}${rarity}`] = void 0;
       return stat;
     };
-    mobGallery.setCountMode(
-      settings.get("mobGalleryKillCounter") ? "Kills" : "None"
-    );
     let nextMobDroppedLoot = false;
     const originalAddPetal = processGameMessageMap.newPetalContainer;
     processGameMessageMap.newPetalContainer = function(data, _me, _advanced) {
@@ -3446,6 +3460,382 @@ Please enter a Rarity.`
       return dimensions;
     };
   }
+  class DropdownUI {
+    /**
+     * The x-coordinate of the centre of the whole dropdown UI.
+     */
+    x;
+    /**
+     * The y-coordinate of the centre of the whole dropdown UI.
+     */
+    y;
+    /**
+     * The dropdown menu's choice is stored in local storage at this storage key.
+     */
+    localStorageKey;
+    /**
+     * The label for the dropdown menu, displayed to the left of the menu.
+     */
+    labelText;
+    /**
+     * The width of the {@linkcode labelText}.
+     */
+    labelWidth;
+    /**
+     * A tooltip icon, displayed to the right of the dropdown menu.
+     */
+    tooltipIcon;
+    /**
+     * The coordinates for the tooltip icon.
+     */
+    tooltipPos;
+    /**
+     * The options that the user can select in this dropdown menu.
+     */
+    options;
+    /**
+     * The width used to display the dropdown itself, based on the widths of its
+     * contents.
+     */
+    optionsWidth;
+    /**
+     * The height that each dropdown option will take up.
+     */
+    heightPerOption = 30;
+    /**
+     * The choice that the user has currently selected.
+     */
+    currentChoice;
+    /**
+     * Whether or not the user has expanded the dropdown menu to display its list
+     * of options.
+     */
+    expanded;
+    /**
+     * The vertical translation of the list of options, relative to its fully
+     * expanded position. (This number is negative when the list of options is
+     * retracted.)
+     */
+    optionsTranslateY;
+    /**
+     * A list of listeners to listen to the user selecting options in this
+     * dropdown menu.
+     */
+    listeners;
+    /**
+     * The timestamp of the most recent time that the user clicked on an option.
+     */
+    optionSelectedTime;
+    constructor(labelText, localStorageKey, x, y, options, tooltip) {
+      this.labelText = labelText;
+      this.localStorageKey = localStorageKey;
+      this.x = x;
+      this.y = y;
+      this.tooltipIcon = new TooltipIcon(tooltip);
+      this.tooltipPos = { x: 0, y: 0 };
+      this.options = options;
+      this.expanded = false;
+      this.optionsTranslateY = -this.totalOptionsHeight;
+      this.listeners = [];
+      this.optionSelectedTime = time - 1e4;
+      const localStorageChoice = localStorage.getItem(localStorageKey);
+      if (isNil(localStorageChoice)) {
+        this.currentChoice = this.options[0];
+        localStorage.setItem(
+          this.localStorageKey,
+          JSON.stringify(this.currentChoice)
+        );
+      } else {
+        this.currentChoice = JSON.parse(localStorageChoice);
+      }
+      this.optionsWidth = 60;
+      ctx.font = "900 17px Ubuntu";
+      for (let { text } of this.options) {
+        this.optionsWidth = Math.max(this.optionsWidth, ctx.measureText(text).width + 60);
+      }
+      this.labelWidth = ctx.measureText(labelText).width;
+    }
+    /**
+     * The total width of the whole dropdown UI.
+     */
+    get width() {
+      const originalFont = ctx.font;
+      ctx.font = "900 17px Ubuntu";
+      const ret = this.labelWidth + DROPDOWN_UI_PADDING + this.optionsWidth + DROPDOWN_UI_PADDING + TOOLTIP_ICON_SIZE;
+      ctx.font = originalFont;
+      return ret;
+    }
+    /**
+     * The x-coordinate of the left side of the dropdown options.
+     */
+    get optionsX() {
+      return this.x - this.width / 2 + this.labelWidth + DROPDOWN_UI_PADDING;
+    }
+    /**
+     * The total height taken up by this menu's list of options, equal to
+     * {@linkcode options options.length} times {@linkcode heightPerOption}.
+     */
+    get totalOptionsHeight() {
+      return this.options.length * this.heightPerOption;
+    }
+    /**
+     * This function sets {@linkcode currentChoice} to the given option, saves it
+     * in local storage, and triggers all of the {@linkcode listeners}.
+     */
+    setOption(option) {
+      this.currentChoice = option;
+      localStorage.setItem(this.localStorageKey, JSON.stringify(option));
+      for (let fn of this.listeners) {
+        fn(option.text);
+      }
+    }
+    /**
+     * Toggles whether or not the dropdown menu is opened or closed.
+     */
+    toggleExpansion() {
+      this.expanded = !this.expanded;
+    }
+    draw() {
+      let currentX = this.x - this.width / 2;
+      ctx.font = "900 17px Ubuntu";
+      ctx.lineWidth = 2;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.strokeStyle = "black";
+      ctx.fillStyle = "white";
+      ctx.strokeText(this.labelText, currentX, this.y);
+      ctx.fillText(this.labelText, currentX, this.y);
+      currentX += this.labelWidth + DROPDOWN_UI_PADDING;
+      if (this.expanded) {
+        this.optionsTranslateY = interpolate(this.optionsTranslateY, 0, 0.3);
+      } else {
+        this.optionsTranslateY = interpolate(
+          this.optionsTranslateY,
+          -this.totalOptionsHeight,
+          0.3
+        );
+      }
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(
+        currentX - 10,
+        this.y + this.heightPerOption / 2 - 10,
+        this.optionsWidth + 20,
+        (this.options.length + 1) * this.heightPerOption
+      );
+      ctx.clip();
+      ctx.closePath();
+      const hoveredOption = this.hoveredOptionIndex();
+      ctx.translate(0, this.optionsTranslateY);
+      let currentY = this.y + this.heightPerOption;
+      for (let i = 0; i < this.options.length; i++) {
+        const { text, colour } = this.options[i];
+        ctx.fillStyle = i === hoveredOption ? "#bfbfbf" : "white";
+        ctx.beginPath();
+        ctx.rect(
+          currentX,
+          currentY - this.heightPerOption / 2,
+          this.optionsWidth,
+          this.heightPerOption
+        );
+        ctx.stroke();
+        ctx.fill();
+        ctx.closePath();
+        ctx.fillStyle = colour;
+        ctx.strokeText(text, currentX + 5, currentY);
+        ctx.fillText(text, currentX + 5, currentY);
+        currentY += this.heightPerOption;
+      }
+      ctx.restore();
+      ctx.fillStyle = "white";
+      ctx.beginPath();
+      ctx.rect(
+        currentX,
+        this.y - this.heightPerOption / 2,
+        this.optionsWidth,
+        this.heightPerOption
+      );
+      ctx.stroke();
+      ctx.fill();
+      ctx.closePath();
+      ctx.fillStyle = this.currentChoice.colour;
+      ctx.strokeText(this.currentChoice.text, currentX + 5, this.y);
+      ctx.fillText(this.currentChoice.text, currentX + 5, this.y);
+      ctx.beginPath();
+      ctx.moveTo(currentX + this.optionsWidth - 5, this.y - 5);
+      ctx.lineTo(currentX + this.optionsWidth - 15, this.y + 5);
+      ctx.lineTo(currentX + this.optionsWidth - 25, this.y - 5);
+      ctx.stroke();
+      ctx.closePath();
+      if (this.hoveringOverOpener() || hoveredOption > -1) {
+        setCursor("pointer");
+      }
+      currentX += this.optionsWidth + DROPDOWN_UI_PADDING;
+      this.tooltipPos = { x: currentX + TOOLTIP_ICON_SIZE / 2, y: this.y };
+      this.tooltipIcon.drawIcon(this.tooltipPos);
+      this.tooltipIcon.drawText(
+        this.tooltipPos,
+        { x: mouse.canvasX, y: mouse.canvasY }
+      );
+    }
+    /**
+     * Determines whether or not the user is hovering over the dropdown menu to
+     * open/close it.
+     */
+    hoveringOverOpener() {
+      return mouseInBox(
+        { x: mouse.canvasX, y: mouse.canvasY },
+        {
+          x: this.optionsX,
+          y: this.y - this.heightPerOption / 2,
+          w: this.optionsWidth,
+          h: this.heightPerOption
+        }
+      );
+    }
+    /**
+     * Returns the index of the option that the user is currently hovering over,
+     * or -1 if the user is currently not hovering over any option.
+     */
+    hoveredOptionIndex() {
+      if (mouse.canvasY <= this.y + this.heightPerOption / 2) {
+        return -1;
+      }
+      if (!mouseInBox(
+        { x: mouse.canvasX, y: mouse.canvasY },
+        {
+          x: this.optionsX,
+          y: this.y + this.heightPerOption / 2 + this.optionsTranslateY,
+          w: this.optionsWidth,
+          h: this.totalOptionsHeight
+        }
+      )) {
+        return -1;
+      }
+      const relativeY = mouse.canvasY - (this.y + this.heightPerOption / 2 + this.optionsTranslateY);
+      const index = Math.floor(relativeY / this.heightPerOption);
+      return Math.max(Math.min(index, this.options.length - 1), 0);
+    }
+    /**
+     * Processes a mouse click input.
+     */
+    mouseDown() {
+      const hoveredOption = this.hoveredOptionIndex();
+      if (this.hoveringOverOpener()) {
+        this.toggleExpansion();
+      } else if (hoveredOption > -1) {
+        this.setOption(this.options[hoveredOption]);
+        this.optionSelectedTime = time;
+        this.expanded = false;
+        this.optionsTranslateY = -this.totalOptionsHeight;
+      } else if (this.expanded) {
+        this.toggleExpansion();
+      }
+    }
+    /**
+     * Adds a listener to {@linkcode listeners}, which will allow it to listen to
+     * all *future* choices made by the user.
+     * @param fn The listener to be added.
+     * @param applyCurrent Whether or not to also apply `fn` to the
+     * {@linkcode currentChoice currently selected option}. Default: `true`.
+     */
+    addListener(fn, applyCurrent = true) {
+      this.listeners.push(fn);
+      if (applyCurrent) {
+        fn(this.currentChoice.text);
+      }
+    }
+    /**
+     * Returns `true` if and only if the user clicked on an option within the
+     * past 250ms.
+     */
+    recentlySelectedOption() {
+      return time - this.optionSelectedTime < 250;
+    }
+  }
+  function addGalleryCounterDropdownMenu() {
+    const originalResize = mobGallery.resize;
+    mobGallery.resize = function(h) {
+      originalResize.apply(this, [h]);
+      this.h += GALLERY_EXTRA_HEIGHT;
+      this.dimensions.h += GALLERY_EXTRA_HEIGHT;
+      this.inventorySpace.y += GALLERY_EXTRA_HEIGHT;
+      this.scrollBounds.y.end += GALLERY_EXTRA_HEIGHT;
+      this.inventorySpace.w += GALLERY_EXTRA_HOR_SPACE;
+      this.scrollBounds.y.start = this.inventorySpace.y + this.scrollBarSize / 2 + 14 + GALLERY_TOP_PADDING;
+    };
+    const originalDrawRows = mobGallery.drawRows;
+    mobGallery.drawRows = function() {
+      originalDrawRows.apply(this);
+      this.scrollExcess.x -= GALLERY_EXTRA_HOR_SPACE;
+    };
+    mobGallery._currentY = mobGallery.currentY;
+    Object.defineProperty(mobGallery, "currentY", {
+      get: function() {
+        return this._currentY;
+      },
+      set: function(v) {
+        this._currentY = Math.max(v, this.inventorySpace.y + GALLERY_TOP_PADDING);
+      }
+    });
+    const originalUpdateScroll = mobGallery.updateScroll;
+    mobGallery.updateScroll = function(scroll, { mouseX, mouseY }) {
+      if (mouseInBox(
+        { x: mouseX, y: mouseY },
+        {
+          x: this.x,
+          y: this.inventorySpace.y,
+          w: this.w,
+          h: this.inventorySpace.h
+        }
+      )) {
+        originalUpdateScroll.apply(this, [scroll, { mouseX, mouseY }]);
+      }
+    };
+    const dropdownUI = new DropdownUI(
+      "Display count:",
+      "cinderMobStatDisplay",
+      mobGallery.x + mobGallery.w / 2,
+      mobGallery.renderY + 80,
+      [
+        { text: "None", colour: "white" },
+        { text: "Kills", colour: TEXT_LIGHT_RED },
+        { text: "Spawns", colour: TEXT_LIGHT_BLUE },
+        { text: "Kills +", colour: TEXT_LIGHT_RED },
+        { text: "Spawns +", colour: TEXT_LIGHT_BLUE }
+      ],
+      `The "Kills +" and "Spawns +" options count Lucky mobs multiple times based on their loot multipliers.`
+    );
+    dropdownUI.addListener((option) => {
+      mobGallery.setCountMode(option);
+    });
+    const originalDrawInventory = mobGallery.drawInventory;
+    mobGallery.drawInventory = function(alpha) {
+      originalDrawInventory.apply(this, [alpha]);
+      ctx.font = "900 32px Ubuntu";
+      ctx.lineWidth = 3.75;
+      ctx.fillStyle = "white";
+      ctx.strokeStyle = "black";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.strokeText("Mob Gallery", this.x + this.w / 2, this.renderY + 15);
+      ctx.fillText("Mob Gallery", this.x + this.w / 2, this.renderY + 15);
+      dropdownUI.y = this.renderY + 75;
+      dropdownUI.draw();
+    };
+    const originalMouseDown = mobGallery.mouseDown;
+    mobGallery.mouseDown = function({ x, y }) {
+      originalMouseDown.apply(this, [{ x, y }]);
+      dropdownUI.mouseDown();
+    };
+    const originalDrawStatsBox = Enemy.prototype.drawStatsBox;
+    Enemy.prototype.drawStatsBox = function(drawBelow, rarityOverride) {
+      if (dropdownUI.hoveredOptionIndex() > -1 || dropdownUI.recentlySelectedOption()) {
+        this.isHovered = false;
+      }
+      originalDrawStatsBox.apply(this, [drawBelow, rarityOverride]);
+    };
+  }
   unfreezeObjects();
   initTheoryCraft();
   allowWsDataEditing();
@@ -3474,6 +3864,7 @@ Please enter a Rarity.`
   addPetalSlotLocking();
   addMobGalleryKillCounter();
   widerMobStatsBoxes();
+  addGalleryCounterDropdownMenu();
   addScreenshotMode();
   addScriptVersionToDebugInfo();
   displayMobGalleryOutsideMenu();

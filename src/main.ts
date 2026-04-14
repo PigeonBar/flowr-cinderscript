@@ -30,6 +30,7 @@ import { displayMobGalleryOutsideMenu } from "./dev/mobGalleryOutsideMenu";
 import { addMobGalleryKillCounter } from "./features/mobGalleryKillCounter";
 import { initPetalDrawingUtils } from "./inits/petalDrawingUtils";
 import { widerMobStatsBoxes } from "./features/widerMobStatsBoxes";
+import { addGalleryCounterDropdownMenu } from "./features/galleryCounterDropdownMenu";
 
 // #region Inits
 unfreezeObjects();
@@ -62,6 +63,7 @@ optimizeHighQualityRenders();
 addPetalSlotLocking();
 addMobGalleryKillCounter();
 widerMobStatsBoxes();
+addGalleryCounterDropdownMenu();
 
 // #region Dev tools
 addScreenshotMode();

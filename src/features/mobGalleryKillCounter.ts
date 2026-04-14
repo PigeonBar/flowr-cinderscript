@@ -1,7 +1,6 @@
 import { unsafeWindow } from "$";
 import { TEXT_LIGHT_BLUE, TEXT_LIGHT_RED } from "../constants/constants";
 import type { Rarity } from "../enums";
-import { settings } from "../settings/settingsManager";
 import { isNil } from "../utils";
 
 /**
@@ -30,9 +29,9 @@ export function addMobGalleryKillCounter(): void {
         return killCounter;
       case "spawns":
         return spawnCounter;
-      case "kills+":
+      case "kills +":
         return killPlusCounter;
-      case "spawns+":
+      case "spawns +":
         return spawnPlusCounter;
       default:
         return undefined;
@@ -40,9 +39,9 @@ export function addMobGalleryKillCounter(): void {
   }
 
   mobGallery.getStatTextColour = function() {
-    if (["kills", "kills+"].includes(this.countMode.toLowerCase())) {
+    if (["kills", "kills +"].includes(this.countMode.toLowerCase())) {
       return TEXT_LIGHT_RED;
-    } else if (["spawns", "spawns+"].includes(this.countMode.toLowerCase())) {
+    } else if (["spawns", "spawns +"].includes(this.countMode.toLowerCase())) {
       return TEXT_LIGHT_BLUE;
     } else {
       return "white";
@@ -62,17 +61,19 @@ export function addMobGalleryKillCounter(): void {
     const mobContainer = mobGallery.rows[type]?.[rarity];
     if (typeof mobContainer === "object") {
       mobContainer.amount = stat;
-      mobContainer.lastAmountChangedTime = time;
+      if (!isNil(this.getStatCounter())) {
+        mobContainer.lastAmountChangedTime = time;
+      } else {
+        // If the mob gallery is not currently displaying a stat, subtract
+        // 10000 from `lastAmountChangedTime` to stop the animation of the
+        // container's amount fading out.
+        mobContainer.lastAmountChangedTime = time - 10000;
+      }
     }
     cachedImages.statBoxes.enemies[`${type}${rarity}`] = undefined;
 
     return stat;
   }
-
-  // For now, the mob gallery tracks kills
-  mobGallery.setCountMode(
-    settings.get("mobGalleryKillCounter") ? "Kills" : "None"
-  );
 
   // Track whether each killed mob is a "real kill" by checking whether or not
   // it dropped loot.

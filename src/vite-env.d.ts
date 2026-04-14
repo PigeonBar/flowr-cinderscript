@@ -94,6 +94,7 @@ declare global {
     menuActive: boolean;
     lastOpenTime?: number;
     lastCloseTime?: number;
+    dimensions: {x: number, y: number, w: number, h: number};
 
     /**
      * The y-position of this menu on the canvas. This value changes when the
@@ -345,6 +346,13 @@ declare global {
 
   class MobGallery extends BottomMenu {
     x: number;
+    y: number;
+    scrollBarSize: number;
+
+    /**
+     * The dimensions of the viewing area for the gallery entries.
+     */
+    inventorySpace: {x: number, y: number, w: number, h: number};
 
     /**
      * The percentages that this gallery is scrolled horizontally and
@@ -358,6 +366,25 @@ declare global {
      * determine the gallery entries' translations due to scrolling.
      */
     scrollExcess: {x: number, y: number};
+
+    /**
+     * Bounds for the locations of the horizontal and vertical scroll bars.
+     */
+    scrollBounds: {
+      x: {start: number, end: number},
+      y: {start: number, end: number},
+    };
+
+    /**
+     * A number that tracks the y-position of each row that gets drawn.
+     */
+    currentY: number;
+
+    /**
+     * An internal value used by this script to enforce some bounds on
+     * `currentY` via a setter function.
+     */
+    _currentY: number;
 
     /**
      * The mob gallery's contents, as follows:
@@ -385,18 +412,48 @@ declare global {
 
     /**
      * The stat that this mob gallery is currently counting. Available options
-     * are "Kills", "Kills+", "Spawns", and "Spawns+". Setting this field to
+     * are "Kills", "Kills +", "Spawns", and "Spawns +". Setting this field to
      * any other value will disable counting.
      */
     countMode: string;
 
-    draw();
+    draw(): void;
+
+    /**
+     * Draws the rows of gallery entries, and also updates 
+     * {@linkcode scrollExcess} based on the dimensions of the drawn entries.
+     */
+    drawRows(): void;
+
+    /**
+     * Handles drawing most of the mob gallery.
+     */
+    drawInventory(alpha?: number): void;
 
     generateEnemyPc(
       type: EnemyType,
       rarity: Rarity,
       dimensions: number,
     ): PetalContainer;
+
+    /**
+     * Updates the dimensions of this mob gallery and its components, expect
+     * for {@linkcode scrollExcess}, which is updated at the end of
+     * {@linkcode drawRows}.
+     */
+    resize(h?: number): void;
+
+    /**
+     * Processes a mouse click input.
+     */
+    mouseDown({x, y}: CanvasMouseData): void;
+
+    /**
+     * Processes a mouse scroll input in order to scroll the gallery.
+     */
+    updateScroll(
+      scroll: {x: number, y: number}, { mouseX, mouseY }: CanvasMouseData2,
+    ): void;
 
     /**
      * Returns the stat counter currently being used, based on
@@ -413,10 +470,10 @@ declare global {
     /**
      * Set the stat that this mob gallery is currently counting, and also
      * updates all of the gallery entries to display the new stat. Available
-     * options are "Kills", "Kills+", "Spawns", and "Spawns+". Using any other
-     * value will disable counting.
+     * options are "Kills", "Kills +", "Spawns", and "Spawns +". Using any
+     * other value will disable counting.
      */
-    setCountMode(value: string);
+    setCountMode(value: string): void;
 
     /**
      * Updates this gallery's displayed stat for the given mob of the given
@@ -494,6 +551,7 @@ declare global {
     xp: number;
     isBoss?: boolean;
     statsBoxAlpha: number;
+    isHovered?: boolean;
 
     /**
      * Whether or not this mob is the head segment of a Leech-like mob.
@@ -788,7 +846,7 @@ declare global {
   const mouse: MouseData;
   
   function mouseInBox(
-    mouse: {x: number, y: number},
+    mouse: CanvasMouseData,
     box: {x: number, y: number, w: number, h: number}
   );
 
