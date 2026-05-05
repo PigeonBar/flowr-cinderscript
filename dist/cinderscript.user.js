@@ -5,6 +5,8 @@
 // @author       Applepie (Ideas + bugfixes), PigeonBar (some technical stuff)
 // @description  A free, publicly available collection of QoL features for flowr.fun players.
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=flowr.fun
+// @downloadURL  https://github.com/PigeonBar/flowr-cinderscript/raw/refs/heads/background-colour-draft/dist/cinderscript.user.js
+// @updateURL    https://github.com/PigeonBar/flowr-cinderscript/raw/refs/heads/background-colour-draft/dist/cinderscript.user.js
 // @match        https://flowr.fun/
 // @grant        unsafeWindow
 // ==/UserScript==

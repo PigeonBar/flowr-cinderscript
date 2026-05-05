@@ -1,6 +1,8 @@
+Before we get started: This branch (background-colour-draft) contains **experimental features** that may need more polishing and may contain bugs. If you did not intend to come here, please navigate back to the "main" branch on this repository.
+
 # Quick start guide
 
-If you are using a userscript manager such as Tampermonkey, it should let you install the script directly using this link: [Install](https://github.com/PigeonBar/flowr-cinderscript/raw/refs/heads/main/dist/cinderscript.user.js).
+If you are using a userscript manager such as Tampermonkey, it should let you install the script directly using this link: [Install](https://github.com/PigeonBar/flowr-cinderscript/raw/refs/heads/background-colour-draft/dist/cinderscript.user.js).
 
 After this initial installation, your userscript manager should automatically take care of detecting and applying updates to your installed script. Please also give yourself some time to configure the script's new settings, especially its **keybinds**.
 
@@ -12,17 +14,15 @@ Welcome! This is a free, publicly available script containing a collection of Qo
 
 I intend to comply with all guidelines and conditions set by the flowr developers. Please report any compliance-related issues to me as needed, and I will fix them asap.
 
-Also, if you would like to use an additional feature that lets you customize biome background colours (which needs some more polishing and may contain bugs), then please navigate to the branch "background-colour-draft" on this repository, then install the script from there.
-
 Finally, this project is not associated with Flamescript in any way. I just thought that "Cinderscript" would be a cool name for my script, given the existence of an old script named "Flamescript".
 
 # Installation steps
 
-The userscript is stored at [dist/cinderscript.user.js](https://github.com/PigeonBar/flowr-cinderscript/raw/refs/heads/main/dist/cinderscript.user.js).
+The userscript is stored at [dist/cinderscript.user.js](https://github.com/PigeonBar/flowr-cinderscript/raw/refs/heads/background-colour-draft/dist/cinderscript.user.js).
 
 This script is meant to be installed using a userscript manager, such as Tampermonkey. If needed, you can install Tampermonkey itself through their [official website](https://www.tampermonkey.net/).
 
-Once you have installed a userscript manager, navigate to the raw script file (e.g., [dist/cinderscript.user.js](https://github.com/PigeonBar/flowr-cinderscript/raw/refs/heads/main/dist/cinderscript.user.js)) on GitHub, and then your userscript manager should automatically prompt you to install the script. If this does not work, you can instead manually install the script using the following steps:
+Once you have installed a userscript manager, navigate to the raw script file (e.g., [dist/cinderscript.user.js](https://github.com/PigeonBar/flowr-cinderscript/raw/refs/heads/background-colour-draft/dist/cinderscript.user.js)) on GitHub, and then your userscript manager should automatically prompt you to install the script. If this does not work, you can instead manually install the script using the following steps:
 
 1. Copy the script's contents (Ctrl+A then Ctrl+C).
 2. Click on your userscript manager's "Create a new script" button to open up a script editor.
