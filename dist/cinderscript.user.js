@@ -5,8 +5,6 @@
 // @author       Applepie (Ideas + bugfixes), PigeonBar (some technical stuff)
 // @description  A free, publicly available collection of QoL features for flowr.fun players.
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=flowr.fun
-// @downloadURL  https://github.com/PigeonBar/flowr-cinderscript/raw/refs/heads/main/dist/cinderscript.user.js
-// @updateURL    https://github.com/PigeonBar/flowr-cinderscript/raw/refs/heads/main/dist/cinderscript.user.js
 // @match        https://flowr.fun/
 // @grant        unsafeWindow
 // ==/UserScript==
@@ -71,6 +69,9 @@
   const LIGHT_CINDER_COLOUR = "#ffaf60";
   const CINDER_COLOUR = "#fc9547";
   const CINDER_BORDER_COLOUR = "#cc7b3d";
+  const LIGHT_SETTINGS_GRAY = "#cacaca";
+  const SETTINGS_GRAY = "#aaaaaa";
+  const SETTINGS_GRAY_BORDER = "#8a8a8a";
   const SETTINGS_GREEN = "#3fff3f";
   const TOOLTIP_BLUE = "#7f7fff";
   const TOOLTIP_BORDER_BLUE = "#3f3fff";
@@ -232,6 +233,13 @@
     petalRenderQualityThreshold: 400,
     craftAnimationLength: 0,
     petalLockShakeIntensity: 2,
+    gardenBackground: Colors.biomes.garden.background,
+    desertBackground: Colors.biomes.desert.background,
+    oceanBackground: Colors.biomes.ocean.background,
+    savannaBackground: Colors.biomes.savanna.background,
+    swampBackground: Colors.biomes.swamp.background,
+    zooBackground: Colors.biomes.zoo.background,
+    deepZooBackground: Colors.biomes.deepzoo.background,
     specialDropsRarity: Rarity.ETHEREAL,
     keybindStatsBox: "KeyG",
     keybindInvertAttack: "Comma",
@@ -277,6 +285,13 @@
         petalRenderQualityThreshold: [],
         craftAnimationLength: [],
         petalLockShakeIntensity: [],
+        gardenBackground: [],
+        desertBackground: [],
+        oceanBackground: [],
+        savannaBackground: [],
+        swampBackground: [],
+        zooBackground: [],
+        deepZooBackground: [],
         specialDropsRarity: [],
         keybindStatsBox: [],
         keybindInvertAttack: [],
@@ -290,6 +305,9 @@
      */
     get(key) {
       return this.savedSettings[key];
+    }
+    getDefault(key) {
+      return defaultSettings[key];
     }
     /**
      * @param key The {@linkcode SettingsKey} being written to.
@@ -381,6 +399,10 @@
     }
   }
   const cinderChangelogList = [
+    {
+      text: `- Added settings to customize biome background colours`,
+      date: "Version 1.7.0"
+    },
     {
       text: `- [*] With this update, this script should now generally be ready for use by Flowrscript users!
 - [*] Fixed inventory menu not being expandable (PR #35)
@@ -610,6 +632,652 @@
           clearInterval(interval);
         }
       }, 1e3);
+    }
+  }
+  class RGBColour {
+    /**
+     * A number from 0 to 255, representing the Red intensity of this colour.
+     */
+    red;
+    /**
+     * A number from 0 to 255, representing the Green intensity of this colour.
+     */
+    green;
+    /**
+     * A number from 0 to 255, representing the Blue intensity of this colour.
+     */
+    blue;
+    constructor(arg1, arg2, arg3) {
+      if (typeof arg1 === "number" && !isNil(arg2) && !isNil(arg3)) {
+        this.red = arg1;
+        this.green = arg2;
+        this.blue = arg3;
+      } else if (typeof arg1 === "string" && isHexCode(arg1)) {
+        this.red = parseInt(arg1.slice(1, 3), 16);
+        this.green = parseInt(arg1.slice(3, 5), 16);
+        this.blue = parseInt(arg1.slice(5, 7), 16);
+      } else {
+        console.warn("Invalid colour constructor args!", arg1, arg2, arg3);
+        this.red = this.green = this.blue = 0;
+      }
+      this.red = Math.max(Math.min(this.red, 255), 0);
+      this.green = Math.max(Math.min(this.green, 255), 0);
+      this.blue = Math.max(Math.min(this.blue, 255), 0);
+    }
+    /**
+     * A helper function to convert an rgb intensity to a 2-character hex code.
+     */
+    componentToHex(intensity) {
+      const hex = Math.round(intensity).toString(16);
+      return hex.length === 1 ? "0" + hex : hex;
+    }
+    /**
+     * Returns a hex code representing this colour.
+     * 
+     * If this colour's intensities are decimal numbers, this function rounds the
+     * three intensities to the nearest integer first.
+     */
+    getHexCode() {
+      return "#" + this.componentToHex(this.red) + this.componentToHex(this.green) + this.componentToHex(this.blue);
+    }
+    /**
+     * Computes the brightness of this colour, as a number between 0 and 1.
+     */
+    getBrightness() {
+      return Math.max(this.red, this.green, this.blue) / 255;
+    }
+    /**
+     * Computes the saturation of this colour, as a number between 0 and 1.
+     */
+    getSaturation() {
+      const colour1 = this.fullBrightness();
+      return 1 - Math.min(colour1.red, colour1.green, colour1.blue) / 255;
+    }
+    /**
+     * Computes the hue of this colour on the colour wheel, as a number between
+     * 0 and 360.
+     */
+    getHue() {
+      const colour2 = this.fullBrightnessAndSaturation();
+      const minColour = Math.min(colour2.red, colour2.green, colour2.blue);
+      const maxColour = Math.max(colour2.red, colour2.green, colour2.blue);
+      if (colour2.red === maxColour) {
+        if (colour2.green === minColour) {
+          return 360 - colour2.blue * 60 / 255;
+        } else {
+          return colour2.green * 60 / 255;
+        }
+      } else if (colour2.green === maxColour) {
+        if (colour2.blue === minColour) {
+          return 120 - colour2.red * 60 / 255;
+        } else {
+          return 120 + colour2.blue * 60 / 255;
+        }
+      } else {
+        if (colour2.red === minColour) {
+          return 240 - colour2.green * 60 / 255;
+        } else {
+          return 240 + colour2.red * 60 / 255;
+        }
+      }
+    }
+    /**
+     * Returns a copy of this colour with brightness set to full.
+     */
+    fullBrightness() {
+      const brightness = this.getBrightness();
+      if (brightness <= 0) {
+        return new RGBColour(255, 255, 255);
+      } else {
+        const ratio = 1 / brightness;
+        return new RGBColour(
+          this.red * ratio,
+          this.green * ratio,
+          this.blue * ratio
+        );
+      }
+    }
+    /**
+     * Returns a copy of this colour with brightness set to full, and then
+     * saturation set to full.
+     */
+    fullBrightnessAndSaturation() {
+      const colour1 = this.fullBrightness();
+      const saturation = this.getSaturation();
+      if (saturation <= 0) {
+        return new RGBColour(255, 0, 0);
+      } else {
+        const ratio = 1 / saturation;
+        const fn = (intensity) => {
+          return 255 - ratio * (255 - intensity);
+        };
+        return new RGBColour(fn(colour1.red), fn(colour1.green), fn(colour1.blue));
+      }
+    }
+  }
+  class ColourSelectorUi {
+    /**
+     * The x-coordinate of this ui on the main canvas.
+     */
+    x;
+    /**
+     * The y-coordinate of this ui on the main canvas.
+     */
+    y;
+    /**
+     * The width of this ui on the main canvas.
+     */
+    w;
+    /**
+     * The height of this ui on the main canvas.
+     */
+    h;
+    /**
+     * Whether or not the user has opened this UI.
+     */
+    active;
+    /**
+     * The original colour stored by this UI before the user started editing.
+     */
+    originalColour;
+    /**
+     * The base game's default colour for the setting that is being edited.
+     */
+    defaultColour;
+    /**
+     * The hue of the currently edited colour.
+     */
+    hue;
+    /**
+     * The saturation of the currently edited colour.
+     */
+    saturation;
+    /**
+     * The brightness of the currently edited colour.
+     */
+    brightness;
+    /**
+     * The position of the main gradient rectangle relative to this UI.
+     */
+    gradientRect;
+    /**
+     * The position of the colour wheel picker relative to this UI.
+     */
+    colourWheel;
+    /**
+     * The position of the "Save Selection" button relative to this UI.
+     */
+    saveButton;
+    /**
+     * The position of the "Import Hex Code" button relative to this UI.
+     */
+    importButton;
+    /**
+     * The position of the "Close" button relative to this UI.
+     */
+    closeButton;
+    /**
+     * The parent {@linkcode CinderSettingsMenu} that this UI belongs to.
+     */
+    parentMenu;
+    /**
+     * Whether or not the user is currently dragging the main gradient rectangle
+     * picker (saturation + brightness).
+     */
+    draggingMainGradient;
+    /**
+     * Whether or not the user is currently dragging the colour wheel picker.
+     */
+    draggingColourWheel;
+    /**
+     * Whether or not this UI has unsaved changes.
+     */
+    unsavedChanges;
+    constructor(parentMenu) {
+      this.active = false;
+      this.originalColour = new RGBColour("#ffffff");
+      this.defaultColour = new RGBColour("#ffffff");
+      this.hue = this.originalColour.getHue();
+      this.saturation = this.originalColour.getSaturation();
+      this.brightness = this.originalColour.getBrightness();
+      this.parentMenu = parentMenu;
+      this.draggingColourWheel = false;
+      this.draggingMainGradient = false;
+      this.unsavedChanges = false;
+      this.w = 770;
+      this.h = 350;
+      this.x = this.parentMenu.x + this.parentMenu.w + 20;
+      this.y = -this.h - 20;
+      this.gradientRect = { x: 20, y: 50, w: 400, h: 280 };
+      this.colourWheel = {
+        x: this.gradientRect.x + this.gradientRect.w + 40,
+        y: this.gradientRect.y,
+        w: 40,
+        h: this.gradientRect.h
+      };
+      this.saveButton = {
+        x: this.colourWheel.x + this.colourWheel.w + 40,
+        y: this.colourWheel.y,
+        w: 160,
+        h: 40
+      };
+      this.importButton = {
+        x: this.colourWheel.x + this.colourWheel.w + 40,
+        y: this.colourWheel.y + 50,
+        w: 160,
+        h: 40
+      };
+      this.closeButton = {
+        x: this.w - 7.5 - 30 - 3,
+        y: 7.5 + 3,
+        w: 30,
+        h: 30
+      };
+    }
+    /**
+     * Sets this UI to be editing a new colour for a new item/setting (i.e., any
+     * time that {@linkcode originalColour} should also be overwritten).
+     */
+    setColour(colour) {
+      if (typeof colour === "string") {
+        this.originalColour = new RGBColour(colour);
+      } else {
+        this.originalColour = colour;
+      }
+      this.hue = this.originalColour.getHue();
+      this.saturation = this.originalColour.getSaturation();
+      this.brightness = this.originalColour.getBrightness();
+      this.unsavedChanges = false;
+    }
+    /**
+     * Sets this UI's {@linkcode defaultColour} for a new setting.
+     */
+    setDefaultColour(colour) {
+      this.defaultColour = new RGBColour(colour);
+    }
+    /**
+     * Computes the colour corresponding to the currently selected hue (with full
+     * saturation and brightness).
+     */
+    getColourForCurrentHue() {
+      let red = 0;
+      let green = 0;
+      let blue = 0;
+      if (this.hue < 60) {
+        red = 255;
+        green = 255 * this.hue / 60;
+      } else if (this.hue < 120) {
+        green = 255;
+        red = 255 * (120 - this.hue) / 60;
+      } else if (this.hue < 180) {
+        green = 255;
+        blue = 255 * (this.hue - 120) / 60;
+      } else if (this.hue < 240) {
+        blue = 255;
+        green = 255 * (240 - this.hue) / 60;
+      } else if (this.hue < 300) {
+        blue = 255;
+        red = 255 * (this.hue - 240) / 60;
+      } else {
+        red = 255;
+        blue = 255 * (360 - this.hue) / 60;
+      }
+      return new RGBColour(red, green, blue);
+    }
+    /**
+     * Computes the currently selected colour.
+     */
+    getCurrentColour() {
+      const colour1 = this.getColourForCurrentHue();
+      let red = colour1.red;
+      let green = colour1.green;
+      let blue = colour1.blue;
+      red = 255 - this.saturation * (255 - red);
+      green = 255 - this.saturation * (255 - green);
+      blue = 255 - this.saturation * (255 - blue);
+      red = this.brightness * red;
+      green = this.brightness * green;
+      blue = this.brightness * blue;
+      return new RGBColour(red, green, blue);
+    }
+    /**
+     * The main function to draw this UI.
+     */
+    draw() {
+      this.x = this.parentMenu.x + this.parentMenu.w + 20;
+      const targetY = this.active ? 20 : -this.h - 20;
+      this.y = interpolate(this.y, targetY, 0.3);
+      this.handleDragging();
+      ctx.save();
+      ctx.translate(this.x, this.y);
+      ctx.strokeStyle = SETTINGS_GRAY_BORDER;
+      ctx.fillStyle = SETTINGS_GRAY;
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.roundRect(0, 0, this.w, this.h, 3);
+      ctx.fill();
+      ctx.stroke();
+      ctx.closePath();
+      ctx.font = "900 32px Ubuntu";
+      ctx.fillStyle = "white";
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 3.75;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctxDrawText("Colour Selector", this.w / 2, 10);
+      const grad1 = ctx.createLinearGradient(
+        this.gradientRect.x,
+        0,
+        this.gradientRect.x + this.gradientRect.w,
+        0
+      );
+      grad1.addColorStop(0, "#ffffff");
+      grad1.addColorStop(1, this.getColourForCurrentHue().getHexCode());
+      ctx.fillStyle = grad1;
+      ctx.fillRect(
+        this.gradientRect.x,
+        this.gradientRect.y,
+        this.gradientRect.w,
+        this.gradientRect.h
+      );
+      const grad2 = ctx.createLinearGradient(
+        0,
+        this.gradientRect.y,
+        0,
+        this.gradientRect.y + this.gradientRect.h
+      );
+      grad2.addColorStop(0, "#00000000");
+      grad2.addColorStop(1, "#000000");
+      ctx.fillStyle = grad2;
+      ctx.fillRect(
+        this.gradientRect.x,
+        this.gradientRect.y,
+        this.gradientRect.w,
+        this.gradientRect.h
+      );
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(
+        this.gradientRect.x + this.saturation * this.gradientRect.w,
+        this.gradientRect.y + (1 - this.brightness) * this.gradientRect.h,
+        11,
+        0,
+        2 * Math.PI
+      );
+      ctx.stroke();
+      ctx.closePath();
+      ctx.strokeStyle = "white";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(
+        this.gradientRect.x + this.saturation * this.gradientRect.w,
+        this.gradientRect.y + (1 - this.brightness) * this.gradientRect.h,
+        9,
+        0,
+        2 * Math.PI
+      );
+      ctx.stroke();
+      ctx.closePath();
+      const grad3 = ctx.createLinearGradient(
+        0,
+        this.colourWheel.y,
+        0,
+        this.colourWheel.y + this.colourWheel.h
+      );
+      grad3.addColorStop(0, "#ff0000");
+      grad3.addColorStop(1 / 6, "#ffff00");
+      grad3.addColorStop(1 / 3, "#00ff00");
+      grad3.addColorStop(1 / 2, "#00ffff");
+      grad3.addColorStop(2 / 3, "#0000ff");
+      grad3.addColorStop(5 / 6, "#ff00ff");
+      grad3.addColorStop(1, "#ff0000");
+      ctx.fillStyle = grad3;
+      ctx.fillRect(
+        this.colourWheel.x,
+        this.colourWheel.y,
+        this.colourWheel.w,
+        this.colourWheel.h
+      );
+      ctx.strokeStyle = "white";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.rect(
+        this.colourWheel.x - 8,
+        this.colourWheel.y + this.hue * this.colourWheel.h / 360 - 4,
+        this.colourWheel.w + 16,
+        8
+      );
+      ctx.stroke();
+      ctx.closePath();
+      let currentX = this.saveButton.x;
+      let currentY = this.colourWheel.y + this.colourWheel.h - 10;
+      ctx.font = "900 17px Ubuntu";
+      ctx.lineWidth = 2;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "bottom";
+      ctx.fillStyle = "white";
+      ctx.strokeStyle = "black";
+      ctxDrawText("Default: ", currentX, currentY);
+      currentX += ctx.measureText("Default: ").width;
+      ctx.fillStyle = SETTINGS_GREEN;
+      ctxDrawText(this.defaultColour.getHexCode(), currentX, currentY);
+      currentX = this.colourWheel.x + 250;
+      ctx.fillStyle = this.defaultColour.getHexCode();
+      ctx.fillRect(currentX, currentY - 30, 40, 40);
+      currentX = this.saveButton.x;
+      currentY -= 40;
+      ctx.fillStyle = "white";
+      ctxDrawText("New: ", currentX, currentY);
+      currentX += ctx.measureText("New: ").width;
+      ctx.fillStyle = SETTINGS_GREEN;
+      ctxDrawText(this.getCurrentColour().getHexCode(), currentX, currentY);
+      currentX = this.colourWheel.x + 250;
+      ctx.fillStyle = this.getCurrentColour().getHexCode();
+      ctx.fillRect(currentX, currentY - 30, 40, 40);
+      currentX = this.saveButton.x;
+      currentY -= 40;
+      ctx.fillStyle = "white";
+      ctxDrawText("Original: ", currentX, currentY);
+      currentX += ctx.measureText("Original: ").width;
+      ctx.fillStyle = SETTINGS_GREEN;
+      ctxDrawText(this.originalColour.getHexCode(), currentX, currentY);
+      currentX = this.colourWheel.x + 250;
+      ctx.fillStyle = this.originalColour.getHexCode(), ctx.fillRect(currentX, currentY - 30, 40, 40);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "black";
+      ctx.strokeRect(currentX - 1, currentY - 31, 42, 122);
+      ctx.fillStyle = SETTINGS_GRAY;
+      ctx.strokeStyle = SETTINGS_GRAY_BORDER;
+      ctx.lineWidth = 4.5;
+      if (this.hoveringOverElement(this.saveButton)) {
+        ctx.fillStyle = LIGHT_SETTINGS_GRAY;
+        setCursor("pointer");
+      }
+      ctx.beginPath();
+      ctx.roundRect(
+        this.saveButton.x,
+        this.saveButton.y,
+        this.saveButton.w,
+        this.saveButton.h,
+        3
+      );
+      ctx.fill();
+      ctx.stroke();
+      ctx.closePath();
+      ctx.fillStyle = "white";
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 2;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctxDrawText(
+        "Save Selection",
+        this.saveButton.x + this.saveButton.w / 2,
+        this.saveButton.y + this.saveButton.h / 2
+      );
+      ctx.fillStyle = SETTINGS_GRAY;
+      ctx.strokeStyle = SETTINGS_GRAY_BORDER;
+      ctx.lineWidth = 4.5;
+      if (this.hoveringOverElement(this.importButton)) {
+        ctx.fillStyle = LIGHT_SETTINGS_GRAY;
+        setCursor("pointer");
+      }
+      ctx.beginPath();
+      ctx.roundRect(
+        this.importButton.x,
+        this.importButton.y,
+        this.importButton.w,
+        this.importButton.h,
+        3
+      );
+      ctx.fill();
+      ctx.stroke();
+      ctx.closePath();
+      ctx.fillStyle = "white";
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 2;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctxDrawText(
+        "Import Hex Code",
+        this.importButton.x + this.importButton.w / 2,
+        this.importButton.y + this.importButton.h / 2
+      );
+      ctx.fillStyle = "#c1565e";
+      ctx.strokeStyle = "#90464b";
+      ctx.lineWidth = 5;
+      if (this.hoveringOverElement(this.closeButton)) {
+        ctx.fillStyle = "#c16666";
+        setCursor("pointer");
+      }
+      ctx.beginPath();
+      ctx.roundRect(
+        this.closeButton.x,
+        this.closeButton.y,
+        this.closeButton.w,
+        this.closeButton.h,
+        6
+      );
+      ctx.fill();
+      ctx.stroke();
+      ctx.closePath();
+      ctx.lineWidth = 4.75;
+      ctx.lineCap = "round";
+      ctx.strokeStyle = "#cccccc";
+      ctx.beginPath();
+      ctx.moveTo(
+        this.closeButton.x + 7.5,
+        this.closeButton.y + 7.5
+      );
+      ctx.lineTo(
+        this.closeButton.x + this.closeButton.w - 7.5,
+        this.closeButton.y + this.closeButton.h - 7.5
+      );
+      ctx.stroke();
+      ctx.closePath();
+      ctx.beginPath();
+      ctx.moveTo(
+        this.closeButton.x + this.closeButton.w - 7.5,
+        this.closeButton.y + 7.5
+      );
+      ctx.lineTo(
+        this.closeButton.x + 7.5,
+        this.closeButton.y + this.closeButton.h - 7.5
+      );
+      ctx.stroke();
+      ctx.closePath();
+      ctx.translate(3, -3);
+      ctx.restore();
+    }
+    /**
+     * Handles editing the picked colour based on the user's mouse position when
+     * the user is already dragging the main gradient picker or the colour wheel
+     * picker.
+     */
+    handleDragging() {
+      if (this.draggingMainGradient) {
+        this.saturation = (mouse.canvasX - this.gradientRect.x - this.x) / this.gradientRect.w;
+        this.brightness = 1 - (mouse.canvasY - this.gradientRect.y - this.y) / this.gradientRect.h;
+      } else if (this.draggingColourWheel) {
+        this.hue = 360 * (mouse.canvasY - this.colourWheel.y - this.y) / this.colourWheel.h;
+      }
+      this.saturation = Math.max(Math.min(this.saturation, 1), 0);
+      this.brightness = Math.max(Math.min(this.brightness, 1), 0);
+      this.hue = Math.max(Math.min(this.hue, 360), 0);
+    }
+    /**
+     * Checks whether the mouse is inside this menu.
+     */
+    mouseInMenu() {
+      return mouseInBox(
+        { x: mouse.canvasX, y: mouse.canvasY },
+        { x: this.x, y: this.y, w: this.w, h: this.h }
+      );
+    }
+    /**
+     * Handles the user clicking on the UI.
+     */
+    mouseDown() {
+      if (this.hoveringOverElement(this.gradientRect)) {
+        this.draggingMainGradient = true;
+        this.unsavedChanges = true;
+      } else if (this.hoveringOverElement(this.colourWheel)) {
+        this.draggingColourWheel = true;
+        this.unsavedChanges = true;
+      } else if (this.hoveringOverElement(this.saveButton)) {
+        this.originalColour = this.getCurrentColour();
+        this.parentMenu.saveColour(this.getCurrentColour().getHexCode());
+      } else if (this.hoveringOverElement(this.importButton)) {
+        let colour = prompt("Please input a hex code:") ?? "";
+        if (colour.charAt(0) !== "#") {
+          colour = "#" + colour;
+        }
+        if (isHexCode(colour)) {
+          this.setColour(colour);
+          this.parentMenu.saveColour(colour);
+        } else {
+          alert(`Error: "${colour}" is not a valid hex code!`);
+        }
+      } else if (this.hoveringOverElement(this.closeButton)) {
+        this.parentMenu.cancelColourOption();
+        this.active = false;
+      }
+    }
+    /**
+     * Handles the user releasing a mouse click.
+     */
+    mouseUp() {
+      this.draggingColourWheel = false;
+      this.draggingMainGradient = false;
+    }
+    /**
+     * A helper function to determine whether the mouse is hovering over one of
+     * this UI's elements.
+     */
+    hoveringOverElement(element) {
+      return mouseInBox(
+        { x: mouse.canvasX, y: mouse.canvasY },
+        {
+          x: this.x + element.x,
+          y: this.y + element.y,
+          w: element.w,
+          h: element.h
+        }
+      );
+    }
+    /**
+     * If {@linkcode unsavedChanges} is `true`, prompt the user on whether or not
+     * they would like to save the unsaved changes.
+     */
+    saveBeforeClosingPrompt() {
+      if (this.unsavedChanges) {
+        if (confirm(
+          "The colour selector has unsaved changes! Save before closing?"
+        )) {
+          this.originalColour = this.getCurrentColour();
+          this.parentMenu.saveColour(this.getCurrentColour().getHexCode());
+        }
+      }
     }
   }
   let settingsMap;
@@ -900,6 +1568,12 @@
       return true;
     }
     /**
+     * @returns `true` iff this is a {@linkcode ColourOption}.
+     */
+    isColourOption() {
+      return false;
+    }
+    /**
      * Processes `originalColour` to make it flash white if the user has edited
      * this setting within the past 1.5s.
      */
@@ -980,7 +1654,73 @@
         ctx.fillText(text, currentX, menu.midHeight);
         currentX += ctx.measureText(text).width;
       }
+      if (this.isColourOption() && !this.editingState) {
+        ctx.strokeStyle = "black";
+        ctx.fillStyle = this.state;
+        ctx.lineWidth = 2;
+        currentX += 10;
+        ctx.fillRect(currentX, menu.midHeight - 10, 20, 20);
+        ctx.strokeRect(currentX, menu.midHeight - 10, 20, 20);
+      }
       menu.currentHeight += SETTINGS_OPTION_HEIGHT;
+    }
+  }
+  class ColourOption extends DisplayValueOption {
+    state;
+    settingsKey;
+    /**
+     * Whether or not the player is currently editing this setting.
+     */
+    editingState;
+    constructor(name, settingsKey, tooltip) {
+      super(name, tooltip);
+      this.state = settings.get(settingsKey);
+      this.settingsKey = settingsKey;
+      this.editingState = false;
+    }
+    isColourOption() {
+      return true;
+    }
+    getDisplayedValues() {
+      if (this.editingState) {
+        return [this.state, " (Editing...)"];
+      } else {
+        return [this.state];
+      }
+    }
+    getValueFillStyles() {
+      const colour1 = this.getFlashColour(SETTINGS_GREEN);
+      if (this.editingState) {
+        return [colour1, CINDER_COLOUR];
+      } else {
+        return [colour1];
+      }
+    }
+    onClick(menu) {
+      if (!this.editingState) {
+        menu.setCurrentColourOption(this);
+        this.editingState = true;
+      } else {
+        menu.cancelColourOption();
+      }
+    }
+    /**
+     * Saves the given colour to the settings.
+     */
+    saveColour(newColour) {
+      if (!isHexCode(newColour)) {
+        console.warn(newColour + " is not a valid hex code!");
+        return;
+      }
+      this.changeTime = performance.now();
+      this.state = newColour;
+      settings.set(this.settingsKey, newColour);
+    }
+    /**
+     * Ends this option's editing state.
+     */
+    finishEdit() {
+      this.editingState = false;
     }
   }
   class NumberOption extends DisplayValueOption {
@@ -1195,6 +1935,15 @@ Please enter a Rarity.`
      */
     currentKeybindOption;
     /**
+     * The {@linkcode ColourOption} currently being edited, if applicable.
+     */
+    currentColourOption;
+    /**
+     * The {@linkcode ColourSelectorUi} that is used for editing this menu's
+     * {@linkcode ColourOption ColourOptions}.
+     */
+    colourSelectorUi;
+    /**
      * The timestamp for the most recent time that the player used a mouse wheel
      * input to scroll this menu.
      */
@@ -1288,6 +2037,34 @@ Please enter a Rarity.`
             },
             dependentKeys: []
           }
+        ),
+        gardenBackground: new ColourOption(
+          "Garden Background Colour",
+          "gardenBackground"
+        ),
+        desertBackground: new ColourOption(
+          "Desert Background Colour",
+          "desertBackground"
+        ),
+        oceanBackground: new ColourOption(
+          "Ocean Background Colour",
+          "oceanBackground"
+        ),
+        savannaBackground: new ColourOption(
+          "Savanna Background Colour",
+          "savannaBackground"
+        ),
+        swampBackground: new ColourOption(
+          "Swamp Background Colour",
+          "swampBackground"
+        ),
+        zooBackground: new ColourOption(
+          "Zoo Background Colour",
+          "zooBackground"
+        ),
+        deepZooBackground: new ColourOption(
+          "Deep Zoo Background Colour",
+          "deepZooBackground"
         ),
         baseReciprocalOfFOV: new NumberOption(
           "Base Zoom Out",
@@ -1394,6 +2171,14 @@ Please enter a Rarity.`
         settingsMap.inventoryExpandButton,
         settingsMap.petalLockShakeIntensity,
         settingsMap.missileDrawPriority,
+        new SettingsSectionHeading("Background Colours"),
+        settingsMap.gardenBackground,
+        settingsMap.desertBackground,
+        settingsMap.oceanBackground,
+        settingsMap.savannaBackground,
+        settingsMap.swampBackground,
+        settingsMap.zooBackground,
+        settingsMap.deepZooBackground,
         new SettingsSectionHeading("Zoom Settings"),
         settingsMap.baseReciprocalOfFOV,
         settingsMap.playerHpBarScale,
@@ -1450,6 +2235,7 @@ Please enter a Rarity.`
       document.addEventListener("wheel", (e) => {
         this.mouseScroll(e);
       });
+      this.colourSelectorUi = new ColourSelectorUi(this);
     }
     /**
      * The y-position at the midpoint of the option currently being rendered.
@@ -1498,7 +2284,7 @@ Please enter a Rarity.`
       ctx.roundRect(0, 0, this.w, this.h, 3);
       ctx.clip();
       ctx.closePath();
-      ctx.fillStyle = "#aaaaaa";
+      ctx.fillStyle = SETTINGS_GRAY;
       ctx.beginPath();
       ctx.roundRect(0, 0, this.w, this.h, 3);
       ctx.fill();
@@ -1541,7 +2327,7 @@ Please enter a Rarity.`
         }
       }
       ctx.restore();
-      ctx.strokeStyle = "#8a8a8a";
+      ctx.strokeStyle = SETTINGS_GRAY_BORDER;
       ctx.lineWidth = 8;
       ctx.beginPath();
       ctx.roundRect(this.x, this.renderY, this.w, this.h, 3);
@@ -1552,6 +2338,7 @@ Please enter a Rarity.`
         option.drawTooltipBox(e);
       }
       ctx.translate(0, this.scroll);
+      this.colourSelectorUi.draw();
     }
     /**
      * Renders the given {@linkcode SettingsOption}. Each type of option is
@@ -1620,6 +2407,7 @@ Please enter a Rarity.`
       if (_unsafeWindow.state !== "menu" && settings.get("hideSettingsDuringRuns")) {
         return;
       }
+      this.colourSelectorUi.mouseDown();
       if (this.mouseOnScrollbar()) {
         this.draggingScrollbarOffset = mouse.canvasY - (this.renderY + this.scrollbarPos);
       }
@@ -1641,6 +2429,7 @@ Please enter a Rarity.`
      */
     mouseUp() {
       this.draggingScrollbarOffset = void 0;
+      this.colourSelectorUi.mouseUp();
     }
     /**
      * Scrolls this menu up/down in response to a mouse wheel input.
@@ -1664,8 +2453,47 @@ Please enter a Rarity.`
       super.toggle();
       if (!this.active) {
         this.cancelKeybind();
+        this.cancelColourOption();
         this.mouseUp();
       }
+    }
+    /**
+     * Sets a {@linkcode ColourOption} to be edited, and cancel the previous
+     * colour option if applicable.
+     * 
+     * This function also handles setting {@linkcode colourSelectorUi} to be
+     * editing the new colour option, if it exists.
+     */
+    setCurrentColourOption(option) {
+      if (!isNil(this.currentColourOption)) {
+        this.currentColourOption.finishEdit();
+      }
+      if (this.colourSelectorUi.active) {
+        this.colourSelectorUi.saveBeforeClosingPrompt();
+      }
+      this.currentColourOption = option;
+      if (!isNil(this.currentColourOption)) {
+        this.colourSelectorUi.active = true;
+        this.colourSelectorUi.setColour(this.currentColourOption.state);
+        this.colourSelectorUi.setDefaultColour(
+          settings.getDefault(this.currentColourOption.settingsKey)
+        );
+      } else {
+        this.colourSelectorUi.active = false;
+      }
+    }
+    /**
+     * Cancels editing the current colour option.
+     */
+    cancelColourOption() {
+      this.setCurrentColourOption(void 0);
+    }
+    /**
+     * Saves the given colour to the currently edited colour option.
+     */
+    saveColour(colour) {
+      this.currentColourOption?.saveColour(colour);
+      this.colourSelectorUi.unsavedChanges = false;
     }
     /**
      * Sets a {@linkcode KeybindOption} to be edited, and cancel the previous
@@ -1684,13 +2512,21 @@ Please enter a Rarity.`
       this.setCurrentKeybindOption(void 0);
     }
     /**
-     * Checks whether the mouse is inside this menu, excluding its borders.
+     * Checks whether the mouse is inside this menu, excluding its colour
+     * selector UI.
      */
-    mouseInMenu() {
+    mouseInPrimaryMenu() {
       return mouseInBox(
         { x: mouse.canvasX, y: mouse.canvasY },
         { x: this.x + 4, y: this.renderY + 4, w: this.w - 8, h: this.h - 8 }
       );
+    }
+    /**
+     * Checks whether the mouse is inside this menu (including its colour
+     * selector UI), excluding its borders.
+     */
+    mouseInMenu() {
+      return this.mouseInPrimaryMenu() || this.colourSelectorUi.mouseInMenu();
     }
     /**
      * Checks whether the mouse is hovering over this menu's scrollbar.
@@ -1834,6 +2670,13 @@ Please enter a Rarity.`
       }
     }
     return false;
+  }
+  function ctxDrawText(...params) {
+    ctx.strokeText(...params);
+    ctx.fillText(...params);
+  }
+  function isHexCode(str) {
+    return !isNil(str.match(new RegExp("^#[0-9a-fA-F]{6}$")));
   }
   function addScreenshotMode() {
     const originalRenderGame = renderGame;
@@ -2018,6 +2861,36 @@ Please enter a Rarity.`
   function exceededThreshold() {
     const threshold = settings.get("petalRenderQualityThreshold");
     return threshold >= 0 && renderCounter > threshold;
+  }
+  function handleBackgroundColourSettings() {
+    Colors.biomes.garden.background = settings.get("gardenBackground");
+    Colors.biomes.desert.background = settings.get("desertBackground");
+    Colors.biomes.ocean.background = settings.get("oceanBackground");
+    Colors.biomes.savanna.background = settings.get("savannaBackground");
+    Colors.biomes.swamp.background = settings.get("swampBackground");
+    Colors.biomes.zoo.background = settings.get("zooBackground");
+    Colors.biomes.deepzoo.background = settings.get("deepZooBackground");
+    settings.addListener("gardenBackground", (option) => {
+      Colors.biomes.garden.background = option;
+    });
+    settings.addListener("desertBackground", (option) => {
+      Colors.biomes.desert.background = option;
+    });
+    settings.addListener("oceanBackground", (option) => {
+      Colors.biomes.ocean.background = option;
+    });
+    settings.addListener("savannaBackground", (option) => {
+      Colors.biomes.savanna.background = option;
+    });
+    settings.addListener("swampBackground", (option) => {
+      Colors.biomes.swamp.background = option;
+    });
+    settings.addListener("zooBackground", (option) => {
+      Colors.biomes.zoo.background = option;
+    });
+    settings.addListener("deepZooBackground", (option) => {
+      Colors.biomes.deepzoo.background = option;
+    });
   }
   function addCraftingSearchBar() {
     craftingMenu.rawPetalContainers = { ...craftingMenu.petalContainers };
@@ -4207,6 +5080,35 @@ Please enter a Rarity.`
         };
       }
     }
+    const ascendUI = _unsafeWindow.ascendUI;
+    if (!isNil(ascendUI)) {
+      const originalDraw = ascendUI.draw;
+      ascendUI.draw = function() {
+        if (isNil(this.offset)) {
+          this.offset = 0;
+        }
+        if (cinderSettingsMenu.colourSelectorUi.active) {
+          this.offset = interpolate(this.offset, -200, 0.2);
+        } else {
+          this.offset = interpolate(this.offset, 0, 0.2);
+        }
+        ctx.translate(0, this.offset);
+        originalDraw.apply(this);
+        ctx.translate(0, -this.offset);
+      };
+      Object.defineProperty(ascendUI, "buttonDimensions", {
+        get: function() {
+          return {
+            x: canvas.w / 2 - 34.2266 * 4 / 2,
+            y: 18.5 * 2 + (this.offset ?? 0),
+            w: 34.2266 * 4,
+            h: 40
+          };
+        },
+        set: () => {
+        }
+      });
+    }
     if (!isNil(flowrMod)) {
       const originalDrawIcon = flowrMod.flowrSettingsMenu.drawIcon;
       flowrMod.flowrSettingsMenu.drawIcon = function(alpha) {
@@ -4290,6 +5192,7 @@ Please enter a Rarity.`
     widerMobStatsBoxes();
     addGalleryCounterDropdownMenu();
     addQuickStatsBoxHotkey();
+    handleBackgroundColourSettings();
     addScreenshotMode();
     addScriptVersionToDebugInfo();
     displayMobGalleryOutsideMenu();

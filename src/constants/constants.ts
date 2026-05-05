@@ -18,6 +18,21 @@ export const CINDER_COLOUR = "#fc9547";
 export const CINDER_BORDER_COLOUR = "#cc7b3d";
 
 /**
+ * A lighter version of {@linkcode SETTINGS_GRAY}.
+ */
+export const LIGHT_SETTINGS_GRAY = "#cacaca";
+
+/**
+ * The colour of the settings menu's fill, copied from Flowr's base code.
+ */
+export const SETTINGS_GRAY = "#aaaaaa";
+
+/**
+ * The colour of the settings menu's border, copied from Flowr's base code.
+ */
+export const SETTINGS_GRAY_BORDER = "#8a8a8a";
+
+/**
  * The default colour of a displayed settings value.
  */
 export const SETTINGS_GREEN = "#3fff3f";

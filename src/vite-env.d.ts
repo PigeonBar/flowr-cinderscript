@@ -60,6 +60,11 @@ declare global {
     lastMessageTimeReceived: number;
 
     /**
+     * The UI for asking the player whether or not they want to ascend.
+     */
+    ascendUI?: AscendUI;
+
+    /**
      * An object used by Flowrscript.
      */
     flowrMod?: FlowrMod;
@@ -110,6 +115,13 @@ declare global {
 
   const Colors: {
     rarities: {name: string, color: string, border: string, fancy?: any}[];
+    biomes: Record<string, {
+      background: string,
+      grid: string,
+      fancyBase: string,
+      fancyPaths: string[],
+      fancyOpacity: number[],
+    }>;
   }
 
   /**
@@ -1076,6 +1088,26 @@ declare global {
   type ChangelogEntry = {text: string, date: string};
 
   const changeloglist: ChangelogEntry[];
+
+  /**
+   * The UI for asking the player whether or not they want to ascend.
+   */
+  class AscendUI {
+    /**
+     * The position of the button that the user can click on to ascend.
+     */
+    buttonDimensions: { x: number, y: number, w: number, h: number };
+
+    /**
+     * The vertical translation of this ui, which can be set to a negative
+     * number to hide this ui temporarily.
+     * 
+     * This is exclusively used by Cinderscript.
+     */
+    offset?: number;
+
+    draw(): void;
+  }
 
   class SquadUI {
     render(dt: number);

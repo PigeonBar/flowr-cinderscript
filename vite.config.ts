@@ -13,8 +13,6 @@ export default defineConfig({
         author: 'Applepie (Ideas + bugfixes), PigeonBar (some technical stuff)',
         icon: 'https://www.google.com/s2/favicons?sz=64&domain=flowr.fun',
         match: ['https://flowr.fun/'],
-        downloadURL: 'https://github.com/PigeonBar/flowr-cinderscript/raw/refs/heads/main/dist/cinderscript.user.js',
-        updateURL: 'https://github.com/PigeonBar/flowr-cinderscript/raw/refs/heads/main/dist/cinderscript.user.js',
       },
       build: {
         fileName: 'cinderscript.user.js',

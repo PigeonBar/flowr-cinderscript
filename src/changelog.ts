@@ -1,6 +1,8 @@
 import { unsafeWindow } from "$";
 
 const cinderChangelogList: ChangelogEntry[] = [
+  {text: `- Added settings to customize biome background colours`,
+  date: "Version 1.7.0"},
   {text: `- [*] With this update, this script should now generally be ready for use by Flowrscript users!
 - [*] Fixed inventory menu not being expandable (PR #35)
 - [*] Fixed stat boxes being rendered far away from the cursor (PR #35)
