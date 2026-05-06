@@ -12,7 +12,7 @@ Welcome! This is a free, publicly available script containing a collection of Qo
 
 I intend to comply with all guidelines and conditions set by the flowr developers. Please report any compliance-related issues to me as needed, and I will fix them asap.
 
-This project exists to support up-and-coming players who have trouble gaining access to QoL scripts because they have not gotten into Elocord (a private community of elite flowr players.) If you are in Elocord, then you'll likely want to use Elocord's private scripts instead, since they are an *extremely* good upgrade compared to my scripts. Additionally, <sub>I may have completely screwed over my relations with some Elocord members</sub>, so if you are applying to get into Elocord, you are advised to uninstall my scripts in order to avoid social ridicule from Elocord members.
+Also, if you would like to use an additional feature that lets you customize biome background colours (which needs some more polishing and may contain bugs), then please navigate to the branch "background-colour-draft" on this repository, then install the script from there.
 
 Finally, this project is not associated with Flamescript in any way. I just thought that "Cinderscript" would be a cool name for my script, given the existence of an old script named "Flamescript".
 

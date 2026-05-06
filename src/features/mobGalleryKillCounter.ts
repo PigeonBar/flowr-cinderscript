@@ -357,12 +357,20 @@ class MobCounter {
   }
 }
 
-const killCounter = new MobCounter("cinderKillCounter");
+let killCounter: MobCounter;
+let killPlusCounter: MobCounter;
+let spawnCounter: MobCounter;
+let spawnPlusCounter: MobCounter;
 
-const killPlusCounter = new MobCounter("cinderKillPlusCounter");
-
-const spawnCounter = new MobCounter("cinderSpawnCounter");
-
-const spawnPlusCounter = new MobCounter("cinderSpawnPlusCounter");
+/**
+ * A helper function to initialize all of the mob counters, to prevent
+ * certain side effects from their constructors running during importing.
+ */
+export function initMobCounters(): void {
+  killCounter = new MobCounter("cinderKillCounter");
+  killPlusCounter = new MobCounter("cinderKillPlusCounter");
+  spawnCounter = new MobCounter("cinderSpawnCounter");
+  spawnPlusCounter = new MobCounter("cinderSpawnPlusCounter");
+}
 
 export type { MobCounter };
