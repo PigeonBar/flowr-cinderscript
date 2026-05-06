@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Flowr - Cinderscript
 // @namespace    npm/vite-plugin-monkey
-// @version      1.5.1
+// @version      1.5.2
 // @author       PigeonBar (original creator)
 // @description  A free, publicly available collection of QoL features for flowr.fun players.
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=flowr.fun
@@ -11,9 +11,10 @@
 // @grant        unsafeWindow
 // ==/UserScript==
 
-(async function () {
+(function () {
   'use strict';
 
+  var _unsafeWindow = /* @__PURE__ */ (() => typeof unsafeWindow != "undefined" ? unsafeWindow : void 0)();
   var Rarity = /* @__PURE__ */ ((Rarity2) => {
     Rarity2[Rarity2["COMMON"] = 0] = "COMMON";
     Rarity2[Rarity2["UNUSUAL"] = 1] = "UNUSUAL";
@@ -209,7 +210,6 @@
     "Plank",
     "Carrot"
   ]);
-  var _unsafeWindow = /* @__PURE__ */ (() => typeof unsafeWindow != "undefined" ? unsafeWindow : void 0)();
   let settingsMap;
   function initOptions(options) {
     settingsMap = Object.freeze(options);
@@ -339,6 +339,12 @@
     }
   }
   const cinderChangelogList = [
+    {
+      text: `- Fixed some issues involving physical overlap with Flowrscript's menus (PR #33)
+- Fixed the settings menu being active outside the main menu (PR #33)
+- This script now waits longer for Flowrscript to load its skins (200ms -> 1000ms) (PR #33)`,
+      date: "Version 1.5.2"
+    },
     {
       text: `- Attempted fix for the settings menu not working if you are also using Flowrscript, Flowrmod, etc. (PR #32)`,
       date: "Version 1.5.1"
@@ -505,6 +511,21 @@
   let cinderChangelog;
   function initChangelog() {
     cinderChangelog = new CinderChangelog();
+  }
+  let flowrMod;
+  function initFlowrscriptPointer() {
+    if (!isNil(_unsafeWindow.flowrMod)) {
+      flowrMod = _unsafeWindow.flowrMod;
+    } else {
+      const interval = setInterval(() => {
+        if (!isNil(_unsafeWindow.flowrMod)) {
+          chatAnnounce(
+            "Warning - An issue was detected while trying to load Cinderscript after Flowrscript. Please report this if this is regularly happening to you."
+          );
+          clearInterval(interval);
+        }
+      }, 1e3);
+    }
   }
   class TooltipBox {
     w;
@@ -1328,6 +1349,9 @@ Please enter a Rarity.`
     }
     // TODO: Make the scroll translation code less spaghetti
     draw() {
+      if (_unsafeWindow.state !== "menu") {
+        return;
+      }
       this.offset = interpolate(this.offset, this.targetOffset, 0.3);
       if (!isNil(this.draggingScrollbarOffset)) {
         this.scrollbarPos = mouse.canvasY - this.draggingScrollbarOffset;
@@ -1417,7 +1441,7 @@ Please enter a Rarity.`
      * processed differently. This code is adapted from Flowr's client code.
      */
     mouseDown(e) {
-      if (!this.active) {
+      if (!this.active || _unsafeWindow.state !== "menu") {
         return;
       }
       if (!this.mouseInMenu()) {
@@ -1506,15 +1530,23 @@ Please enter a Rarity.`
   }
   let MENU_LIST;
   function initMenuList() {
-    MENU_LIST = Object.freeze([
+    const rawList = [
       settingsMenu,
       changelog,
       cinderSettingsMenu,
       cinderChangelog,
       globalInventory,
       craftingMenu,
-      mobGallery
-    ]);
+      mobGallery,
+      shop
+    ];
+    if (!isNil(flowrMod)) {
+      rawList.push(
+        flowrMod.flowrSettingsMenu,
+        flowrMod.petalGallery
+      );
+    }
+    MENU_LIST = Object.freeze(rawList);
   }
   function isNil(arg) {
     return arg === void 0 || arg === null;
@@ -1573,6 +1605,9 @@ Please enter a Rarity.`
   function isTopMenu(menu) {
     return Object.hasOwn(menu, "active");
   }
+  function isShop(menu) {
+    return menu.constructor === Shop;
+  }
   function mouseOnMenu() {
     if (_unsafeWindow.state !== "menu") {
       return false;
@@ -1585,9 +1620,9 @@ Please enter a Rarity.`
         },
         {
           x: isTopMenu(menu) ? menu.x : 130,
-          y: menu.renderY,
-          w: menu.w,
-          h: menu.h
+          y: isShop(menu) ? menu.menu.y.val : menu.renderY,
+          w: isShop(menu) ? 600 : menu.w,
+          h: isShop(menu) ? 500 : menu.h
         }
       )) {
         return true;
@@ -1655,19 +1690,7 @@ Please enter a Rarity.`
       fn: toggleScreenshotMode
     });
   }
-  function detectLateFlowrscriptLoading() {
-    if (isNil(_unsafeWindow.flowrMod)) {
-      const interval = setInterval(() => {
-        if (!isNil(_unsafeWindow.flowrMod)) {
-          chatAnnounce(
-            "Warning - An issue was detected while trying to load Cinderscript after Flowrscript. Please report this if this is regularly happening to you."
-          );
-          clearInterval(interval);
-        }
-      }, 1e3);
-    }
-  }
-  const version = "1.5.1";
+  const version = "1.5.2";
   function addScriptVersionToDebugInfo() {
     const originalRenderDebug = renderDebug;
     renderDebug = () => {
@@ -3838,7 +3861,15 @@ Please enter a Rarity.`
   }
   function preventMenuOverlap() {
     for (let menu of MENU_LIST) {
-      if (isTopMenu(menu)) {
+      if (isShop(menu)) {
+        const originalToggle = menu.toggle;
+        menu.toggle = function() {
+          if (!menu.menu.active) {
+            closeAllMenus();
+          }
+          originalToggle.apply(menu);
+        };
+      } else if (isTopMenu(menu)) {
         const originalToggle = menu.toggle;
         menu.toggle = function() {
           if (!menu.active) {
@@ -3856,10 +3887,27 @@ Please enter a Rarity.`
         };
       }
     }
+    if (!isNil(flowrMod)) {
+      const originalDrawIcon = flowrMod.flowrSettingsMenu.drawIcon;
+      flowrMod.flowrSettingsMenu.drawIcon = function(alpha) {
+        if (_unsafeWindow.state === "menu") {
+          for (let menu of MENU_LIST) {
+            if (isTopMenu(menu) && menu !== flowrMod?.flowrSettingsMenu && menu.active) {
+              return;
+            }
+          }
+        }
+        originalDrawIcon.apply(this, [alpha]);
+      };
+    }
   }
   function closeAllMenus() {
     for (let menu of MENU_LIST) {
-      if (isTopMenu(menu)) {
+      if (isShop(menu)) {
+        if (menu.menu.active) {
+          menu.toggle();
+        }
+      } else if (isTopMenu(menu)) {
         if (menu.active) {
           menu.toggle();
         }
@@ -3877,42 +3925,53 @@ Please enter a Rarity.`
   function refreezeObjects() {
     Object.freeze(processGameMessageMap);
   }
-  await( new Promise((resolve) => setTimeout(resolve, 200)));
-  detectLateFlowrscriptLoading();
-  initExportedObjects();
-  unfreezeObjects();
-  initTheoryCraft();
-  allowWsDataEditing();
-  preventMenuOverlap();
-  allowEditingKeybinds();
-  initKeybindHandling();
-  addNewMenuButtons();
-  handleMenuTranslations();
-  initPetalDrawingUtils();
-  addPetalCraftPreview();
-  addCraftingSearchBar();
-  addRandomizedSquadCodes();
-  displayMissilesAboveEnemies();
-  modifyBaseFOV();
-  enlargeZoomedOutItems();
-  fixNegativeRadiusFreeze();
-  addQuickStatsBoxHotkey();
-  enableInvertAttackAndDefend();
-  prioritizeRenderingStatsBoxes();
-  preventClickingBehindMenus();
-  fixDraggingPetalsOutOfBounds();
-  addInventoryMenuExpansion();
-  autoReducePetalQuality();
-  allowFastCrafting();
-  optimizeHighQualityRenders();
-  addPetalSlotLocking();
-  addMobGalleryKillCounter();
-  widerMobStatsBoxes();
-  addGalleryCounterDropdownMenu();
-  addScreenshotMode();
-  addScriptVersionToDebugInfo();
-  displayMobGalleryOutsideMenu();
-  prioritizeRenderingDragPetal();
-  refreezeObjects();
+  const mainScriptPromise = new Promise(async (resolve) => {
+    await new Promise((resolve2) => setTimeout(resolve2, 1e3));
+    initFlowrscriptPointer();
+    initExportedObjects();
+    unfreezeObjects();
+    initTheoryCraft();
+    allowWsDataEditing();
+    preventMenuOverlap();
+    allowEditingKeybinds();
+    initKeybindHandling();
+    addNewMenuButtons();
+    handleMenuTranslations();
+    initPetalDrawingUtils();
+    addPetalCraftPreview();
+    addCraftingSearchBar();
+    addRandomizedSquadCodes();
+    displayMissilesAboveEnemies();
+    modifyBaseFOV();
+    enlargeZoomedOutItems();
+    fixNegativeRadiusFreeze();
+    addQuickStatsBoxHotkey();
+    enableInvertAttackAndDefend();
+    prioritizeRenderingStatsBoxes();
+    preventClickingBehindMenus();
+    fixDraggingPetalsOutOfBounds();
+    addInventoryMenuExpansion();
+    autoReducePetalQuality();
+    allowFastCrafting();
+    optimizeHighQualityRenders();
+    addPetalSlotLocking();
+    addMobGalleryKillCounter();
+    widerMobStatsBoxes();
+    addGalleryCounterDropdownMenu();
+    addScreenshotMode();
+    addScriptVersionToDebugInfo();
+    displayMobGalleryOutsideMenu();
+    prioritizeRenderingDragPetal();
+    refreezeObjects();
+    resolve();
+  });
+  const originalOnLoad = _unsafeWindow.onload;
+  _unsafeWindow.onload = function(ev) {
+    mainScriptPromise.then(
+      () => {
+        originalOnLoad?.apply(_unsafeWindow, [ev]);
+      }
+    );
+  };
 
 })();

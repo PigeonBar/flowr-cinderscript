@@ -298,6 +298,11 @@ export class CinderSettingsMenu extends SettingsMenu {
 
   // TODO: Make the scroll translation code less spaghetti
   draw() {
+    // Failsafe: Do not draw this settings menu outside of the game's main menu
+    if (unsafeWindow.state !== "menu") {
+      return;
+    }
+
     this.offset = interpolate(this.offset, this.targetOffset, 0.3);
 
     if (!isNil(this.draggingScrollbarOffset)) {
@@ -411,7 +416,7 @@ export class CinderSettingsMenu extends SettingsMenu {
    * processed differently. This code is adapted from Flowr's client code.
    */
   mouseDown(e: CanvasMouseData): void {
-    if (!this.active) {
+    if (!this.active || unsafeWindow.state !== "menu") {
       return;
     }
     if (!this.mouseInMenu()) {

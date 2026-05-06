@@ -114,6 +114,13 @@ export function isTopMenu(menu: Menu): menu is TopMenu {
 }
 
 /**
+ * A helper function that determines whether a menu is a {@linkcode Shop}.
+ */
+export function isShop(menu: Menu): menu is Shop {
+  return menu.constructor === Shop;
+}
+
+/**
  * Determines whether the cursor is currently hovering over any menu.
  */
 export function mouseOnMenu() {
@@ -122,6 +129,7 @@ export function mouseOnMenu() {
   }
 
   for (let menu of MENU_LIST) {
+    // Note: The shop unfortunately has hardcoded width and height.
     if (mouseInBox(
       {
         x: mouse.canvasX,
@@ -129,9 +137,9 @@ export function mouseOnMenu() {
       },
       {
         x: isTopMenu(menu) ? menu.x : 130,
-        y: menu.renderY,
-        w: menu.w,
-        h: menu.h,
+        y: isShop(menu) ? menu.menu.y.val : menu.renderY,
+        w: isShop(menu) ? 600 : menu.w,
+        h: isShop(menu) ? 500 : menu.h,
       }
     )) {
       return true;

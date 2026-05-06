@@ -62,8 +62,15 @@ declare global {
     /**
      * An object used by Flowrscript.
      */
-    flowrMod?: any;
+    flowrMod?: FlowrMod;
   }
+
+  type FlowrMod = {
+    flowrSettingsMenu: TopMenu & {
+      drawIcon(alpha?: number): void;
+    },
+    petalGallery: GlobalInventory;
+  };
 
   type PetalType = string; // TODO: List of actually existing petal types?
   type EnemyType = string; // TODO: List of actually existing enemy types?
@@ -90,8 +97,21 @@ declare global {
    */
   const staticGradients: Partial<Record<Rarity, CanvasGradient | string>>;
 
+  class Shop {
+    toggle(): void;
+    menu: {
+      active: boolean;
+      y: {
+        val: number;
+      };
+    };
+  }
+
+  const shop: Shop;
+
   /**
-   * The menus at the bottom of the screen (inventory, crafting, gallery)
+   * The menus at the bottom of the screen that conveniently share some code
+   * with each other (inventory, crafting, gallery, but NOT shop).
    */
   class BottomMenu {
     w: number;
@@ -955,7 +975,8 @@ declare global {
   }) => void;
 
   /**
-   * The menus at the top of the screen (settings, changelog)
+   * The menus at the top of the screen that conveniently share some code with
+   * each other (settings, changelog)
    */
   class TopMenu {
     x: number;
@@ -977,7 +998,7 @@ declare global {
     toggle();
   }
 
-  type Menu = TopMenu | BottomMenu;
+  type Menu = TopMenu | BottomMenu | Shop;
 
   class SettingsMenu extends TopMenu {
     targetOffset: number;
