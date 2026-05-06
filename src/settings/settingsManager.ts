@@ -124,4 +124,12 @@ export class SettingsManager {
   }
 }
 
-export const settings = new SettingsManager();
+export let settings: SettingsManager;
+
+/**
+ * A helper function to initialize {@linkcode settings}, to prevent certain
+ * side effects from its constructor running during importing.
+ */
+export function initSettingsManager(): void {
+  settings = new SettingsManager();
+}

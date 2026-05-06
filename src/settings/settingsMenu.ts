@@ -513,4 +513,15 @@ export class CinderSettingsMenu extends SettingsMenu {
   }
 }
 
-export const cinderSettingsMenu = new CinderSettingsMenu();
+/**
+ * A menu for displaying this script's settings.
+ */
+export let cinderSettingsMenu: CinderSettingsMenu;
+
+/**
+ * A helper function to initialize {@linkcode cinderSettingsMenu}, to prevent
+ * certain side effects from its constructor running during importing.
+ */
+export function initSettingsMenu(): void {
+  cinderSettingsMenu = new CinderSettingsMenu();
+}

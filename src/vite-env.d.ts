@@ -58,6 +58,11 @@ declare global {
      * The timestamp for the most recent message received via the WebSocket.
      */
     lastMessageTimeReceived: number;
+
+    /**
+     * An object used by Flowrscript.
+     */
+    flowrMod?: any;
   }
 
   type PetalType = string; // TODO: List of actually existing petal types?

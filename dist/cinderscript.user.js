@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Flowr - Cinderscript
 // @namespace    npm/vite-plugin-monkey
-// @version      1.5.0
+// @version      1.5.1
 // @author       PigeonBar (original creator)
 // @description  A free, publicly available collection of QoL features for flowr.fun players.
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=flowr.fun
@@ -11,7 +11,7 @@
 // @grant        unsafeWindow
 // ==/UserScript==
 
-(function () {
+(async function () {
   'use strict';
 
   var Rarity = /* @__PURE__ */ ((Rarity2) => {
@@ -268,7 +268,10 @@
       }
     }
   }
-  const settings = new SettingsManager();
+  let settings;
+  function initSettingsManager() {
+    settings = new SettingsManager();
+  }
   const keybinds = [];
   function initKeybindHandling() {
     const originalHandleKey = inputHandler.handleKey;
@@ -336,6 +339,10 @@
     }
   }
   const cinderChangelogList = [
+    {
+      text: `- Attempted fix for the settings menu not working if you are also using Flowrscript, Flowrmod, etc. (PR #32)`,
+      date: "Version 1.5.1"
+    },
     {
       text: `- The mob gallery now has more types of mob counters, such as a spawn counter! (PR #31)
 - Tooltip text boxes are now fully opaque (PR #31)`,
@@ -495,7 +502,10 @@
       changeloglist.push(...vanillaChangelogList);
     }
   }
-  const cinderChangelog = new CinderChangelog();
+  let cinderChangelog;
+  function initChangelog() {
+    cinderChangelog = new CinderChangelog();
+  }
   class TooltipBox {
     w;
     h;
@@ -1490,16 +1500,22 @@ Please enter a Rarity.`
       );
     }
   }
-  const cinderSettingsMenu = new CinderSettingsMenu();
-  const MENU_LIST = Object.freeze([
-    settingsMenu,
-    changelog,
-    cinderSettingsMenu,
-    cinderChangelog,
-    globalInventory,
-    craftingMenu,
-    mobGallery
-  ]);
+  let cinderSettingsMenu;
+  function initSettingsMenu() {
+    cinderSettingsMenu = new CinderSettingsMenu();
+  }
+  let MENU_LIST;
+  function initMenuList() {
+    MENU_LIST = Object.freeze([
+      settingsMenu,
+      changelog,
+      cinderSettingsMenu,
+      cinderChangelog,
+      globalInventory,
+      craftingMenu,
+      mobGallery
+    ]);
+  }
   function isNil(arg) {
     return arg === void 0 || arg === null;
   }
@@ -1639,7 +1655,19 @@ Please enter a Rarity.`
       fn: toggleScreenshotMode
     });
   }
-  const version = "1.5.0";
+  function detectLateFlowrscriptLoading() {
+    if (isNil(_unsafeWindow.flowrMod)) {
+      const interval = setInterval(() => {
+        if (!isNil(_unsafeWindow.flowrMod)) {
+          chatAnnounce(
+            "Warning - An issue was detected while trying to load Cinderscript after Flowrscript. Please report this if this is regularly happening to you."
+          );
+          clearInterval(interval);
+        }
+      }, 1e3);
+    }
+  }
+  const version = "1.5.1";
   function addScriptVersionToDebugInfo() {
     const originalRenderDebug = renderDebug;
     renderDebug = () => {
@@ -1662,6 +1690,56 @@ Please enter a Rarity.`
       ctx.strokeText(versionText, x, y);
       ctx.fillText(versionText, x, y);
     };
+  }
+  function displayMobGalleryOutsideMenu() {
+    mobGallery.activeOutsideMenu = false;
+    addKeybindInstruction({
+      type: "localStorage",
+      storageKey: "cinderDevGalleryOutsideMenu",
+      fn: toggleMobGalleryOutsideMenu
+    });
+    const originalRenderGame = renderGame;
+    renderGame = function(dt2) {
+      originalRenderGame(dt2);
+      if (mobGallery.activeOutsideMenu && mobGallery.menuActive) {
+        mobGallery.draw();
+      }
+    };
+    const originalDraw = PetalContainer.prototype.draw;
+    PetalContainer.prototype.draw = function(inGame, number) {
+      const scrolledPos = {
+        x: mobGallery.inventorySpace.x + mobGallery.scrollExcess.x * mobGallery.scroll.render.x,
+        y: mobGallery.renderY + mobGallery.inventorySpace.y - mobGallery.y + mobGallery.scrollExcess.y * mobGallery.scroll.render.y
+      };
+      const petalPos = {
+        x: this.render.x - this.render.w / 2,
+        y: this.render.y - this.render.w / 2
+      };
+      if (this === mobGallery.rows[this.type]?.[this.rarity] && (petalPos.x > scrolledPos.x + mobGallery.inventorySpace.w || petalPos.x + this.render.w < scrolledPos.x || petalPos.y > scrolledPos.y + mobGallery.inventorySpace.h || petalPos.y + this.render.w < scrolledPos.y)) {
+        this.updateInterpolate();
+        return;
+      }
+      originalDraw.apply(this, [inGame, number]);
+    };
+    const originalDiscoverEnemy = addDiscoveredEnemy;
+    addDiscoveredEnemy = function(type = "Ladybug", rarity = Rarity.COMMON) {
+      if (!discoveredEnemies[type]?.[rarity]) {
+        originalDiscoverEnemy(type, rarity);
+      }
+    };
+  }
+  function toggleMobGalleryOutsideMenu() {
+    if (_unsafeWindow.state !== "game") {
+      return;
+    }
+    if (mobGallery.menuActive && mobGallery.activeOutsideMenu) {
+      mobGallery.activeOutsideMenu = false;
+    } else {
+      mobGallery.activeOutsideMenu = true;
+    }
+    if (mobGallery.menuActive !== mobGallery.activeOutsideMenu) {
+      mobGallery.toggleMenu();
+    }
   }
   let renderCounter = 0;
   let disableHqp = false;
@@ -1912,204 +1990,6 @@ Please enter a Rarity.`
       dragPetalCtx?.clearRect(0, 0, dragPetalCanvas.width, dragPetalCanvas.height);
       originalDraw();
     };
-  }
-  const petalLockIcon = new Image();
-  petalLockIcon.src = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgoKPHN2ZwogICB3aWR0aD0iNTQuNTAwMzJtbSIKICAgaGVpZ2h0PSI2NC41MDAwMDhtbSIKICAgdmlld0JveD0iMCAwIDU0LjUwMDMyIDY0LjUwMDAwOCIKICAgdmVyc2lvbj0iMS4xIgogICBpZD0ic3ZnMSIKICAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogICB4bWxuczpzdmc9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8ZGVmcwogICAgIGlkPSJkZWZzMSIgLz4KICA8ZwogICAgIGlkPSJsYXllcjEiCiAgICAgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTY5Ljk5OTk5OSwtNzApIj4KICAgIDxyZWN0CiAgICAgICBzdHlsZT0iZmlsbDojZGYwMmZmO2ZpbGwtb3BhY2l0eTowO3N0cm9rZTojZmZmZmZmO3N0cm9rZS13aWR0aDo0LjQ5ODtzdHJva2UtbGluZWNhcDpzcXVhcmU7c3Ryb2tlLWxpbmVqb2luOnJvdW5kO3N0cm9rZS1taXRlcmxpbWl0OjE7c3Ryb2tlLWRhc2hhcnJheTpub25lO3N0cm9rZS1vcGFjaXR5OjE7cGFpbnQtb3JkZXI6bWFya2VycyBzdHJva2UgZmlsbCIKICAgICAgIGlkPSJyZWN0MiIKICAgICAgIHdpZHRoPSI1MC4wMDIzMTkiCiAgICAgICBoZWlnaHQ9IjUwLjAwMjMxOSIKICAgICAgIHg9IjcyLjI0OTAwMSIKICAgICAgIHk9IjcyLjI0OTAwMSIgLz4KICAgIDxyZWN0CiAgICAgICBzdHlsZT0iZmlsbDojZmZmZmZmO2ZpbGwtb3BhY2l0eToxO3N0cm9rZTojZmZmZmZmO3N0cm9rZS13aWR0aDowO3N0cm9rZS1saW5lY2FwOnNxdWFyZTtzdHJva2UtbGluZWpvaW46cm91bmQ7c3Ryb2tlLW1pdGVybGltaXQ6MTtzdHJva2UtZGFzaGFycmF5Om5vbmU7c3Ryb2tlLW9wYWNpdHk6MTtwYWludC1vcmRlcjptYXJrZXJzIHN0cm9rZSBmaWxsIgogICAgICAgaWQ9InJlY3QzIgogICAgICAgd2lkdGg9IjgiCiAgICAgICBoZWlnaHQ9IjUiCiAgICAgICB4PSI5My4yNSIKICAgICAgIHk9IjEyOS41IiAvPgogICAgPGVsbGlwc2UKICAgICAgIHN0eWxlPSJmaWxsOiNmZmZmZmY7ZmlsbC1vcGFjaXR5OjA7c3Ryb2tlOiNmZmZmZmY7c3Ryb2tlLXdpZHRoOjI7c3Ryb2tlLWxpbmVjYXA6c3F1YXJlO3N0cm9rZS1saW5lam9pbjpyb3VuZDtzdHJva2UtbWl0ZXJsaW1pdDoxO3N0cm9rZS1kYXNoYXJyYXk6bm9uZTtzdHJva2Utb3BhY2l0eToxO3BhaW50LW9yZGVyOm1hcmtlcnMgc3Ryb2tlIGZpbGwiCiAgICAgICBpZD0icGF0aDMiCiAgICAgICBjeD0iOTcuMjUiCiAgICAgICBjeT0iMTI5LjUiCiAgICAgICByeD0iMi41IgogICAgICAgcnk9IjQiIC8+CiAgPC9nPgo8L3N2Zz4K";
-  function addPetalSlotLocking() {
-    const lockManager = new LockManager();
-    const oldDraw = Inventory.prototype.draw;
-    Inventory.prototype.draw = function(alpha) {
-      oldDraw.apply(this, [alpha]);
-      lockManager.draw(this);
-    };
-    addKeybindInstruction({
-      type: "settings",
-      settingsKey: "keybindLockSlot",
-      keyType: "keydown",
-      inGame: true,
-      inMenu: true,
-      fn: () => {
-        lockManager.lockKeybindHeld = true;
-      }
-    });
-    addKeybindInstruction({
-      type: "settings",
-      settingsKey: "keybindLockSlot",
-      keyType: "keyup",
-      inGame: true,
-      inMenu: true,
-      fn: () => {
-        lockManager.lockKeybindHeld = false;
-      }
-    });
-    addKeybindInstruction({
-      type: "rawValue",
-      value: "KeyR",
-      inGame: true,
-      inMenu: true,
-      beforeOriginal: true,
-      fn: () => {
-        lockManager.swappingAllPetals = true;
-      }
-    });
-    addKeybindInstruction({
-      type: "rawValue",
-      value: "KeyR",
-      inGame: true,
-      inMenu: true,
-      beforeOriginal: false,
-      fn: () => {
-        lockManager.swappingAllPetals = false;
-      }
-    });
-    const originalSwap = Inventory.prototype.swapPetals;
-    Inventory.prototype.swapPetals = function(index, toSend) {
-      if (lockManager.toggleLock(this, index)) {
-        return;
-      }
-      if (!lockManager.applyLock(this, index)) {
-        originalSwap.apply(this, [index, toSend]);
-      }
-    };
-  }
-  class LockManager {
-    /**
-     * Whether or not each slot is currently locked.
-     */
-    slotLocked;
-    /**
-     * The *target* opacity of each lock icon (from 0 to 1) based the slot's
-     * status, such as whether the user has locked it, whether it is currently
-     * occupied, etc..
-     */
-    alpha;
-    /**
-     * The current opacity of each lock icon, which approaches 
-     * {@linkcode alpha} smoothly.
-     */
-    renderAlpha;
-    /**
-     * Whether or not the user is holding the [Lock Petal Slot] key.
-     */
-    lockKeybindHeld;
-    /**
-     * The timer for each petal slot's shaking animation when the user tries to
-     * swap a locked petal, in milliseconds.
-     */
-    shakeTimer;
-    /**
-     * Whether or not the user is currently swapping all petals by pressing [R].
-     */
-    swappingAllPetals;
-    constructor() {
-      const storedLocks = localStorage.getItem("cinderLocks");
-      if (!isNil(storedLocks)) {
-        this.slotLocked = JSON.parse(storedLocks);
-      } else {
-        this.slotLocked = Array(10).fill(false);
-      }
-      this.alpha = Array(10).fill(0);
-      this.renderAlpha = Array(10).fill(0);
-      this.shakeTimer = Array(10).fill(0);
-      this.lockKeybindHeld = false;
-      this.swappingAllPetals = false;
-    }
-    /**
-     * A helper function to determine whether a slot is lockable, according to
-     * the settings and the total number of petals that the loadout has.
-     */
-    isAllowedToLock(loadout, slot) {
-      return (slot >= 5 || settings.get("allowLockSlotsOneToFive")) && slot < loadout.topPetalSlots.length;
-    }
-    /**
-     * Draws the lock icons onto the petal slots of the given loadout.
-     */
-    draw(loadout) {
-      for (let i = 0; i < 10; i++) {
-        if (!this.isAllowedToLock(loadout, i)) {
-          this.slotLocked[i] = false;
-        }
-      }
-      for (let i = 0; i < loadout.topPetalSlots.length; i++) {
-        this.updateAlpha(loadout, i);
-        this.drawIcon(loadout, i);
-      }
-      ctx.globalAlpha = 1;
-    }
-    /**
-     * A helper function to update {@linkcode alpha} and {@linkcode renderAlpha}
-     * for a single slot.
-     */
-    updateAlpha(loadout, slot) {
-      const petal = loadout.topPetalContainers[slot];
-      const slotObject = loadout.topPetalSlots[slot];
-      if (!this.isAllowedToLock(loadout, slot)) {
-        this.alpha[slot] = 0;
-      } else if (this.slotLocked[slot]) {
-        if (isNil(petal) || Math.abs(petal.render.x - slotObject.x) > 5 || Math.abs(petal.render.y - slotObject.y) > 5) {
-          this.alpha[slot] = 0.5;
-        } else {
-          this.alpha[slot] = 1;
-        }
-      } else {
-        if (this.lockKeybindHeld) {
-          this.alpha[slot] = 0.5;
-        } else {
-          this.alpha[slot] = 0;
-        }
-      }
-      this.renderAlpha[slot] = interpolate(this.renderAlpha[slot], this.alpha[slot], dt / 200);
-    }
-    /**
-     * A helper function to draw the lock icon for a single petal slot.
-     */
-    drawIcon(loadout, slot) {
-      const sizeMult = this.alpha[slot] === 1 ? Math.pow(1 + PETAL_BORDER_RATIO / 2, 2) : 1 + PETAL_BORDER_RATIO / 2 + 0.02;
-      const iconRatio = petalLockIcon.height / petalLockIcon.width;
-      const slotObject = loadout.topPetalSlots[slot];
-      this.shakeTimer[slot] = Math.max(0, this.shakeTimer[slot] - dt);
-      const intensity = settings.get("petalLockShakeIntensity");
-      const iconX = slotObject.x - sizeMult * slotObject.size / 2 + intensity * Math.sin(this.shakeTimer[slot] * 2 * Math.PI / 75);
-      ctx.globalAlpha = this.renderAlpha[slot];
-      ctx.drawImage(
-        petalLockIcon,
-        iconX,
-        slotObject.y - sizeMult * slotObject.size / 2 + loadout.translateY,
-        sizeMult * slotObject.size,
-        sizeMult * slotObject.size * iconRatio
-      );
-    }
-    /**
-     * Toggles the given slot's lock status if the slot is lockable.
-     * 
-     * Locking petals requires the following 3 criteria:
-     * 1. The user is holding the [Lock Petal Slot] key.
-     * 2. The user is allowed to lock the given slot.
-     * 3. The user is not pressing [R] to swap the entire loadout.
-     * 
-     * @returns `true` iff the slot was successfully toggled.
-     */
-    toggleLock(loadout, slot) {
-      if (this.lockKeybindHeld && this.isAllowedToLock(loadout, slot) && !this.swappingAllPetals) {
-        this.slotLocked[slot] = !this.slotLocked[slot];
-        localStorage.setItem("cinderLocks", JSON.stringify(this.slotLocked));
-        if (this.slotLocked[slot]) {
-          this.shakeTimer[slot] = 225;
-        }
-        return true;
-      }
-      return false;
-    }
-    /**
-     * @returns `true` iff the slot is currently locked.
-     */
-    applyLock(loadout, slot) {
-      if (this.slotLocked[slot] && !isNil(loadout.topPetalContainers[slot])) {
-        this.shakeTimer[slot] = 225;
-        return true;
-      }
-      return false;
-    }
   }
   function enlargeZoomedOutItems() {
     const originalRenderHpBar = renderHpBar;
@@ -2369,1095 +2249,6 @@ Please enter a Rarity.`
       if (args[2] > 0) {
         originalArc.apply(this, args);
       }
-    };
-  }
-  const wsDataEditing = [];
-  function allowWsDataEditing() {
-    function injectWsSend() {
-      const originalSend = ws.send;
-      ws.send = function(data) {
-        const rawData = msgpackr.unpack(data);
-        for (let fn of wsDataEditing) {
-          fn(rawData);
-        }
-        originalSend.apply(ws, [msgpackr.pack(rawData)]);
-      };
-    }
-    const originalInitWS = initWS;
-    initWS = function() {
-      originalInitWS();
-      injectWsSend();
-    };
-    if (!isNil(ws)) {
-      injectWsSend();
-    }
-  }
-  function addWsDataEditing(fn) {
-    wsDataEditing.push(fn);
-  }
-  function enableInvertAttackAndDefend() {
-    let rawAttacking = false;
-    let rawDefending = false;
-    function updateClientAttack() {
-      const newAttacking = rawAttacking !== settings.get("invertAttack");
-      if (!isNil(_unsafeWindow.selfId)) {
-        const player = room.flowers[_unsafeWindow.selfId];
-        if (!isNil(player)) {
-          player.attacking = newAttacking;
-        }
-      }
-      return newAttacking;
-    }
-    function updateClientDefend() {
-      const newDefending = rawDefending !== settings.get("invertDefend");
-      if (!isNil(_unsafeWindow.selfId)) {
-        const player = room.flowers[_unsafeWindow.selfId];
-        if (!isNil(player)) {
-          player.defending = newDefending;
-        }
-      }
-      return newDefending;
-    }
-    addWsDataEditing((data) => {
-      if (!isNil(data.attack)) {
-        rawAttacking = data.attack;
-        data.attack = updateClientAttack();
-      } else if (data[0] === "a") {
-        rawAttacking = data[1];
-        data[1] = updateClientAttack();
-      } else if (!isNil(data.defend)) {
-        rawDefending = data.defend;
-        data.defend = updateClientDefend();
-      } else if (data[0] === "d") {
-        rawDefending = data[1];
-        data[1] = updateClientDefend();
-      }
-    });
-    addKeybindInstruction(
-      { type: "settings", settingsKey: "keybindInvertAttack", fn: () => {
-        const newInvertAttack = !settings.get("invertAttack");
-        settings.set("invertAttack", newInvertAttack);
-        chatAnnounce(
-          "Invert Attack set to " + (newInvertAttack ? "ON" : "OFF") + "!",
-          TEXT_LIGHT_RED
-        );
-        send({ attack: rawAttacking });
-      } }
-    );
-    addKeybindInstruction(
-      { type: "settings", settingsKey: "keybindInvertDefend", fn: () => {
-        const newInvertDefend = !settings.get("invertDefend");
-        settings.set("invertDefend", newInvertDefend);
-        chatAnnounce(
-          "Invert Defend set to " + (newInvertDefend ? "ON" : "OFF") + "!",
-          TEXT_LIGHT_BLUE
-        );
-        send({ defend: rawDefending });
-      } }
-    );
-    const originalEnterGame = enterGame;
-    enterGame = function() {
-      originalEnterGame();
-      send({ attack: false });
-      send({ defend: false });
-    };
-  }
-  function modifyBaseFOV() {
-    addKeybindInstruction({ type: "rawValue", value: "BracketLeft", fn: () => {
-      fov = 1 / settings.get("baseReciprocalOfFOV");
-    } });
-    const originalEnterGame = enterGame;
-    enterGame = function() {
-      originalEnterGame();
-      fov = 1 / settings.get("baseReciprocalOfFOV");
-    };
-  }
-  function optimizeHighQualityRenders() {
-    const airCachedThisFrame = [];
-    const airCanvases = [];
-    const airCtx = [];
-    const airPetals = [];
-    initializeCachedAir();
-    const starCanvas = new OffscreenCanvas(30, 30);
-    const starCtx = starCanvas.getContext("2d");
-    let simStarX = 0;
-    let simStarY = 0;
-    const originalDraw = draw;
-    draw = function() {
-      if (settings.get("disableAllOptimizations")) {
-        originalDraw();
-        return;
-      }
-      starCtx?.reset();
-      if (settings.get("petalStarCaching") && !isNil(starCtx)) {
-        const originalCtx = ctx;
-        ctx = starCtx;
-        simStarX += 0.1;
-        simStarY += 0.1;
-        ctx.translate(15, 15);
-        drawStar(0, 0);
-        ctx.translate(-15, -15);
-        ctx = originalCtx;
-      }
-      for (let rarity = 0; rarity <= MAX_RARITY; rarity++) {
-        airCachedThisFrame[rarity] = false;
-        airCtx[rarity]?.reset();
-      }
-      originalDraw();
-    };
-    const originalDrawPetal = PetalContainer.prototype.draw;
-    PetalContainer.prototype.draw = function(inGame, number) {
-      if (settings.get("disablePetalStars") && !settings.get("disableAllOptimizations") && !isNil(this.stars)) {
-        for (let star of this.stars) {
-          star.x = Infinity;
-          star.y = Infinity;
-        }
-      }
-      if (settings.get("disableAllOptimizations") || this === airPetals[this.rarity] || !_unsafeWindow.hqp || this.shouldAnimate() || inGame && !isNil(number) && !isNil(petalReloadData[number])) {
-        originalDrawPetal.apply(this, [inGame, number]);
-        return;
-      } else {
-        this.shouldDrawCachedAir = true;
-        const originalGradient = staticGradients[this.rarity];
-        const originalBorder = Colors.rarities[this.rarity].border;
-        const originalFill = ctx.fill;
-        originalDrawPetal.apply(this, [inGame, number]);
-        this.shouldDrawCachedAir = false;
-        staticGradients[this.rarity] = originalGradient;
-        Colors.rarities[this.rarity].border = originalBorder;
-        _unsafeWindow.hqp = true;
-        ctx.fill = originalFill;
-      }
-    };
-    const originalInterpolate = PetalContainer.prototype.updateInterpolate;
-    PetalContainer.prototype.updateInterpolate = function() {
-      originalInterpolate.apply(this);
-      if (settings.get("disableAllOptimizations")) {
-        return;
-      }
-      if (this.shouldDrawCachedAir) {
-        if (this.toOscillate && !toRender(
-          { x: this.render.x, y: this.render.y, radius: this.radius },
-          window.camera
-        ) && !this.toSkipCulling) {
-          return;
-        }
-        ctx.save();
-        ctx.translate(this.render.x, this.render.y);
-        let scale = this.getScale();
-        let rotation = this.getRotation();
-        if (rotation !== 0) {
-          ctx.rotate(rotation);
-        }
-        if (scale !== 1) {
-          ctx.scale(scale, scale);
-        }
-        if (this.toOscillate && !this.isDisplayPetalContainer) {
-          ctx.globalAlpha = 0.3;
-          ctx.fillStyle = "black";
-          ctx.beginPath();
-          ctx.roundRect(-30, -30, 60, 60, 5);
-          ctx.fill();
-          ctx.closePath();
-          ctx.globalAlpha = 1;
-          const originalFill = ctx.fill;
-          ctx.fill = function() {
-            if (ctx.globalAlpha < 0.5 && (ctx.fillStyle === "black" || ctx.fillStyle === "#000000")) {
-              ctx.fill = originalFill;
-              return;
-            }
-            originalFill.apply(this);
-          };
-        }
-        const newCtx = airCtx[this.rarity];
-        if (!airCachedThisFrame[this.rarity] && !isNil(newCtx)) {
-          const oldCtx = ctx;
-          ctx = newCtx;
-          airPetals[this.rarity].stars = [];
-          airPetals[this.rarity].draw();
-          ctx = oldCtx;
-          airCachedThisFrame[this.rarity] = true;
-        }
-        ctx.drawImage(airCanvases[this.rarity], -50, -50, 100, 100);
-        this.drawStars();
-        staticGradients[this.rarity] = "transparent";
-        Colors.rarities[this.rarity].border = "transparent";
-        _unsafeWindow.hqp = false;
-        ctx.restore();
-      }
-    };
-    function drawStar(x, y) {
-      ctx.beginPath();
-      let twinkleTime = Date.now() / 600;
-      if (ctx === starCtx) {
-        twinkleTime += simStarX / 30 + simStarY / 30;
-      } else {
-        twinkleTime += x / 30 + y / 30;
-      }
-      const grad = ctx.createRadialGradient(x, y, 15, x, y, 0);
-      grad.addColorStop(0, "transparent");
-      grad.addColorStop(0.8, `rgba(255,255,255,${(Math.cos(twinkleTime) + 1) * 0.8})`);
-      grad.addColorStop(1, "white");
-      ctx.fillStyle = grad;
-      ctx.globalAlpha = 0.3;
-      ctx.fillRect(-25, -25, 50, 50);
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = "#fff";
-      ctx.arc(x, y, 1, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.closePath();
-    }
-    PetalContainer.prototype.drawStars = function() {
-      const totalStars = Colors.rarities[this.rarity].fancy?.stars;
-      if (!isNil(totalStars) && _unsafeWindow.hqp) {
-        if (isNil(this.stars)) {
-          this.stars = [];
-          for (let starnum = 0; starnum < totalStars; starnum++) {
-            this.stars.push(
-              { x: Math.random() * 50 - 25, y: Math.random() * 50 - 25 }
-            );
-          }
-        }
-        ctx.beginPath();
-        ctx.roundRect(-22.75, -22.75, 45.5, 45.5, 0.25);
-        ctx.clip();
-        ctx.closePath();
-        for (let star of this.stars) {
-          star.x += 0.1;
-          star.y += 0.1;
-          if (star.x > 25 || star.y > 25) {
-            star.x = Math.random() * 800 - 20 - 30;
-            star.y = -30;
-          }
-          if (star.x < 25 && star.x > -25 && star.y < 25 && star.y > -25) {
-            if (settings.get("petalStarCaching")) {
-              ctx.drawImage(starCanvas, star.x - 15, star.y - 15, 30, 30);
-            } else {
-              drawStar(star.x, star.y);
-            }
-          }
-        }
-      }
-    };
-    function initializeCachedAir() {
-      for (let rarity = 0; rarity <= MAX_RARITY; rarity++) {
-        const newCanvas = new OffscreenCanvas(120, 120);
-        airCanvases.push(newCanvas);
-        airCtx.push(newCanvas.getContext("2d"));
-        const airPetal = new PetalContainer(
-          [new Petal({ type: "Air", rarity })],
-          {
-            x: 60,
-            y: 60,
-            w: 60,
-            h: 60,
-            toOscillate: false
-          },
-          Math.random(),
-          1
-        );
-        airPetal.nameless = true;
-        airPetal.spawnAnimation = 1;
-        airPetals.push(airPetal);
-        airCachedThisFrame.push(false);
-      }
-    }
-  }
-  function addPetalCraftPreview() {
-    craftingMenu.previewPetalSlot = {
-      x: craftingMenu.w * 0.83,
-      y: craftingMenu.h * 0.167,
-      w: 65,
-      h: 65
-    };
-    const originalDrawCrafting = craftingMenu.drawInventory;
-    craftingMenu.drawInventory = function(alpha = 1) {
-      if (!settings.get("petalCraftPreview")) {
-        originalDrawCrafting.apply(this, [alpha]);
-        return;
-      }
-      originalDrawCrafting.apply(this, [alpha]);
-      ctx.translate(130, this.renderY);
-      if (!isNil(this.previewPetalContainer)) {
-        this.previewPetalContainer.y = this.previewPetalSlot.y;
-      }
-      const slot = this.previewPetalSlot;
-      ctx.fillStyle = this.getSlotColor();
-      ctx.beginPath();
-      ctx.roundRect(
-        slot.x - this.petalContainerSize / 2,
-        slot.y - this.petalContainerSize / 2,
-        this.petalContainerSize,
-        this.petalContainerSize,
-        8
-      );
-      ctx.fill();
-      ctx.closePath();
-      ctx.fillStyle = "#f0f0f0";
-      ctx.strokeStyle = "black";
-      ctx.lineWidth = 3.75;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.font = "900 16px Ubuntu";
-      ctx.strokeText("Preview", slot.x, slot.y - 55);
-      ctx.fillText("Preview", slot.x, slot.y - 55);
-      const mouseX = mouse.canvasX;
-      const mouseY = mouse.canvasY;
-      const container = this.previewPetalContainer;
-      if (container !== void 0) {
-        container.draw();
-        if (mouseInBox(
-          { x: mouseX, y: mouseY },
-          {
-            x: container.render.x - container.w / 2 + 130,
-            y: container.render.y - container.h / 2 + canvas.h - this.h - 20,
-            w: container.w,
-            h: container.h
-          }
-        )) {
-          container.isHovered = true;
-        }
-        container.drawStatsBox(
-          false,
-          false,
-          130 + container.render.x,
-          canvas.h - this.h - 20 + container.render.y
-        );
-      }
-      ctx.translate(-130, -this.renderY);
-    };
-    const originalAddPetal = craftingMenu.addCraftingPetalContainers;
-    craftingMenu.addCraftingPetalContainers = function(type, rarity, amount, attempt) {
-      originalAddPetal.apply(this, [type, rarity, amount, attempt]);
-      const currentPetal = this.craftingPetalContainers[0];
-      if (currentPetal !== void 0 && (this.previewPetalContainer?.type !== currentPetal.type || this.previewPetalContainer?.rarity !== currentPetal.rarity + 1)) {
-        const slot = this.previewPetalSlot;
-        this.previewPetalContainer = new PetalContainer(
-          [new Petal({ type: currentPetal.type, rarity: currentPetal.rarity + 1 })],
-          { x: slot.x, y: slot.y, w: 65, h: 65, toOscillate: false },
-          Math.random(),
-          1
-        );
-      }
-    };
-    const originalRemovePetal = craftingMenu.removeCraftingPetalContainers;
-    craftingMenu.removeCraftingPetalContainers = function() {
-      originalRemovePetal.apply(this);
-      this.previewPetalContainer = void 0;
-    };
-    const originalEnterGame = craftingMenu.enterGame;
-    craftingMenu.enterGame = function() {
-      originalEnterGame.apply(this);
-      this.previewPetalContainer = void 0;
-    };
-  }
-  function addQuickStatsBoxHotkey() {
-    let showQuickStatsBox = false;
-    addKeybindInstruction({
-      type: "settings",
-      settingsKey: "keybindStatsBox",
-      fn: () => {
-        showQuickStatsBox = !showQuickStatsBox;
-      }
-    });
-    const originalRenderGame = renderGame;
-    const originalDrawStatsBox = PetalContainer.prototype.drawStatsBox;
-    renderGame = (dt2) => {
-      if (showQuickStatsBox) {
-        PetalContainer.prototype.drawStatsBox = function(drawBelow, mob, x, y) {
-          if (this.petals[0]?.constructor === Petal) {
-            originalDrawStatsBox.apply(this, [drawBelow, mob, x, y]);
-          }
-        };
-      }
-      originalRenderGame(dt2);
-      PetalContainer.prototype.drawStatsBox = originalDrawStatsBox;
-      if (showQuickStatsBox) {
-        const totalCount = {};
-        for (let enemyBox of Object.values(room.enemyBoxes)) {
-          totalCount[enemyBox.type] ??= 0;
-          totalCount[enemyBox.type] += enemyBox.amount;
-        }
-        let highestBox = void 0;
-        for (let enemyBox of Object.values(room.enemyBoxes)) {
-          if (isNil(highestBox) || enemyBox.rarity > highestBox.rarity || enemyBox.rarity === highestBox.rarity && totalCount[enemyBox.type] <= totalCount[highestBox.type]) {
-            if (!enemyBox.isBoss) {
-              highestBox = enemyBox;
-            }
-          }
-        }
-        if (!isNil(highestBox)) {
-          if (isNil(highestBox.ec)) {
-            highestBox.ec = mobGallery.generateEnemyPc(
-              highestBox.type,
-              highestBox.rarity,
-              1
-            );
-          }
-          if (!Stats.enemies[highestBox.type]) {
-            calculateStats();
-          } else {
-            highestBox.ec.isHovered = true;
-            highestBox.ec.drawStatsBox(
-              true,
-              true,
-              canvas.w / 2 + highestBox.x,
-              highestBox.y + highestBox.w / 2 + 3 * highestBox.w / 5
-            );
-          }
-        }
-      }
-    };
-  }
-  function addRandomizedSquadCodes() {
-    const originalSendRoomRequest = sendRoomRequest;
-    sendRoomRequest = function(msg) {
-      if (msg.findPrivate === true && msg.squadCode === "") {
-        const newCode = randomSquadCode();
-        msg.squadCode = newCode;
-        if (settings.get("autoCopyCodes")) {
-          navigator.clipboard.writeText(newCode);
-          chatAnnounce("Code copied to clipboard! (" + newCode + ")");
-        } else {
-          chatAnnounce("Random code generated! (" + newCode + ")");
-        }
-      }
-      originalSendRoomRequest(msg);
-    };
-    const originalPrompt = prompt;
-    _unsafeWindow.prompt = function(msg, _def) {
-      if (msg === "Enter Private Squad Code") {
-        msg = "Enter private squad code (leave empty to generate a random code):";
-      }
-      return originalPrompt(msg, _def);
-    };
-  }
-  function randomSquadCode() {
-    let squadCode = "";
-    let hasLetter = false;
-    for (let i = 0; i < 6; i++) {
-      const roll = Math.floor(Math.random() * 16);
-      if (roll < 10) {
-        squadCode += String.fromCharCode("0".charCodeAt(0) + roll);
-      } else {
-        squadCode += String.fromCharCode("a".charCodeAt(0) + roll - 10);
-        hasLetter = true;
-      }
-    }
-    return hasLetter ? squadCode : randomSquadCode();
-  }
-  function prioritizeRenderingStatsBoxes() {
-    const statsBoxCanvas = document.createElement("canvas");
-    statsBoxCanvas.style = "z-index: 2; pointer-events: none";
-    document.body.appendChild(statsBoxCanvas);
-    const statsBoxCtx = statsBoxCanvas.getContext("2d");
-    const originalStatsBoxDraw = StatsBox.prototype.draw;
-    StatsBox.prototype.draw = function() {
-      statsBoxCanvas.width = canvas.width;
-      statsBoxCanvas.height = canvas.height;
-      const originalCtx = ctx;
-      if (!isNil(statsBoxCtx)) {
-        ctx = statsBoxCtx;
-        ctx.globalAlpha = originalCtx.globalAlpha;
-        ctx.setTransform(savedRenderTransform);
-      }
-      originalStatsBoxDraw.apply(this);
-      ctx = originalCtx;
-    };
-    const originalDraw = draw;
-    draw = function() {
-      statsBoxCtx?.reset();
-      statsBoxCtx?.clearRect(0, 0, statsBoxCanvas.width, statsBoxCanvas.height);
-      originalDraw();
-    };
-  }
-  function allowEditingKeybinds() {
-    const originalHandleKey = inputHandler.handleKey;
-    inputHandler.handleKey = function(e) {
-      if (_unsafeWindow.state === "menu" && e.type === "keydown" && !e.repeat && !isNil(cinderSettingsMenu.currentKeybindOption)) {
-        if (e.code === "Delete") {
-          cinderSettingsMenu.currentKeybindOption.finishEdit(KEYBIND_DELETED);
-        } else {
-          cinderSettingsMenu.currentKeybindOption.finishEdit(e.code);
-        }
-        cinderSettingsMenu.cancelKeybind();
-        return;
-      }
-      originalHandleKey.apply(inputHandler, [e]);
-    };
-  }
-  function handleMenuTranslations() {
-    for (let menu of MENU_LIST) {
-      if (isTopMenu(menu)) {
-        Object.defineProperty(menu, "renderY", {
-          get: function() {
-            return this.y + this.offset;
-          }
-        });
-      } else {
-        Object.defineProperty(menu, "renderY", {
-          get: function() {
-            this.lastOpenTime ??= time - 160;
-            this.lastCloseTime ??= time - 160;
-            if (!this.menuActive && time - this.lastCloseTime >= 160) {
-              return canvas.h;
-            }
-            let translate = 0;
-            if (time - this.lastCloseTime < 160) {
-              translate += this.h * easeOutCubic((time - this.lastCloseTime) / 160);
-            }
-            if (time - this.lastOpenTime < 160) {
-              translate += (this.h + 40) * (1 - easeOutCubic((time - this.lastOpenTime) / 160));
-            }
-            return canvas.h - this.h - 20 + translate;
-          }
-        });
-      }
-    }
-  }
-  function initTheoryCraft() {
-    if (theoryCraft.length > 0) {
-      console.warn("theoryCraft already initialized!");
-      return;
-    }
-    for (let rarity = 0; rarity <= MAX_PETAL_RARITY; rarity++) {
-      theoryCraft.push(5);
-      let probFailedSoFar = 1;
-      let attempt = 0;
-      while (probFailedSoFar > 0) {
-        probFailedSoFar *= 1 - calculateChance(attempt, rarity) / 100;
-        theoryCraft[rarity] += probFailedSoFar * 2.5;
-        attempt++;
-      }
-    }
-  }
-  function addNewMenuButtons() {
-    const menuSeparatorLine = document.createElement("div");
-    menuSeparatorLine.id = "menuSeparatorLine";
-    const buttonList = changelogButton.parentElement;
-    buttonList?.appendChild(menuSeparatorLine);
-    const settingsImage = new Image(35, 35);
-    settingsImage.src = `gfx/gear.png?v=${ver}`;
-    settingsImage.draggable = false;
-    const cinderSettingsButton = document.createElement("div");
-    cinderSettingsButton.className = "cinderMenuButton";
-    cinderSettingsButton.appendChild(settingsImage);
-    cinderSettingsButton.onclick = () => {
-      cinderSettingsMenu.toggle();
-    };
-    buttonList?.appendChild(cinderSettingsButton);
-    const githubIcon = new Image(35, 35);
-    githubIcon.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik01Ni43OTM3IDg0Ljk2ODhDNDQuNDE4NyA4My40Njg4IDM1LjcgNzQuNTYyNSAzNS43IDYzLjAzMTNDMzUuNyA1OC4zNDM4IDM3LjM4NzUgNTMuMjgxMyA0MC4yIDQ5LjkwNjNDMzguOTgxMiA0Ni44MTI1IDM5LjE2ODcgNDAuMjUgNDAuNTc1IDM3LjUzMTNDNDQuMzI1IDM3LjA2MjUgNDkuMzg3NSAzOS4wMzEzIDUyLjM4NzUgNDEuNzVDNTUuOTUgNDAuNjI1IDU5LjcgNDAuMDYyNSA2NC4yOTM3IDQwLjA2MjVDNjguODg3NSA0MC4wNjI1IDcyLjYzNzUgNDAuNjI1IDc2LjAxMjUgNDEuNjU2M0M3OC45MTg3IDM5LjAzMTMgODQuMDc1IDM3LjA2MjUgODcuODI1IDM3LjUzMTNDODkuMTM3NSA0MC4wNjI1IDg5LjMyNSA0Ni42MjUgODguMTA2MiA0OS44MTI1QzkxLjEwNjIgNTMuMzc1IDkyLjcgNTguMTU2MyA5Mi43IDYzLjAzMTNDOTIuNyA3NC41NjI1IDgzLjk4MTIgODMuMjgxMyA3MS40MTg3IDg0Ljg3NUM3NC42MDYyIDg2LjkzNzUgNzYuNzYyNSA5MS40Mzc1IDc2Ljc2MjUgOTYuNTkzOEw3Ni43NjI1IDEwNi4zNDRDNzYuNzYyNSAxMDkuMTU2IDc5LjEwNjIgMTEwLjc1IDgxLjkxODcgMTA5LjYyNUM5OC44ODc1IDEwMy4xNTYgMTEyLjIgODYuMTg3NSAxMTIuMiA2NS4xODc1QzExMi4yIDM4LjY1NjMgOTAuNjM3NSAxNyA2NC4xMDYyIDE3QzM3LjU3NSAxNyAxNi4yIDM4LjY1NjIgMTYuMiA2NS4xODc1QzE2LjIgODYgMjkuNDE4NyAxMDMuMjUgNDcuMjMxMiAxMDkuNzE5QzQ5Ljc2MjUgMTEwLjY1NiA1Mi4yIDEwOC45NjkgNTIuMiAxMDYuNDM4TDUyLjIgOTguOTM3NUM1MC44ODc1IDk5LjUgNDkuMiA5OS44NzUgNDcuNyA5OS44NzVDNDEuNTEyNSA5OS44NzUgMzcuODU2MiA5Ni41IDM1LjIzMTIgOTAuMjE4OEMzNC4yIDg3LjY4NzUgMzMuMDc1IDg2LjE4NzUgMzAuOTE4NyA4NS45MDYzQzI5Ljc5MzcgODUuODEyNSAyOS40MTg3IDg1LjM0MzggMjkuNDE4NyA4NC43ODEzQzI5LjQxODcgODMuNjU2MyAzMS4yOTM3IDgyLjgxMjUgMzMuMTY4NyA4Mi44MTI1QzM1Ljg4NzUgODIuODEyNSAzOC4yMzEyIDg0LjUgNDAuNjY4NyA4Ny45Njg4QzQyLjU0MzcgOTAuNjg3NSA0NC41MTI1IDkxLjkwNjMgNDYuODU2MiA5MS45MDYzQzQ5LjIgOTEuOTA2MyA1MC43IDkxLjA2MjUgNTIuODU2MiA4OC45MDYzQzU0LjQ1IDg3LjMxMjUgNTUuNjY4NyA4NS45MDYzIDU2Ljc5MzcgODQuOTY4OFoiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPgo=";
-    githubIcon.id = "githubIcon";
-    githubIcon.draggable = false;
-    const githubButton = document.createElement("div");
-    githubButton.className = "cinderMenuButton";
-    const githubLink = document.createElement("a");
-    githubLink.href = "https://github.com/PigeonBar/flowr-cinderscript";
-    githubLink.target = "_blank";
-    githubLink.title = "Check out Cinderscript on GitHub!";
-    githubLink.appendChild(githubIcon);
-    githubButton.appendChild(githubLink);
-    buttonList?.appendChild(githubButton);
-    const changelogImage = new Image(24, 24);
-    changelogImage.src = `gfx/scroll.png?v=${ver}`;
-    changelogImage.draggable = false;
-    const cinderChangelogButton = document.createElement("div");
-    cinderChangelogButton.className = "cinderMenuButton";
-    cinderChangelogButton.appendChild(changelogImage);
-    cinderChangelogButton.onclick = () => {
-      cinderChangelog.toggle();
-    };
-    buttonList?.appendChild(cinderChangelogButton);
-    const styles = `
-    #menuSeparatorLine {
-      background-color: ${CINDER_BORDER_COLOUR};
-      margin-left: 10px;
-      margin-top: 10px;
-      width: 41px;
-      height: 5px;
-      border-radius: 3px;
-    }
-
-    #githubIcon {
-      margin-top: 3px;
-    }
-
-    .cinderMenuButton {
-      border-color: ${CINDER_BORDER_COLOUR};
-      border-style: solid;
-      border-width: 3px;
-      background-color: ${CINDER_COLOUR};
-      border-radius: 8px;
-      margin-left: 10px;
-      margin-top: 10px;
-      width: 35px;
-      height: 35px;
-      transition: background-color 0.1s;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-    
-    .cinderMenuButton:hover {
-      cursor: pointer;
-      background-color: ${LIGHT_CINDER_COLOUR};
-    }
-    
-    #changelogButton:hover {
-      cursor: pointer;  /* I think the Flowr devs forgot to add this */
-    }
-  `;
-    const styleSheet = document.createElement("style");
-    styleSheet.textContent = styles;
-    document.head.appendChild(styleSheet);
-  }
-  function preventClickingBehindMenus() {
-    const originalMouseDown = menuInventory.mouseDown;
-    menuInventory.mouseDown = function({ mouseX, mouseY }, inv) {
-      if (!mouseOnMenu()) {
-        originalMouseDown.apply(this, [{ mouseX, mouseY }, inv]);
-      }
-    };
-    const originalAddClosest = menuInventory.addClosest;
-    menuInventory.addClosest = function(p, globalInv) {
-      if (!mouseOnMenu()) {
-        return originalAddClosest.apply(this, [p, globalInv]);
-      } else {
-        return false;
-      }
-    };
-    const originalDraw = Inventory.prototype.draw;
-    Inventory.prototype.draw = function(alpha) {
-      const originalDrawStatsBox = PetalContainer.prototype.drawStatsBox;
-      if (mouseOnMenu()) {
-        PetalContainer.prototype.drawStatsBox = function(drawBelow, mob, x, y) {
-          this.isHovered = false;
-          originalDrawStatsBox.apply(this, [drawBelow, mob, x, y]);
-        };
-      }
-      originalDraw.apply(this, [alpha]);
-      PetalContainer.prototype.drawStatsBox = originalDrawStatsBox;
-    };
-    const originalGetClosest = menuInventory.getClosest;
-    menuInventory.getClosest = function(p) {
-      if (!mouseOnMenu()) {
-        return originalGetClosest.apply(menuInventory, [p]);
-      } else {
-        return false;
-      }
-    };
-    const originalRender = squadUI.render;
-    squadUI.render = function(dt2) {
-      const originalX = mouse.canvasX;
-      const originalY = mouse.canvasY;
-      if (mouseOnMenu()) {
-        mouse.canvasX = mouse.canvasY = -1e99;
-      }
-      originalRender.apply(this, [dt2]);
-      mouse.canvasX = originalX;
-      mouse.canvasY = originalY;
-    };
-    const originalStartSliderDrag = squadUI.startSliderDrag;
-    squadUI.startSliderDrag = function(x) {
-      if (!mouseOnMenu()) {
-        originalStartSliderDrag.apply(this, [x]);
-      }
-    };
-    const originalBiomeMouseDown = biomeManager.mouseDown;
-    biomeManager.mouseDown = function({ mouseX, mouseY }) {
-      if (!mouseOnMenu()) {
-        originalBiomeMouseDown.apply(this, [{ mouseX, mouseY }]);
-      }
-    };
-  }
-  function preventMenuOverlap() {
-    for (let menu of MENU_LIST) {
-      if (isTopMenu(menu)) {
-        const originalToggle = menu.toggle;
-        menu.toggle = function() {
-          if (!menu.active) {
-            closeAllMenus();
-          }
-          originalToggle.apply(menu);
-        };
-      } else {
-        const originalToggle = menu.toggleMenu;
-        menu.toggleMenu = function() {
-          if (!menu.menuActive) {
-            closeAllMenus();
-          }
-          originalToggle.apply(menu);
-        };
-      }
-    }
-  }
-  function closeAllMenus() {
-    for (let menu of MENU_LIST) {
-      if (isTopMenu(menu)) {
-        if (menu.active) {
-          menu.toggle();
-        }
-      } else {
-        if (menu.menuActive) {
-          menu.toggleMenu();
-        }
-      }
-    }
-  }
-  function unfreezeObjects() {
-    processGameMessageMap = { ...processGameMessageMap };
-    Colors.rarities = structuredClone(Colors.rarities);
-  }
-  function refreezeObjects() {
-    Object.freeze(processGameMessageMap);
-  }
-  function displayMobGalleryOutsideMenu() {
-    mobGallery.activeOutsideMenu = false;
-    addKeybindInstruction({
-      type: "localStorage",
-      storageKey: "cinderDevGalleryOutsideMenu",
-      fn: toggleMobGalleryOutsideMenu
-    });
-    const originalRenderGame = renderGame;
-    renderGame = function(dt2) {
-      originalRenderGame(dt2);
-      if (mobGallery.activeOutsideMenu && mobGallery.menuActive) {
-        mobGallery.draw();
-      }
-    };
-    const originalDraw = PetalContainer.prototype.draw;
-    PetalContainer.prototype.draw = function(inGame, number) {
-      const scrolledPos = {
-        x: mobGallery.inventorySpace.x + mobGallery.scrollExcess.x * mobGallery.scroll.render.x,
-        y: mobGallery.renderY + mobGallery.inventorySpace.y - mobGallery.y + mobGallery.scrollExcess.y * mobGallery.scroll.render.y
-      };
-      const petalPos = {
-        x: this.render.x - this.render.w / 2,
-        y: this.render.y - this.render.w / 2
-      };
-      if (this === mobGallery.rows[this.type]?.[this.rarity] && (petalPos.x > scrolledPos.x + mobGallery.inventorySpace.w || petalPos.x + this.render.w < scrolledPos.x || petalPos.y > scrolledPos.y + mobGallery.inventorySpace.h || petalPos.y + this.render.w < scrolledPos.y)) {
-        this.updateInterpolate();
-        return;
-      }
-      originalDraw.apply(this, [inGame, number]);
-    };
-    const originalDiscoverEnemy = addDiscoveredEnemy;
-    addDiscoveredEnemy = function(type = "Ladybug", rarity = Rarity.COMMON) {
-      if (!discoveredEnemies[type]?.[rarity]) {
-        originalDiscoverEnemy(type, rarity);
-      }
-    };
-  }
-  function toggleMobGalleryOutsideMenu() {
-    if (_unsafeWindow.state !== "game") {
-      return;
-    }
-    if (mobGallery.menuActive && mobGallery.activeOutsideMenu) {
-      mobGallery.activeOutsideMenu = false;
-    } else {
-      mobGallery.activeOutsideMenu = true;
-    }
-    if (mobGallery.menuActive !== mobGallery.activeOutsideMenu) {
-      mobGallery.toggleMenu();
-    }
-  }
-  function addMobGalleryKillCounter() {
-    mobGallery.setCountMode = function(value) {
-      this.countMode = value;
-      for (let type in this.rows) {
-        for (let rarity = 0; rarity < this.rows[type].length; rarity++) {
-          this.updateStat(type, rarity);
-        }
-      }
-      cachedImages.statBoxes.enemies = {};
-    };
-    mobGallery.getStatCounter = function() {
-      switch (this.countMode.toLowerCase()) {
-        case "kills":
-          return killCounter;
-        case "spawns":
-          return spawnCounter;
-        case "kills +":
-          return killPlusCounter;
-        case "spawns +":
-          return spawnPlusCounter;
-        default:
-          return void 0;
-      }
-    };
-    mobGallery.getStatTextColour = function() {
-      if (["kills", "kills +"].includes(this.countMode.toLowerCase())) {
-        return TEXT_LIGHT_RED;
-      } else if (["spawns", "spawns +"].includes(this.countMode.toLowerCase())) {
-        return TEXT_LIGHT_BLUE;
-      } else {
-        return "white";
-      }
-    };
-    mobGallery.updateStat = function(type, rarity) {
-      if (isNonLootableEnemyType(type)) {
-        return 1;
-      }
-      const stat = this.getStatCounter()?.getStat(type, rarity) ?? 1;
-      const mobContainer = mobGallery.rows[type]?.[rarity];
-      if (typeof mobContainer === "object") {
-        mobContainer.amount = stat;
-        if (!isNil(this.getStatCounter())) {
-          mobContainer.lastAmountChangedTime = time;
-        } else {
-          mobContainer.lastAmountChangedTime = time - 1e4;
-        }
-      }
-      cachedImages.statBoxes.enemies[`${type}${rarity}`] = void 0;
-      return stat;
-    };
-    let nextMobDroppedLoot = false;
-    const originalAddPetal = processGameMessageMap.newPetalContainer;
-    processGameMessageMap.newPetalContainer = function(data, _me, _advanced) {
-      originalAddPetal(data, _me, _advanced);
-      if (_unsafeWindow.spectating) {
-        return;
-      }
-      nextMobDroppedLoot = true;
-    };
-    const originalRemoveEnemy = processGameMessageMap.removeEnemy;
-    processGameMessageMap.removeEnemy = function(data, _me, _advanced) {
-      const enemy = room.enemies[data.removeEnemy];
-      originalRemoveEnemy(data, _me, _advanced);
-      if (_unsafeWindow.spectating) {
-        return;
-      }
-      if (localStorage.getItem("cinderDevMobCounterWarnings")) {
-        let usingHorn = false;
-        for (let petal of Object.values(inventory.topPetalContainers)) {
-          if (petal?.type === "Horn") {
-            usingHorn = true;
-          }
-        }
-        if (nextMobDroppedLoot && enemy.lootMultiplier === 0 && !enemy.isBoss) {
-          console.warn("Unexpected loot!", time);
-          console.warn(enemy);
-        } else if (!nextMobDroppedLoot && enemy.lootMultiplier > 0 && !usingHorn) {
-          console.warn("No loot!", time);
-          console.warn(enemy);
-        }
-      }
-      if (nextMobDroppedLoot && !enemy.isBoss && enemy.lootMultiplier > 0) {
-        killCounter.incrementStat(enemy.type, enemy.rarity, 1);
-        killPlusCounter.incrementStat(
-          enemy.type,
-          enemy.rarity,
-          enemy.lootMultiplier
-        );
-      }
-      nextMobDroppedLoot = false;
-    };
-    const originalAddEnemy = processGameMessageMap.newEnemy;
-    processGameMessageMap.newEnemy = function(data, _me, _advanced) {
-      originalAddEnemy(data, _me, _advanced);
-      if (_unsafeWindow.spectating) {
-        return;
-      }
-      const enemy = room.enemies[data.id];
-      enemy.lootMultiplier = 1 + (room.shinyWave ?? 0);
-      if (expectNoLoot(enemy)) {
-        enemy.lootMultiplier = 0;
-      }
-      if (enemy.lootMultiplier > 0 && !enemy.isBoss) {
-        spawnCounter.incrementStat(enemy.type, enemy.rarity, 1);
-        spawnPlusCounter.incrementStat(
-          enemy.type,
-          enemy.rarity,
-          enemy.lootMultiplier
-        );
-      }
-    };
-    const originalGenerate = mobGallery.generateEnemyPc;
-    mobGallery.generateEnemyPc = function(type, rarity, dimensions) {
-      const container = originalGenerate.apply(this, [type, rarity, dimensions]);
-      if (!isNonLootableEnemyType(type)) {
-        container.amount = mobGallery.updateStat(type, rarity);
-      }
-      return container;
-    };
-    const originalDraw = PetalContainer.prototype.draw;
-    PetalContainer.prototype.draw = function(inGame, number) {
-      originalDraw.apply(this, [inGame, number]);
-      if (this === mobGallery.rows[this.type]?.[this.rarity] && !isNonLootableEnemyType(this.type) && !isNil(mobGallery.getStatCounter())) {
-        this.drawAmount(mobGallery.getStatTextColour());
-      }
-    };
-    const originalGenEcBox = StatsBox.prototype.genEcBox;
-    StatsBox.prototype.genEcBox = function() {
-      const canvas2 = originalGenEcBox.apply(this);
-      const statsBoxCtx = canvas2.getContext("2d");
-      if (this.isGallery && !isNonLootableEnemyType(this.name) && !isNil(mobGallery.getStatCounter()) && !isNil(statsBoxCtx)) {
-        statsBoxCtx.resetTransform();
-        statsBoxCtx.letterSpacing = "0px";
-        statsBoxCtx.font = `900 ${1.2 * 22.5}px Ubuntu`;
-        const x = 10 + 7.5 + statsBoxCtx.measureText(this.name).width;
-        const y = 10 + 4 + 4;
-        statsBoxCtx.font = `900 ${0.75 * 22.5}px Ubuntu`;
-        statsBoxCtx.lineWidth = 0.75 * 3.25;
-        statsBoxCtx.fillStyle = mobGallery.getStatTextColour();
-        statsBoxCtx.strokeStyle = "black";
-        statsBoxCtx.textAlign = "left";
-        statsBoxCtx.textBaseline = "top";
-        statsBoxCtx.strokeText("x" + this.amount.toLocaleString(), x, y);
-        statsBoxCtx.fillText("x" + this.amount.toLocaleString(), x, y);
-      }
-      return canvas2;
-    };
-    const originalDrawStatsBox = Enemy.prototype.drawStatsBox;
-    Enemy.prototype.drawStatsBox = function(drawBelow, rarityOverride) {
-      let isGallery = false;
-      const galleryEntry = mobGallery.rows[this.type]?.[this.rarity];
-      if (typeof galleryEntry === "object" && this === galleryEntry.petals[0]) {
-        isGallery = true;
-      }
-      let cache = cachedImages.statBoxes.enemies[`${this.type}${this.rarity}`];
-      if (isGallery !== cache?.isGallery) {
-        cachedImages.statBoxes.enemies[`${this.type}${this.rarity}`] = void 0;
-      }
-      originalDrawStatsBox.apply(this, [drawBelow, rarityOverride]);
-      cache = cachedImages.statBoxes.enemies[`${this.type}${this.rarity}`];
-      if (isGallery && !isNil(cache) && !cache.isGallery && typeof galleryEntry === "object") {
-        cache.amount = galleryEntry.amount;
-        if (!isNil(cache.image)) {
-          cache.image = cache.genEcBox();
-        }
-      }
-      if (!isNil(cache)) {
-        cache.isGallery = isGallery;
-      }
-      return canvas;
-    };
-  }
-  function isNonLootableEnemyType(type) {
-    return type.includes("Missile") || type.includes("Egg");
-  }
-  function expectNoLoot(enemy) {
-    return isNonLootableEnemyType(enemy.type) || enemy.type.includes("Eel") && !enemy.isHead || enemy.type.includes("Leech") && !enemy.isHead || bosses.length > 0;
-  }
-  class MobCounter {
-    /**
-     * The local storage key to store the tracked stats in.
-     */
-    storageKey;
-    /**
-     * The stats being tracked by this tracker. The format is:
-     * `savedStats[playerName][enemyType][enemyRarity]`.
-     */
-    savedStats;
-    /**
-     * Constructs a new tracker using stats saved at the given storage key.
-     */
-    constructor(storageKey) {
-      this.storageKey = storageKey;
-      this.savedStats = JSON.parse(
-        localStorage.getItem(storageKey) ?? "{}"
-      );
-    }
-    /**
-     * Retrieves the tracked stat for the given mob of the given rarity. If the
-     * given mob does not have a tracked stat yet, return `0` instead.
-     */
-    getStat(type, rarity) {
-      return this.savedStats[username]?.[type]?.[rarity] ?? 0;
-    }
-    /**
-     * Increment the tracked stat for the given mob of the given rarity.
-     */
-    incrementStat(type, rarity, amount) {
-      if (isNil(this.savedStats[username])) {
-        this.savedStats[username] = {};
-      }
-      if (isNil(this.savedStats[username][type])) {
-        this.savedStats[username][type] = {};
-      }
-      if (isNil(this.savedStats[username][type][rarity])) {
-        this.savedStats[username][type][rarity] = 0;
-      }
-      this.savedStats[username][type][rarity] += amount;
-      localStorage.setItem(this.storageKey, JSON.stringify(this.savedStats));
-      if (this === mobGallery.getStatCounter()) {
-        mobGallery.updateStat(type, rarity);
-      }
-    }
-  }
-  const killCounter = new MobCounter("cinderKillCounter");
-  const killPlusCounter = new MobCounter("cinderKillPlusCounter");
-  const spawnCounter = new MobCounter("cinderSpawnCounter");
-  const spawnPlusCounter = new MobCounter("cinderSpawnPlusCounter");
-  function initPetalDrawingUtils() {
-    PetalContainer.prototype.getScale = function() {
-      let scale = this.render.w / 50;
-      const renderAnimationTimer = smoothstep(this.spawnAnimation);
-      scale *= renderAnimationTimer;
-      if (this.toOscillate) {
-        scale *= 1 + Math.sin(performance.now() / 1e3 / 0.076) / 52;
-      }
-      return scale;
-    };
-    PetalContainer.prototype.getRotation = function() {
-      let rotation = 0;
-      const renderAnimationTimer = smoothstep(this.spawnAnimation);
-      rotation -= (1 - renderAnimationTimer) * Math.PI * 3;
-      if (this.isDraggingPetalContainer) {
-        this.draggingTimer ??= 0;
-        const nextFrameTimer = this.draggingTimer + 1e3 / 30 * dt / 16.66;
-        rotation += Math.sin(nextFrameTimer / 280) * 0.28;
-      } else if (!isNil(this.undraggingPetalContainerTimer)) {
-        if (isNil(this.interval)) {
-          this.lastDraggingAngle ??= 0;
-          rotation += interpolate(this.lastDraggingAngle, 0, 0.15);
-        }
-      }
-      if (this.toOscillate === true) {
-        this.angleOffset ??= 0;
-        rotation += this.angleOffset;
-      }
-      return rotation;
-    };
-    PetalContainer.prototype.shouldAnimate = function() {
-      return !NON_ANIM_PETALS.includes(this.type) && !settings.get("disablePetalAnimations");
-    };
-    PetalContainer.prototype.drawAmount = function(textColour = "white") {
-      ctx.save();
-      const scale = this.getScale();
-      ctx.translate(this.render.x, this.render.y);
-      if (performance.now() - this.lastAmountChangedTime < 240) {
-        ctx.globalAlpha = smoothstep(
-          (performance.now() - this.lastAmountChangedTime) / 240
-        );
-      }
-      ctx.font = `600 ${13 * scale}px Ubuntu`;
-      ctx.letterSpacing = "1px";
-      ctx.textBaseline = "middle";
-      ctx.textAlign = "right";
-      ctx.fillStyle = textColour;
-      ctx.strokeStyle = "black";
-      ctx.lineWidth = 2;
-      ctx.translate((70 / 2.5 + 0.5) * scale, (-42 / 2.5 + 0.5) * scale);
-      ctx.rotate(Math.PI / 9.1);
-      if (this.greyed) {
-        ctx.globalAlpha *= 0.3;
-      }
-      ctx.strokeText("x" + formatAmount(this.amount), 0, 0);
-      ctx.fillText("x" + formatAmount(this.amount), 0, 0);
-      ctx.restore();
-    };
-  }
-  function widerMobStatsBoxes() {
-    const originalGenerateDesc = StatsBox.prototype.generateDesc;
-    StatsBox.prototype.generateDesc = function(min, max) {
-      const dimensions = originalGenerateDesc.apply(this, [min, max]);
-      ctx.font = `900 ${1.2 * 22.5}px Ubuntu`;
-      const textWidth = ctx.measureText(this.name).width;
-      dimensions.width = Math.max(dimensions.width, textWidth + 175);
-      dimensions.width = Math.max(Math.min(dimensions.width, max), min);
-      return dimensions;
     };
   }
   class DropdownUI {
@@ -3836,6 +2627,1259 @@ Please enter a Rarity.`
       originalDrawStatsBox.apply(this, [drawBelow, rarityOverride]);
     };
   }
+  const wsDataEditing = [];
+  function allowWsDataEditing() {
+    function injectWsSend() {
+      const originalSend = ws.send;
+      ws.send = function(data) {
+        const rawData = msgpackr.unpack(data);
+        for (let fn of wsDataEditing) {
+          fn(rawData);
+        }
+        originalSend.apply(ws, [msgpackr.pack(rawData)]);
+      };
+    }
+    const originalInitWS = initWS;
+    initWS = function() {
+      originalInitWS();
+      injectWsSend();
+    };
+    if (!isNil(ws)) {
+      injectWsSend();
+    }
+  }
+  function addWsDataEditing(fn) {
+    wsDataEditing.push(fn);
+  }
+  function enableInvertAttackAndDefend() {
+    let rawAttacking = false;
+    let rawDefending = false;
+    function updateClientAttack() {
+      const newAttacking = rawAttacking !== settings.get("invertAttack");
+      if (!isNil(_unsafeWindow.selfId)) {
+        const player = room.flowers[_unsafeWindow.selfId];
+        if (!isNil(player)) {
+          player.attacking = newAttacking;
+        }
+      }
+      return newAttacking;
+    }
+    function updateClientDefend() {
+      const newDefending = rawDefending !== settings.get("invertDefend");
+      if (!isNil(_unsafeWindow.selfId)) {
+        const player = room.flowers[_unsafeWindow.selfId];
+        if (!isNil(player)) {
+          player.defending = newDefending;
+        }
+      }
+      return newDefending;
+    }
+    addWsDataEditing((data) => {
+      if (!isNil(data.attack)) {
+        rawAttacking = data.attack;
+        data.attack = updateClientAttack();
+      } else if (data[0] === "a") {
+        rawAttacking = data[1];
+        data[1] = updateClientAttack();
+      } else if (!isNil(data.defend)) {
+        rawDefending = data.defend;
+        data.defend = updateClientDefend();
+      } else if (data[0] === "d") {
+        rawDefending = data[1];
+        data[1] = updateClientDefend();
+      }
+    });
+    addKeybindInstruction(
+      { type: "settings", settingsKey: "keybindInvertAttack", fn: () => {
+        const newInvertAttack = !settings.get("invertAttack");
+        settings.set("invertAttack", newInvertAttack);
+        chatAnnounce(
+          "Invert Attack set to " + (newInvertAttack ? "ON" : "OFF") + "!",
+          TEXT_LIGHT_RED
+        );
+        send({ attack: rawAttacking });
+      } }
+    );
+    addKeybindInstruction(
+      { type: "settings", settingsKey: "keybindInvertDefend", fn: () => {
+        const newInvertDefend = !settings.get("invertDefend");
+        settings.set("invertDefend", newInvertDefend);
+        chatAnnounce(
+          "Invert Defend set to " + (newInvertDefend ? "ON" : "OFF") + "!",
+          TEXT_LIGHT_BLUE
+        );
+        send({ defend: rawDefending });
+      } }
+    );
+    const originalEnterGame = enterGame;
+    enterGame = function() {
+      originalEnterGame();
+      send({ attack: false });
+      send({ defend: false });
+    };
+  }
+  function addMobGalleryKillCounter() {
+    mobGallery.setCountMode = function(value) {
+      this.countMode = value;
+      for (let type in this.rows) {
+        for (let rarity = 0; rarity < this.rows[type].length; rarity++) {
+          this.updateStat(type, rarity);
+        }
+      }
+      cachedImages.statBoxes.enemies = {};
+    };
+    mobGallery.getStatCounter = function() {
+      switch (this.countMode.toLowerCase()) {
+        case "kills":
+          return killCounter;
+        case "spawns":
+          return spawnCounter;
+        case "kills +":
+          return killPlusCounter;
+        case "spawns +":
+          return spawnPlusCounter;
+        default:
+          return void 0;
+      }
+    };
+    mobGallery.getStatTextColour = function() {
+      if (["kills", "kills +"].includes(this.countMode.toLowerCase())) {
+        return TEXT_LIGHT_RED;
+      } else if (["spawns", "spawns +"].includes(this.countMode.toLowerCase())) {
+        return TEXT_LIGHT_BLUE;
+      } else {
+        return "white";
+      }
+    };
+    mobGallery.updateStat = function(type, rarity) {
+      if (isNonLootableEnemyType(type)) {
+        return 1;
+      }
+      const stat = this.getStatCounter()?.getStat(type, rarity) ?? 1;
+      const mobContainer = mobGallery.rows[type]?.[rarity];
+      if (typeof mobContainer === "object") {
+        mobContainer.amount = stat;
+        if (!isNil(this.getStatCounter())) {
+          mobContainer.lastAmountChangedTime = time;
+        } else {
+          mobContainer.lastAmountChangedTime = time - 1e4;
+        }
+      }
+      cachedImages.statBoxes.enemies[`${type}${rarity}`] = void 0;
+      return stat;
+    };
+    let nextMobDroppedLoot = false;
+    const originalAddPetal = processGameMessageMap.newPetalContainer;
+    processGameMessageMap.newPetalContainer = function(data, _me, _advanced) {
+      originalAddPetal(data, _me, _advanced);
+      if (_unsafeWindow.spectating) {
+        return;
+      }
+      nextMobDroppedLoot = true;
+    };
+    const originalRemoveEnemy = processGameMessageMap.removeEnemy;
+    processGameMessageMap.removeEnemy = function(data, _me, _advanced) {
+      const enemy = room.enemies[data.removeEnemy];
+      originalRemoveEnemy(data, _me, _advanced);
+      if (_unsafeWindow.spectating) {
+        return;
+      }
+      if (localStorage.getItem("cinderDevMobCounterWarnings")) {
+        let usingHorn = false;
+        for (let petal of Object.values(inventory.topPetalContainers)) {
+          if (petal?.type === "Horn") {
+            usingHorn = true;
+          }
+        }
+        if (nextMobDroppedLoot && enemy.lootMultiplier === 0 && !enemy.isBoss) {
+          console.warn("Unexpected loot!", time);
+          console.warn(enemy);
+        } else if (!nextMobDroppedLoot && enemy.lootMultiplier > 0 && !usingHorn) {
+          console.warn("No loot!", time);
+          console.warn(enemy);
+        }
+      }
+      if (nextMobDroppedLoot && !enemy.isBoss && enemy.lootMultiplier > 0) {
+        killCounter.incrementStat(enemy.type, enemy.rarity, 1);
+        killPlusCounter.incrementStat(
+          enemy.type,
+          enemy.rarity,
+          enemy.lootMultiplier
+        );
+      }
+      nextMobDroppedLoot = false;
+    };
+    const originalAddEnemy = processGameMessageMap.newEnemy;
+    processGameMessageMap.newEnemy = function(data, _me, _advanced) {
+      originalAddEnemy(data, _me, _advanced);
+      if (_unsafeWindow.spectating) {
+        return;
+      }
+      const enemy = room.enemies[data.id];
+      enemy.lootMultiplier = 1 + (room.shinyWave ?? 0);
+      if (expectNoLoot(enemy)) {
+        enemy.lootMultiplier = 0;
+      }
+      if (enemy.lootMultiplier > 0 && !enemy.isBoss) {
+        spawnCounter.incrementStat(enemy.type, enemy.rarity, 1);
+        spawnPlusCounter.incrementStat(
+          enemy.type,
+          enemy.rarity,
+          enemy.lootMultiplier
+        );
+      }
+    };
+    const originalGenerate = mobGallery.generateEnemyPc;
+    mobGallery.generateEnemyPc = function(type, rarity, dimensions) {
+      const container = originalGenerate.apply(this, [type, rarity, dimensions]);
+      if (!isNonLootableEnemyType(type)) {
+        container.amount = mobGallery.updateStat(type, rarity);
+      }
+      return container;
+    };
+    const originalDraw = PetalContainer.prototype.draw;
+    PetalContainer.prototype.draw = function(inGame, number) {
+      originalDraw.apply(this, [inGame, number]);
+      if (this === mobGallery.rows[this.type]?.[this.rarity] && !isNonLootableEnemyType(this.type) && !isNil(mobGallery.getStatCounter())) {
+        this.drawAmount(mobGallery.getStatTextColour());
+      }
+    };
+    const originalGenEcBox = StatsBox.prototype.genEcBox;
+    StatsBox.prototype.genEcBox = function() {
+      const canvas2 = originalGenEcBox.apply(this);
+      const statsBoxCtx = canvas2.getContext("2d");
+      if (this.isGallery && !isNonLootableEnemyType(this.name) && !isNil(mobGallery.getStatCounter()) && !isNil(statsBoxCtx)) {
+        statsBoxCtx.resetTransform();
+        statsBoxCtx.letterSpacing = "0px";
+        statsBoxCtx.font = `900 ${1.2 * 22.5}px Ubuntu`;
+        const x = 10 + 7.5 + statsBoxCtx.measureText(this.name).width;
+        const y = 10 + 4 + 4;
+        statsBoxCtx.font = `900 ${0.75 * 22.5}px Ubuntu`;
+        statsBoxCtx.lineWidth = 0.75 * 3.25;
+        statsBoxCtx.fillStyle = mobGallery.getStatTextColour();
+        statsBoxCtx.strokeStyle = "black";
+        statsBoxCtx.textAlign = "left";
+        statsBoxCtx.textBaseline = "top";
+        statsBoxCtx.strokeText("x" + this.amount.toLocaleString(), x, y);
+        statsBoxCtx.fillText("x" + this.amount.toLocaleString(), x, y);
+      }
+      return canvas2;
+    };
+    const originalDrawStatsBox = Enemy.prototype.drawStatsBox;
+    Enemy.prototype.drawStatsBox = function(drawBelow, rarityOverride) {
+      let isGallery = false;
+      const galleryEntry = mobGallery.rows[this.type]?.[this.rarity];
+      if (typeof galleryEntry === "object" && this === galleryEntry.petals[0]) {
+        isGallery = true;
+      }
+      let cache = cachedImages.statBoxes.enemies[`${this.type}${this.rarity}`];
+      if (isGallery !== cache?.isGallery) {
+        cachedImages.statBoxes.enemies[`${this.type}${this.rarity}`] = void 0;
+      }
+      originalDrawStatsBox.apply(this, [drawBelow, rarityOverride]);
+      cache = cachedImages.statBoxes.enemies[`${this.type}${this.rarity}`];
+      if (isGallery && !isNil(cache) && !cache.isGallery && typeof galleryEntry === "object") {
+        cache.amount = galleryEntry.amount;
+        if (!isNil(cache.image)) {
+          cache.image = cache.genEcBox();
+        }
+      }
+      if (!isNil(cache)) {
+        cache.isGallery = isGallery;
+      }
+      return canvas;
+    };
+  }
+  function isNonLootableEnemyType(type) {
+    return type.includes("Missile") || type.includes("Egg");
+  }
+  function expectNoLoot(enemy) {
+    return isNonLootableEnemyType(enemy.type) || enemy.type.includes("Eel") && !enemy.isHead || enemy.type.includes("Leech") && !enemy.isHead || bosses.length > 0;
+  }
+  class MobCounter {
+    /**
+     * The local storage key to store the tracked stats in.
+     */
+    storageKey;
+    /**
+     * The stats being tracked by this tracker. The format is:
+     * `savedStats[playerName][enemyType][enemyRarity]`.
+     */
+    savedStats;
+    /**
+     * Constructs a new tracker using stats saved at the given storage key.
+     */
+    constructor(storageKey) {
+      this.storageKey = storageKey;
+      this.savedStats = JSON.parse(
+        localStorage.getItem(storageKey) ?? "{}"
+      );
+    }
+    /**
+     * Retrieves the tracked stat for the given mob of the given rarity. If the
+     * given mob does not have a tracked stat yet, return `0` instead.
+     */
+    getStat(type, rarity) {
+      return this.savedStats[username]?.[type]?.[rarity] ?? 0;
+    }
+    /**
+     * Increment the tracked stat for the given mob of the given rarity.
+     */
+    incrementStat(type, rarity, amount) {
+      if (isNil(this.savedStats[username])) {
+        this.savedStats[username] = {};
+      }
+      if (isNil(this.savedStats[username][type])) {
+        this.savedStats[username][type] = {};
+      }
+      if (isNil(this.savedStats[username][type][rarity])) {
+        this.savedStats[username][type][rarity] = 0;
+      }
+      this.savedStats[username][type][rarity] += amount;
+      localStorage.setItem(this.storageKey, JSON.stringify(this.savedStats));
+      if (this === mobGallery.getStatCounter()) {
+        mobGallery.updateStat(type, rarity);
+      }
+    }
+  }
+  let killCounter;
+  let killPlusCounter;
+  let spawnCounter;
+  let spawnPlusCounter;
+  function initMobCounters() {
+    killCounter = new MobCounter("cinderKillCounter");
+    killPlusCounter = new MobCounter("cinderKillPlusCounter");
+    spawnCounter = new MobCounter("cinderSpawnCounter");
+    spawnPlusCounter = new MobCounter("cinderSpawnPlusCounter");
+  }
+  function modifyBaseFOV() {
+    addKeybindInstruction({ type: "rawValue", value: "BracketLeft", fn: () => {
+      fov = 1 / settings.get("baseReciprocalOfFOV");
+    } });
+    const originalEnterGame = enterGame;
+    enterGame = function() {
+      originalEnterGame();
+      fov = 1 / settings.get("baseReciprocalOfFOV");
+    };
+  }
+  function optimizeHighQualityRenders() {
+    const airCachedThisFrame = [];
+    const airCanvases = [];
+    const airCtx = [];
+    const airPetals = [];
+    initializeCachedAir();
+    const starCanvas = new OffscreenCanvas(30, 30);
+    const starCtx = starCanvas.getContext("2d");
+    let simStarX = 0;
+    let simStarY = 0;
+    const originalDraw = draw;
+    draw = function() {
+      if (settings.get("disableAllOptimizations")) {
+        originalDraw();
+        return;
+      }
+      starCtx?.reset();
+      if (settings.get("petalStarCaching") && !isNil(starCtx)) {
+        const originalCtx = ctx;
+        ctx = starCtx;
+        simStarX += 0.1;
+        simStarY += 0.1;
+        ctx.translate(15, 15);
+        drawStar(0, 0);
+        ctx.translate(-15, -15);
+        ctx = originalCtx;
+      }
+      for (let rarity = 0; rarity <= MAX_RARITY; rarity++) {
+        airCachedThisFrame[rarity] = false;
+        airCtx[rarity]?.reset();
+      }
+      originalDraw();
+    };
+    const originalDrawPetal = PetalContainer.prototype.draw;
+    PetalContainer.prototype.draw = function(inGame, number) {
+      if (settings.get("disablePetalStars") && !settings.get("disableAllOptimizations") && !isNil(this.stars)) {
+        for (let star of this.stars) {
+          star.x = Infinity;
+          star.y = Infinity;
+        }
+      }
+      if (settings.get("disableAllOptimizations") || this === airPetals[this.rarity] || !_unsafeWindow.hqp || this.shouldAnimate() || inGame && !isNil(number) && !isNil(petalReloadData[number])) {
+        originalDrawPetal.apply(this, [inGame, number]);
+        return;
+      } else {
+        this.shouldDrawCachedAir = true;
+        const originalGradient = staticGradients[this.rarity];
+        const originalBorder = Colors.rarities[this.rarity].border;
+        const originalFill = ctx.fill;
+        originalDrawPetal.apply(this, [inGame, number]);
+        this.shouldDrawCachedAir = false;
+        staticGradients[this.rarity] = originalGradient;
+        Colors.rarities[this.rarity].border = originalBorder;
+        _unsafeWindow.hqp = true;
+        ctx.fill = originalFill;
+      }
+    };
+    const originalInterpolate = PetalContainer.prototype.updateInterpolate;
+    PetalContainer.prototype.updateInterpolate = function() {
+      originalInterpolate.apply(this);
+      if (settings.get("disableAllOptimizations")) {
+        return;
+      }
+      if (this.shouldDrawCachedAir) {
+        if (this.toOscillate && !toRender(
+          { x: this.render.x, y: this.render.y, radius: this.radius },
+          window.camera
+        ) && !this.toSkipCulling) {
+          return;
+        }
+        ctx.save();
+        ctx.translate(this.render.x, this.render.y);
+        let scale = this.getScale();
+        let rotation = this.getRotation();
+        if (rotation !== 0) {
+          ctx.rotate(rotation);
+        }
+        if (scale !== 1) {
+          ctx.scale(scale, scale);
+        }
+        if (this.toOscillate && !this.isDisplayPetalContainer) {
+          ctx.globalAlpha = 0.3;
+          ctx.fillStyle = "black";
+          ctx.beginPath();
+          ctx.roundRect(-30, -30, 60, 60, 5);
+          ctx.fill();
+          ctx.closePath();
+          ctx.globalAlpha = 1;
+          const originalFill = ctx.fill;
+          ctx.fill = function() {
+            if (ctx.globalAlpha < 0.5 && (ctx.fillStyle === "black" || ctx.fillStyle === "#000000")) {
+              ctx.fill = originalFill;
+              return;
+            }
+            originalFill.apply(this);
+          };
+        }
+        const newCtx = airCtx[this.rarity];
+        if (!airCachedThisFrame[this.rarity] && !isNil(newCtx)) {
+          const oldCtx = ctx;
+          ctx = newCtx;
+          airPetals[this.rarity].stars = [];
+          airPetals[this.rarity].draw();
+          ctx = oldCtx;
+          airCachedThisFrame[this.rarity] = true;
+        }
+        ctx.drawImage(airCanvases[this.rarity], -50, -50, 100, 100);
+        this.drawStars();
+        staticGradients[this.rarity] = "transparent";
+        Colors.rarities[this.rarity].border = "transparent";
+        _unsafeWindow.hqp = false;
+        ctx.restore();
+      }
+    };
+    function drawStar(x, y) {
+      ctx.beginPath();
+      let twinkleTime = Date.now() / 600;
+      if (ctx === starCtx) {
+        twinkleTime += simStarX / 30 + simStarY / 30;
+      } else {
+        twinkleTime += x / 30 + y / 30;
+      }
+      const grad = ctx.createRadialGradient(x, y, 15, x, y, 0);
+      grad.addColorStop(0, "transparent");
+      grad.addColorStop(0.8, `rgba(255,255,255,${(Math.cos(twinkleTime) + 1) * 0.8})`);
+      grad.addColorStop(1, "white");
+      ctx.fillStyle = grad;
+      ctx.globalAlpha = 0.3;
+      ctx.fillRect(-25, -25, 50, 50);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = "#fff";
+      ctx.arc(x, y, 1, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.closePath();
+    }
+    PetalContainer.prototype.drawStars = function() {
+      const totalStars = Colors.rarities[this.rarity].fancy?.stars;
+      if (!isNil(totalStars) && _unsafeWindow.hqp) {
+        if (isNil(this.stars)) {
+          this.stars = [];
+          for (let starnum = 0; starnum < totalStars; starnum++) {
+            this.stars.push(
+              { x: Math.random() * 50 - 25, y: Math.random() * 50 - 25 }
+            );
+          }
+        }
+        ctx.beginPath();
+        ctx.roundRect(-22.75, -22.75, 45.5, 45.5, 0.25);
+        ctx.clip();
+        ctx.closePath();
+        for (let star of this.stars) {
+          star.x += 0.1;
+          star.y += 0.1;
+          if (star.x > 25 || star.y > 25) {
+            star.x = Math.random() * 800 - 20 - 30;
+            star.y = -30;
+          }
+          if (star.x < 25 && star.x > -25 && star.y < 25 && star.y > -25) {
+            if (settings.get("petalStarCaching")) {
+              ctx.drawImage(starCanvas, star.x - 15, star.y - 15, 30, 30);
+            } else {
+              drawStar(star.x, star.y);
+            }
+          }
+        }
+      }
+    };
+    function initializeCachedAir() {
+      for (let rarity = 0; rarity <= MAX_RARITY; rarity++) {
+        const newCanvas = new OffscreenCanvas(120, 120);
+        airCanvases.push(newCanvas);
+        airCtx.push(newCanvas.getContext("2d"));
+        const airPetal = new PetalContainer(
+          [new Petal({ type: "Air", rarity })],
+          {
+            x: 60,
+            y: 60,
+            w: 60,
+            h: 60,
+            toOscillate: false
+          },
+          Math.random(),
+          1
+        );
+        airPetal.nameless = true;
+        airPetal.spawnAnimation = 1;
+        airPetals.push(airPetal);
+        airCachedThisFrame.push(false);
+      }
+    }
+  }
+  function addPetalCraftPreview() {
+    craftingMenu.previewPetalSlot = {
+      x: craftingMenu.w * 0.83,
+      y: craftingMenu.h * 0.167,
+      w: 65,
+      h: 65
+    };
+    const originalDrawCrafting = craftingMenu.drawInventory;
+    craftingMenu.drawInventory = function(alpha = 1) {
+      if (!settings.get("petalCraftPreview")) {
+        originalDrawCrafting.apply(this, [alpha]);
+        return;
+      }
+      originalDrawCrafting.apply(this, [alpha]);
+      ctx.translate(130, this.renderY);
+      if (!isNil(this.previewPetalContainer)) {
+        this.previewPetalContainer.y = this.previewPetalSlot.y;
+      }
+      const slot = this.previewPetalSlot;
+      ctx.fillStyle = this.getSlotColor();
+      ctx.beginPath();
+      ctx.roundRect(
+        slot.x - this.petalContainerSize / 2,
+        slot.y - this.petalContainerSize / 2,
+        this.petalContainerSize,
+        this.petalContainerSize,
+        8
+      );
+      ctx.fill();
+      ctx.closePath();
+      ctx.fillStyle = "#f0f0f0";
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 3.75;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "900 16px Ubuntu";
+      ctx.strokeText("Preview", slot.x, slot.y - 55);
+      ctx.fillText("Preview", slot.x, slot.y - 55);
+      const mouseX = mouse.canvasX;
+      const mouseY = mouse.canvasY;
+      const container = this.previewPetalContainer;
+      if (container !== void 0) {
+        container.draw();
+        if (mouseInBox(
+          { x: mouseX, y: mouseY },
+          {
+            x: container.render.x - container.w / 2 + 130,
+            y: container.render.y - container.h / 2 + canvas.h - this.h - 20,
+            w: container.w,
+            h: container.h
+          }
+        )) {
+          container.isHovered = true;
+        }
+        container.drawStatsBox(
+          false,
+          false,
+          130 + container.render.x,
+          canvas.h - this.h - 20 + container.render.y
+        );
+      }
+      ctx.translate(-130, -this.renderY);
+    };
+    const originalAddPetal = craftingMenu.addCraftingPetalContainers;
+    craftingMenu.addCraftingPetalContainers = function(type, rarity, amount, attempt) {
+      originalAddPetal.apply(this, [type, rarity, amount, attempt]);
+      const currentPetal = this.craftingPetalContainers[0];
+      if (currentPetal !== void 0 && (this.previewPetalContainer?.type !== currentPetal.type || this.previewPetalContainer?.rarity !== currentPetal.rarity + 1)) {
+        const slot = this.previewPetalSlot;
+        this.previewPetalContainer = new PetalContainer(
+          [new Petal({ type: currentPetal.type, rarity: currentPetal.rarity + 1 })],
+          { x: slot.x, y: slot.y, w: 65, h: 65, toOscillate: false },
+          Math.random(),
+          1
+        );
+      }
+    };
+    const originalRemovePetal = craftingMenu.removeCraftingPetalContainers;
+    craftingMenu.removeCraftingPetalContainers = function() {
+      originalRemovePetal.apply(this);
+      this.previewPetalContainer = void 0;
+    };
+    const originalEnterGame = craftingMenu.enterGame;
+    craftingMenu.enterGame = function() {
+      originalEnterGame.apply(this);
+      this.previewPetalContainer = void 0;
+    };
+  }
+  const petalLockIcon = new Image();
+  petalLockIcon.src = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgoKPHN2ZwogICB3aWR0aD0iNTQuNTAwMzJtbSIKICAgaGVpZ2h0PSI2NC41MDAwMDhtbSIKICAgdmlld0JveD0iMCAwIDU0LjUwMDMyIDY0LjUwMDAwOCIKICAgdmVyc2lvbj0iMS4xIgogICBpZD0ic3ZnMSIKICAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogICB4bWxuczpzdmc9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8ZGVmcwogICAgIGlkPSJkZWZzMSIgLz4KICA8ZwogICAgIGlkPSJsYXllcjEiCiAgICAgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTY5Ljk5OTk5OSwtNzApIj4KICAgIDxyZWN0CiAgICAgICBzdHlsZT0iZmlsbDojZGYwMmZmO2ZpbGwtb3BhY2l0eTowO3N0cm9rZTojZmZmZmZmO3N0cm9rZS13aWR0aDo0LjQ5ODtzdHJva2UtbGluZWNhcDpzcXVhcmU7c3Ryb2tlLWxpbmVqb2luOnJvdW5kO3N0cm9rZS1taXRlcmxpbWl0OjE7c3Ryb2tlLWRhc2hhcnJheTpub25lO3N0cm9rZS1vcGFjaXR5OjE7cGFpbnQtb3JkZXI6bWFya2VycyBzdHJva2UgZmlsbCIKICAgICAgIGlkPSJyZWN0MiIKICAgICAgIHdpZHRoPSI1MC4wMDIzMTkiCiAgICAgICBoZWlnaHQ9IjUwLjAwMjMxOSIKICAgICAgIHg9IjcyLjI0OTAwMSIKICAgICAgIHk9IjcyLjI0OTAwMSIgLz4KICAgIDxyZWN0CiAgICAgICBzdHlsZT0iZmlsbDojZmZmZmZmO2ZpbGwtb3BhY2l0eToxO3N0cm9rZTojZmZmZmZmO3N0cm9rZS13aWR0aDowO3N0cm9rZS1saW5lY2FwOnNxdWFyZTtzdHJva2UtbGluZWpvaW46cm91bmQ7c3Ryb2tlLW1pdGVybGltaXQ6MTtzdHJva2UtZGFzaGFycmF5Om5vbmU7c3Ryb2tlLW9wYWNpdHk6MTtwYWludC1vcmRlcjptYXJrZXJzIHN0cm9rZSBmaWxsIgogICAgICAgaWQ9InJlY3QzIgogICAgICAgd2lkdGg9IjgiCiAgICAgICBoZWlnaHQ9IjUiCiAgICAgICB4PSI5My4yNSIKICAgICAgIHk9IjEyOS41IiAvPgogICAgPGVsbGlwc2UKICAgICAgIHN0eWxlPSJmaWxsOiNmZmZmZmY7ZmlsbC1vcGFjaXR5OjA7c3Ryb2tlOiNmZmZmZmY7c3Ryb2tlLXdpZHRoOjI7c3Ryb2tlLWxpbmVjYXA6c3F1YXJlO3N0cm9rZS1saW5lam9pbjpyb3VuZDtzdHJva2UtbWl0ZXJsaW1pdDoxO3N0cm9rZS1kYXNoYXJyYXk6bm9uZTtzdHJva2Utb3BhY2l0eToxO3BhaW50LW9yZGVyOm1hcmtlcnMgc3Ryb2tlIGZpbGwiCiAgICAgICBpZD0icGF0aDMiCiAgICAgICBjeD0iOTcuMjUiCiAgICAgICBjeT0iMTI5LjUiCiAgICAgICByeD0iMi41IgogICAgICAgcnk9IjQiIC8+CiAgPC9nPgo8L3N2Zz4K";
+  function addPetalSlotLocking() {
+    const lockManager = new LockManager();
+    const oldDraw = Inventory.prototype.draw;
+    Inventory.prototype.draw = function(alpha) {
+      oldDraw.apply(this, [alpha]);
+      lockManager.draw(this);
+    };
+    addKeybindInstruction({
+      type: "settings",
+      settingsKey: "keybindLockSlot",
+      keyType: "keydown",
+      inGame: true,
+      inMenu: true,
+      fn: () => {
+        lockManager.lockKeybindHeld = true;
+      }
+    });
+    addKeybindInstruction({
+      type: "settings",
+      settingsKey: "keybindLockSlot",
+      keyType: "keyup",
+      inGame: true,
+      inMenu: true,
+      fn: () => {
+        lockManager.lockKeybindHeld = false;
+      }
+    });
+    addKeybindInstruction({
+      type: "rawValue",
+      value: "KeyR",
+      inGame: true,
+      inMenu: true,
+      beforeOriginal: true,
+      fn: () => {
+        lockManager.swappingAllPetals = true;
+      }
+    });
+    addKeybindInstruction({
+      type: "rawValue",
+      value: "KeyR",
+      inGame: true,
+      inMenu: true,
+      beforeOriginal: false,
+      fn: () => {
+        lockManager.swappingAllPetals = false;
+      }
+    });
+    const originalSwap = Inventory.prototype.swapPetals;
+    Inventory.prototype.swapPetals = function(index, toSend) {
+      if (lockManager.toggleLock(this, index)) {
+        return;
+      }
+      if (!lockManager.applyLock(this, index)) {
+        originalSwap.apply(this, [index, toSend]);
+      }
+    };
+  }
+  class LockManager {
+    /**
+     * Whether or not each slot is currently locked.
+     */
+    slotLocked;
+    /**
+     * The *target* opacity of each lock icon (from 0 to 1) based the slot's
+     * status, such as whether the user has locked it, whether it is currently
+     * occupied, etc..
+     */
+    alpha;
+    /**
+     * The current opacity of each lock icon, which approaches 
+     * {@linkcode alpha} smoothly.
+     */
+    renderAlpha;
+    /**
+     * Whether or not the user is holding the [Lock Petal Slot] key.
+     */
+    lockKeybindHeld;
+    /**
+     * The timer for each petal slot's shaking animation when the user tries to
+     * swap a locked petal, in milliseconds.
+     */
+    shakeTimer;
+    /**
+     * Whether or not the user is currently swapping all petals by pressing [R].
+     */
+    swappingAllPetals;
+    constructor() {
+      const storedLocks = localStorage.getItem("cinderLocks");
+      if (!isNil(storedLocks)) {
+        this.slotLocked = JSON.parse(storedLocks);
+      } else {
+        this.slotLocked = Array(10).fill(false);
+      }
+      this.alpha = Array(10).fill(0);
+      this.renderAlpha = Array(10).fill(0);
+      this.shakeTimer = Array(10).fill(0);
+      this.lockKeybindHeld = false;
+      this.swappingAllPetals = false;
+    }
+    /**
+     * A helper function to determine whether a slot is lockable, according to
+     * the settings and the total number of petals that the loadout has.
+     */
+    isAllowedToLock(loadout, slot) {
+      return (slot >= 5 || settings.get("allowLockSlotsOneToFive")) && slot < loadout.topPetalSlots.length;
+    }
+    /**
+     * Draws the lock icons onto the petal slots of the given loadout.
+     */
+    draw(loadout) {
+      for (let i = 0; i < 10; i++) {
+        if (!this.isAllowedToLock(loadout, i)) {
+          this.slotLocked[i] = false;
+        }
+      }
+      for (let i = 0; i < loadout.topPetalSlots.length; i++) {
+        this.updateAlpha(loadout, i);
+        this.drawIcon(loadout, i);
+      }
+      ctx.globalAlpha = 1;
+    }
+    /**
+     * A helper function to update {@linkcode alpha} and {@linkcode renderAlpha}
+     * for a single slot.
+     */
+    updateAlpha(loadout, slot) {
+      const petal = loadout.topPetalContainers[slot];
+      const slotObject = loadout.topPetalSlots[slot];
+      if (!this.isAllowedToLock(loadout, slot)) {
+        this.alpha[slot] = 0;
+      } else if (this.slotLocked[slot]) {
+        if (isNil(petal) || Math.abs(petal.render.x - slotObject.x) > 5 || Math.abs(petal.render.y - slotObject.y) > 5) {
+          this.alpha[slot] = 0.5;
+        } else {
+          this.alpha[slot] = 1;
+        }
+      } else {
+        if (this.lockKeybindHeld) {
+          this.alpha[slot] = 0.5;
+        } else {
+          this.alpha[slot] = 0;
+        }
+      }
+      this.renderAlpha[slot] = interpolate(this.renderAlpha[slot], this.alpha[slot], dt / 200);
+    }
+    /**
+     * A helper function to draw the lock icon for a single petal slot.
+     */
+    drawIcon(loadout, slot) {
+      const sizeMult = this.alpha[slot] === 1 ? Math.pow(1 + PETAL_BORDER_RATIO / 2, 2) : 1 + PETAL_BORDER_RATIO / 2 + 0.02;
+      const iconRatio = petalLockIcon.height / petalLockIcon.width;
+      const slotObject = loadout.topPetalSlots[slot];
+      this.shakeTimer[slot] = Math.max(0, this.shakeTimer[slot] - dt);
+      const intensity = settings.get("petalLockShakeIntensity");
+      const iconX = slotObject.x - sizeMult * slotObject.size / 2 + intensity * Math.sin(this.shakeTimer[slot] * 2 * Math.PI / 75);
+      ctx.globalAlpha = this.renderAlpha[slot];
+      ctx.drawImage(
+        petalLockIcon,
+        iconX,
+        slotObject.y - sizeMult * slotObject.size / 2 + loadout.translateY,
+        sizeMult * slotObject.size,
+        sizeMult * slotObject.size * iconRatio
+      );
+    }
+    /**
+     * Toggles the given slot's lock status if the slot is lockable.
+     * 
+     * Locking petals requires the following 3 criteria:
+     * 1. The user is holding the [Lock Petal Slot] key.
+     * 2. The user is allowed to lock the given slot.
+     * 3. The user is not pressing [R] to swap the entire loadout.
+     * 
+     * @returns `true` iff the slot was successfully toggled.
+     */
+    toggleLock(loadout, slot) {
+      if (this.lockKeybindHeld && this.isAllowedToLock(loadout, slot) && !this.swappingAllPetals) {
+        this.slotLocked[slot] = !this.slotLocked[slot];
+        localStorage.setItem("cinderLocks", JSON.stringify(this.slotLocked));
+        if (this.slotLocked[slot]) {
+          this.shakeTimer[slot] = 225;
+        }
+        return true;
+      }
+      return false;
+    }
+    /**
+     * @returns `true` iff the slot is currently locked.
+     */
+    applyLock(loadout, slot) {
+      if (this.slotLocked[slot] && !isNil(loadout.topPetalContainers[slot])) {
+        this.shakeTimer[slot] = 225;
+        return true;
+      }
+      return false;
+    }
+  }
+  function addQuickStatsBoxHotkey() {
+    let showQuickStatsBox = false;
+    addKeybindInstruction({
+      type: "settings",
+      settingsKey: "keybindStatsBox",
+      fn: () => {
+        showQuickStatsBox = !showQuickStatsBox;
+      }
+    });
+    const originalRenderGame = renderGame;
+    const originalDrawStatsBox = PetalContainer.prototype.drawStatsBox;
+    renderGame = (dt2) => {
+      if (showQuickStatsBox) {
+        PetalContainer.prototype.drawStatsBox = function(drawBelow, mob, x, y) {
+          if (this.petals[0]?.constructor === Petal) {
+            originalDrawStatsBox.apply(this, [drawBelow, mob, x, y]);
+          }
+        };
+      }
+      originalRenderGame(dt2);
+      PetalContainer.prototype.drawStatsBox = originalDrawStatsBox;
+      if (showQuickStatsBox) {
+        const totalCount = {};
+        for (let enemyBox of Object.values(room.enemyBoxes)) {
+          totalCount[enemyBox.type] ??= 0;
+          totalCount[enemyBox.type] += enemyBox.amount;
+        }
+        let highestBox = void 0;
+        for (let enemyBox of Object.values(room.enemyBoxes)) {
+          if (isNil(highestBox) || enemyBox.rarity > highestBox.rarity || enemyBox.rarity === highestBox.rarity && totalCount[enemyBox.type] <= totalCount[highestBox.type]) {
+            if (!enemyBox.isBoss) {
+              highestBox = enemyBox;
+            }
+          }
+        }
+        if (!isNil(highestBox)) {
+          if (isNil(highestBox.ec)) {
+            highestBox.ec = mobGallery.generateEnemyPc(
+              highestBox.type,
+              highestBox.rarity,
+              1
+            );
+          }
+          if (!Stats.enemies[highestBox.type]) {
+            calculateStats();
+          } else {
+            highestBox.ec.isHovered = true;
+            highestBox.ec.drawStatsBox(
+              true,
+              true,
+              canvas.w / 2 + highestBox.x,
+              highestBox.y + highestBox.w / 2 + 3 * highestBox.w / 5
+            );
+          }
+        }
+      }
+    };
+  }
+  function addRandomizedSquadCodes() {
+    const originalSendRoomRequest = sendRoomRequest;
+    sendRoomRequest = function(msg) {
+      if (msg.findPrivate === true && msg.squadCode === "") {
+        const newCode = randomSquadCode();
+        msg.squadCode = newCode;
+        if (settings.get("autoCopyCodes")) {
+          navigator.clipboard.writeText(newCode);
+          chatAnnounce("Code copied to clipboard! (" + newCode + ")");
+        } else {
+          chatAnnounce("Random code generated! (" + newCode + ")");
+        }
+      }
+      originalSendRoomRequest(msg);
+    };
+    const originalPrompt = prompt;
+    _unsafeWindow.prompt = function(msg, _def) {
+      if (msg === "Enter Private Squad Code") {
+        msg = "Enter private squad code (leave empty to generate a random code):";
+      }
+      return originalPrompt(msg, _def);
+    };
+  }
+  function randomSquadCode() {
+    let squadCode = "";
+    let hasLetter = false;
+    for (let i = 0; i < 6; i++) {
+      const roll = Math.floor(Math.random() * 16);
+      if (roll < 10) {
+        squadCode += String.fromCharCode("0".charCodeAt(0) + roll);
+      } else {
+        squadCode += String.fromCharCode("a".charCodeAt(0) + roll - 10);
+        hasLetter = true;
+      }
+    }
+    return hasLetter ? squadCode : randomSquadCode();
+  }
+  function prioritizeRenderingStatsBoxes() {
+    const statsBoxCanvas = document.createElement("canvas");
+    statsBoxCanvas.style = "z-index: 2; pointer-events: none";
+    document.body.appendChild(statsBoxCanvas);
+    const statsBoxCtx = statsBoxCanvas.getContext("2d");
+    const originalStatsBoxDraw = StatsBox.prototype.draw;
+    StatsBox.prototype.draw = function() {
+      statsBoxCanvas.width = canvas.width;
+      statsBoxCanvas.height = canvas.height;
+      const originalCtx = ctx;
+      if (!isNil(statsBoxCtx)) {
+        ctx = statsBoxCtx;
+        ctx.globalAlpha = originalCtx.globalAlpha;
+        ctx.setTransform(savedRenderTransform);
+      }
+      originalStatsBoxDraw.apply(this);
+      ctx = originalCtx;
+    };
+    const originalDraw = draw;
+    draw = function() {
+      statsBoxCtx?.reset();
+      statsBoxCtx?.clearRect(0, 0, statsBoxCanvas.width, statsBoxCanvas.height);
+      originalDraw();
+    };
+  }
+  function widerMobStatsBoxes() {
+    const originalGenerateDesc = StatsBox.prototype.generateDesc;
+    StatsBox.prototype.generateDesc = function(min, max) {
+      const dimensions = originalGenerateDesc.apply(this, [min, max]);
+      ctx.font = `900 ${1.2 * 22.5}px Ubuntu`;
+      const textWidth = ctx.measureText(this.name).width;
+      dimensions.width = Math.max(dimensions.width, textWidth + 175);
+      dimensions.width = Math.max(Math.min(dimensions.width, max), min);
+      return dimensions;
+    };
+  }
+  function allowEditingKeybinds() {
+    const originalHandleKey = inputHandler.handleKey;
+    inputHandler.handleKey = function(e) {
+      if (_unsafeWindow.state === "menu" && e.type === "keydown" && !e.repeat && !isNil(cinderSettingsMenu.currentKeybindOption)) {
+        if (e.code === "Delete") {
+          cinderSettingsMenu.currentKeybindOption.finishEdit(KEYBIND_DELETED);
+        } else {
+          cinderSettingsMenu.currentKeybindOption.finishEdit(e.code);
+        }
+        cinderSettingsMenu.cancelKeybind();
+        return;
+      }
+      originalHandleKey.apply(inputHandler, [e]);
+    };
+  }
+  function handleMenuTranslations() {
+    for (let menu of MENU_LIST) {
+      if (isTopMenu(menu)) {
+        Object.defineProperty(menu, "renderY", {
+          get: function() {
+            return this.y + this.offset;
+          }
+        });
+      } else {
+        Object.defineProperty(menu, "renderY", {
+          get: function() {
+            this.lastOpenTime ??= time - 160;
+            this.lastCloseTime ??= time - 160;
+            if (!this.menuActive && time - this.lastCloseTime >= 160) {
+              return canvas.h;
+            }
+            let translate = 0;
+            if (time - this.lastCloseTime < 160) {
+              translate += this.h * easeOutCubic((time - this.lastCloseTime) / 160);
+            }
+            if (time - this.lastOpenTime < 160) {
+              translate += (this.h + 40) * (1 - easeOutCubic((time - this.lastOpenTime) / 160));
+            }
+            return canvas.h - this.h - 20 + translate;
+          }
+        });
+      }
+    }
+  }
+  function initExportedObjects() {
+    initSettingsManager();
+    initSettingsMenu();
+    initChangelog();
+    initMobCounters();
+    initMenuList();
+  }
+  function initTheoryCraft() {
+    if (theoryCraft.length > 0) {
+      console.warn("theoryCraft already initialized!");
+      return;
+    }
+    for (let rarity = 0; rarity <= MAX_PETAL_RARITY; rarity++) {
+      theoryCraft.push(5);
+      let probFailedSoFar = 1;
+      let attempt = 0;
+      while (probFailedSoFar > 0) {
+        probFailedSoFar *= 1 - calculateChance(attempt, rarity) / 100;
+        theoryCraft[rarity] += probFailedSoFar * 2.5;
+        attempt++;
+      }
+    }
+  }
+  function addNewMenuButtons() {
+    const menuSeparatorLine = document.createElement("div");
+    menuSeparatorLine.id = "menuSeparatorLine";
+    const buttonList = changelogButton.parentElement;
+    buttonList?.appendChild(menuSeparatorLine);
+    const settingsImage = new Image(35, 35);
+    settingsImage.src = `gfx/gear.png?v=${ver}`;
+    settingsImage.draggable = false;
+    const cinderSettingsButton = document.createElement("div");
+    cinderSettingsButton.className = "cinderMenuButton";
+    cinderSettingsButton.appendChild(settingsImage);
+    cinderSettingsButton.onclick = () => {
+      cinderSettingsMenu.toggle();
+    };
+    buttonList?.appendChild(cinderSettingsButton);
+    const githubIcon = new Image(35, 35);
+    githubIcon.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik01Ni43OTM3IDg0Ljk2ODhDNDQuNDE4NyA4My40Njg4IDM1LjcgNzQuNTYyNSAzNS43IDYzLjAzMTNDMzUuNyA1OC4zNDM4IDM3LjM4NzUgNTMuMjgxMyA0MC4yIDQ5LjkwNjNDMzguOTgxMiA0Ni44MTI1IDM5LjE2ODcgNDAuMjUgNDAuNTc1IDM3LjUzMTNDNDQuMzI1IDM3LjA2MjUgNDkuMzg3NSAzOS4wMzEzIDUyLjM4NzUgNDEuNzVDNTUuOTUgNDAuNjI1IDU5LjcgNDAuMDYyNSA2NC4yOTM3IDQwLjA2MjVDNjguODg3NSA0MC4wNjI1IDcyLjYzNzUgNDAuNjI1IDc2LjAxMjUgNDEuNjU2M0M3OC45MTg3IDM5LjAzMTMgODQuMDc1IDM3LjA2MjUgODcuODI1IDM3LjUzMTNDODkuMTM3NSA0MC4wNjI1IDg5LjMyNSA0Ni42MjUgODguMTA2MiA0OS44MTI1QzkxLjEwNjIgNTMuMzc1IDkyLjcgNTguMTU2MyA5Mi43IDYzLjAzMTNDOTIuNyA3NC41NjI1IDgzLjk4MTIgODMuMjgxMyA3MS40MTg3IDg0Ljg3NUM3NC42MDYyIDg2LjkzNzUgNzYuNzYyNSA5MS40Mzc1IDc2Ljc2MjUgOTYuNTkzOEw3Ni43NjI1IDEwNi4zNDRDNzYuNzYyNSAxMDkuMTU2IDc5LjEwNjIgMTEwLjc1IDgxLjkxODcgMTA5LjYyNUM5OC44ODc1IDEwMy4xNTYgMTEyLjIgODYuMTg3NSAxMTIuMiA2NS4xODc1QzExMi4yIDM4LjY1NjMgOTAuNjM3NSAxNyA2NC4xMDYyIDE3QzM3LjU3NSAxNyAxNi4yIDM4LjY1NjIgMTYuMiA2NS4xODc1QzE2LjIgODYgMjkuNDE4NyAxMDMuMjUgNDcuMjMxMiAxMDkuNzE5QzQ5Ljc2MjUgMTEwLjY1NiA1Mi4yIDEwOC45NjkgNTIuMiAxMDYuNDM4TDUyLjIgOTguOTM3NUM1MC44ODc1IDk5LjUgNDkuMiA5OS44NzUgNDcuNyA5OS44NzVDNDEuNTEyNSA5OS44NzUgMzcuODU2MiA5Ni41IDM1LjIzMTIgOTAuMjE4OEMzNC4yIDg3LjY4NzUgMzMuMDc1IDg2LjE4NzUgMzAuOTE4NyA4NS45MDYzQzI5Ljc5MzcgODUuODEyNSAyOS40MTg3IDg1LjM0MzggMjkuNDE4NyA4NC43ODEzQzI5LjQxODcgODMuNjU2MyAzMS4yOTM3IDgyLjgxMjUgMzMuMTY4NyA4Mi44MTI1QzM1Ljg4NzUgODIuODEyNSAzOC4yMzEyIDg0LjUgNDAuNjY4NyA4Ny45Njg4QzQyLjU0MzcgOTAuNjg3NSA0NC41MTI1IDkxLjkwNjMgNDYuODU2MiA5MS45MDYzQzQ5LjIgOTEuOTA2MyA1MC43IDkxLjA2MjUgNTIuODU2MiA4OC45MDYzQzU0LjQ1IDg3LjMxMjUgNTUuNjY4NyA4NS45MDYzIDU2Ljc5MzcgODQuOTY4OFoiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPgo=";
+    githubIcon.id = "githubIcon";
+    githubIcon.draggable = false;
+    const githubButton = document.createElement("div");
+    githubButton.className = "cinderMenuButton";
+    const githubLink = document.createElement("a");
+    githubLink.href = "https://github.com/PigeonBar/flowr-cinderscript";
+    githubLink.target = "_blank";
+    githubLink.title = "Check out Cinderscript on GitHub!";
+    githubLink.appendChild(githubIcon);
+    githubButton.appendChild(githubLink);
+    buttonList?.appendChild(githubButton);
+    const changelogImage = new Image(24, 24);
+    changelogImage.src = `gfx/scroll.png?v=${ver}`;
+    changelogImage.draggable = false;
+    const cinderChangelogButton = document.createElement("div");
+    cinderChangelogButton.className = "cinderMenuButton";
+    cinderChangelogButton.appendChild(changelogImage);
+    cinderChangelogButton.onclick = () => {
+      cinderChangelog.toggle();
+    };
+    buttonList?.appendChild(cinderChangelogButton);
+    const styles = `
+    #menuSeparatorLine {
+      background-color: ${CINDER_BORDER_COLOUR};
+      margin-left: 10px;
+      margin-top: 10px;
+      width: 41px;
+      height: 5px;
+      border-radius: 3px;
+    }
+
+    #githubIcon {
+      margin-top: 3px;
+    }
+
+    .cinderMenuButton {
+      border-color: ${CINDER_BORDER_COLOUR};
+      border-style: solid;
+      border-width: 3px;
+      background-color: ${CINDER_COLOUR};
+      border-radius: 8px;
+      margin-left: 10px;
+      margin-top: 10px;
+      width: 35px;
+      height: 35px;
+      transition: background-color 0.1s;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .cinderMenuButton:hover {
+      cursor: pointer;
+      background-color: ${LIGHT_CINDER_COLOUR};
+    }
+    
+    #changelogButton:hover {
+      cursor: pointer;  /* I think the Flowr devs forgot to add this */
+    }
+  `;
+    const styleSheet = document.createElement("style");
+    styleSheet.textContent = styles;
+    document.head.appendChild(styleSheet);
+  }
+  function initPetalDrawingUtils() {
+    PetalContainer.prototype.getScale = function() {
+      let scale = this.render.w / 50;
+      const renderAnimationTimer = smoothstep(this.spawnAnimation);
+      scale *= renderAnimationTimer;
+      if (this.toOscillate) {
+        scale *= 1 + Math.sin(performance.now() / 1e3 / 0.076) / 52;
+      }
+      return scale;
+    };
+    PetalContainer.prototype.getRotation = function() {
+      let rotation = 0;
+      const renderAnimationTimer = smoothstep(this.spawnAnimation);
+      rotation -= (1 - renderAnimationTimer) * Math.PI * 3;
+      if (this.isDraggingPetalContainer) {
+        this.draggingTimer ??= 0;
+        const nextFrameTimer = this.draggingTimer + 1e3 / 30 * dt / 16.66;
+        rotation += Math.sin(nextFrameTimer / 280) * 0.28;
+      } else if (!isNil(this.undraggingPetalContainerTimer)) {
+        if (isNil(this.interval)) {
+          this.lastDraggingAngle ??= 0;
+          rotation += interpolate(this.lastDraggingAngle, 0, 0.15);
+        }
+      }
+      if (this.toOscillate === true) {
+        this.angleOffset ??= 0;
+        rotation += this.angleOffset;
+      }
+      return rotation;
+    };
+    PetalContainer.prototype.shouldAnimate = function() {
+      return !NON_ANIM_PETALS.includes(this.type) && !settings.get("disablePetalAnimations");
+    };
+    PetalContainer.prototype.drawAmount = function(textColour = "white") {
+      ctx.save();
+      const scale = this.getScale();
+      ctx.translate(this.render.x, this.render.y);
+      if (performance.now() - this.lastAmountChangedTime < 240) {
+        ctx.globalAlpha = smoothstep(
+          (performance.now() - this.lastAmountChangedTime) / 240
+        );
+      }
+      ctx.font = `600 ${13 * scale}px Ubuntu`;
+      ctx.letterSpacing = "1px";
+      ctx.textBaseline = "middle";
+      ctx.textAlign = "right";
+      ctx.fillStyle = textColour;
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 2;
+      ctx.translate((70 / 2.5 + 0.5) * scale, (-42 / 2.5 + 0.5) * scale);
+      ctx.rotate(Math.PI / 9.1);
+      if (this.greyed) {
+        ctx.globalAlpha *= 0.3;
+      }
+      ctx.strokeText("x" + formatAmount(this.amount), 0, 0);
+      ctx.fillText("x" + formatAmount(this.amount), 0, 0);
+      ctx.restore();
+    };
+  }
+  function preventClickingBehindMenus() {
+    const originalMouseDown = menuInventory.mouseDown;
+    menuInventory.mouseDown = function({ mouseX, mouseY }, inv) {
+      if (!mouseOnMenu()) {
+        originalMouseDown.apply(this, [{ mouseX, mouseY }, inv]);
+      }
+    };
+    const originalAddClosest = menuInventory.addClosest;
+    menuInventory.addClosest = function(p, globalInv) {
+      if (!mouseOnMenu()) {
+        return originalAddClosest.apply(this, [p, globalInv]);
+      } else {
+        return false;
+      }
+    };
+    const originalDraw = Inventory.prototype.draw;
+    Inventory.prototype.draw = function(alpha) {
+      const originalDrawStatsBox = PetalContainer.prototype.drawStatsBox;
+      if (mouseOnMenu()) {
+        PetalContainer.prototype.drawStatsBox = function(drawBelow, mob, x, y) {
+          this.isHovered = false;
+          originalDrawStatsBox.apply(this, [drawBelow, mob, x, y]);
+        };
+      }
+      originalDraw.apply(this, [alpha]);
+      PetalContainer.prototype.drawStatsBox = originalDrawStatsBox;
+    };
+    const originalGetClosest = menuInventory.getClosest;
+    menuInventory.getClosest = function(p) {
+      if (!mouseOnMenu()) {
+        return originalGetClosest.apply(menuInventory, [p]);
+      } else {
+        return false;
+      }
+    };
+    const originalRender = squadUI.render;
+    squadUI.render = function(dt2) {
+      const originalX = mouse.canvasX;
+      const originalY = mouse.canvasY;
+      if (mouseOnMenu()) {
+        mouse.canvasX = mouse.canvasY = -1e99;
+      }
+      originalRender.apply(this, [dt2]);
+      mouse.canvasX = originalX;
+      mouse.canvasY = originalY;
+    };
+    const originalStartSliderDrag = squadUI.startSliderDrag;
+    squadUI.startSliderDrag = function(x) {
+      if (!mouseOnMenu()) {
+        originalStartSliderDrag.apply(this, [x]);
+      }
+    };
+    const originalBiomeMouseDown = biomeManager.mouseDown;
+    biomeManager.mouseDown = function({ mouseX, mouseY }) {
+      if (!mouseOnMenu()) {
+        originalBiomeMouseDown.apply(this, [{ mouseX, mouseY }]);
+      }
+    };
+  }
+  function preventMenuOverlap() {
+    for (let menu of MENU_LIST) {
+      if (isTopMenu(menu)) {
+        const originalToggle = menu.toggle;
+        menu.toggle = function() {
+          if (!menu.active) {
+            closeAllMenus();
+          }
+          originalToggle.apply(menu);
+        };
+      } else {
+        const originalToggle = menu.toggleMenu;
+        menu.toggleMenu = function() {
+          if (!menu.menuActive) {
+            closeAllMenus();
+          }
+          originalToggle.apply(menu);
+        };
+      }
+    }
+  }
+  function closeAllMenus() {
+    for (let menu of MENU_LIST) {
+      if (isTopMenu(menu)) {
+        if (menu.active) {
+          menu.toggle();
+        }
+      } else {
+        if (menu.menuActive) {
+          menu.toggleMenu();
+        }
+      }
+    }
+  }
+  function unfreezeObjects() {
+    processGameMessageMap = { ...processGameMessageMap };
+    Colors.rarities = structuredClone(Colors.rarities);
+  }
+  function refreezeObjects() {
+    Object.freeze(processGameMessageMap);
+  }
+  await( new Promise((resolve) => setTimeout(resolve, 200)));
+  detectLateFlowrscriptLoading();
+  initExportedObjects();
   unfreezeObjects();
   initTheoryCraft();
   allowWsDataEditing();

@@ -1,6 +1,8 @@
 import { unsafeWindow } from "$";
 
 const cinderChangelogList: ChangelogEntry[] = [
+  {text: `- Attempted fix for the settings menu not working if you are also using Flowrscript, Flowrmod, etc. (PR #32)`,
+  date: "Version 1.5.1"},
   {text: `- The mob gallery now has more types of mob counters, such as a spawn counter! (PR #31)
 - Tooltip text boxes are now fully opaque (PR #31)`,
   date: "Version 1.5.0 (More Mob Counters)"},
@@ -164,4 +166,12 @@ export class CinderChangelog extends Changelog {
   }
 }
 
-export const cinderChangelog = new CinderChangelog();
+export let cinderChangelog: CinderChangelog;
+
+/**
+ * A helper function to initialize {@linkcode cinderChangelog}, to prevent
+ * certain side effects from its constructor running during importing.
+ */
+export function initChangelog(): void {
+  cinderChangelog = new CinderChangelog();
+}
