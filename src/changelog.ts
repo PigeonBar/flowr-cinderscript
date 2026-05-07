@@ -1,6 +1,10 @@
 import { unsafeWindow } from "$";
 
 const cinderChangelogList: ChangelogEntry[] = [
+  {text: `- Fixed some issues involving physical overlap with Flowrscript's menus (PR #33)
+- Fixed the settings menu being active outside the main menu (PR #33)
+- This script now waits longer for Flowrscript to load its skins (200ms -> 1000ms) (PR #33)`,
+  date: "Version 1.5.2"},
   {text: `- Attempted fix for the settings menu not working if you are also using Flowrscript, Flowrmod, etc. (PR #32)`,
   date: "Version 1.5.1"},
   {text: `- The mob gallery now has more types of mob counters, such as a spawn counter! (PR #31)

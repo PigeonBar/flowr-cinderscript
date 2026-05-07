@@ -1,5 +1,7 @@
 import { cinderChangelog } from "../changelog";
+import { flowrMod } from "../inits/initFlowrscriptPointer";
 import { cinderSettingsMenu } from "../settings/settingsMenu";
+import { isNil } from "../utils";
 
 /**
  * A list of all menus accessible via the main lobby.
@@ -11,7 +13,7 @@ export let MENU_LIST: readonly Menu[];
  * side effects from constructors running during importing.
  */
 export function initMenuList(): void {
-  MENU_LIST = Object.freeze([
+  const rawList: Menu[] = [
     settingsMenu,
     changelog,
     cinderSettingsMenu,
@@ -19,5 +21,18 @@ export function initMenuList(): void {
     globalInventory,
     craftingMenu,
     mobGallery,
-  ]);
+    shop,
+  ];
+  
+  // If Flowrscript is also being used, add its settings menu and its petal
+  // gallery to the menu list.
+  if (!isNil(flowrMod)) {
+    rawList.push(
+      flowrMod.flowrSettingsMenu,
+      flowrMod.petalGallery,
+    );
+  }
+
+  // Finally, freeze the object here
+  MENU_LIST = Object.freeze(rawList);
 }
