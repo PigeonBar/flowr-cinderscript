@@ -3,6 +3,7 @@ import { TEXT_LIGHT_BLUE, TEXT_LIGHT_RED } from "../constants/constants";
 import { addKeybindInstruction } from "../inits/keybindHandling";
 import { addWsDataEditing } from "../inits/wsDataEditing";
 import { settings } from "../settings/settingsManager";
+import { settingsMap } from "../settings/settingsObjects";
 import { chatAnnounce, isNil } from "../utils";
 
 /**
@@ -79,7 +80,6 @@ export function enableInvertAttackAndDefend() {
         "Invert Attack set to " + (newInvertAttack ? "ON" : "OFF") + "!",
         TEXT_LIGHT_RED,
       );
-      send({attack: rawAttacking});
     }}
   );
   addKeybindInstruction(
@@ -90,9 +90,19 @@ export function enableInvertAttackAndDefend() {
         "Invert Defend set to " + (newInvertDefend ? "ON" : "OFF") + "!",
         TEXT_LIGHT_BLUE,
       );
-      send({defend: rawDefending});
     }}
   );
+
+  // Also add listeners for when inverted attack/defend gets toggled, either
+  // via the above keybinds or via the settings menu
+  settings.addListener("invertAttack", (option: boolean) => {
+    settingsMap.invertAttack.state = option;
+    send({attack: rawAttacking});
+  });
+  settings.addListener("invertDefend", (option: boolean) => {
+    settingsMap.invertDefend.state = option;
+    send({defend: rawDefending});
+  });
 
   // Also reset inputs and process input inversion when entering a game
   const originalEnterGame = enterGame;

@@ -2,6 +2,7 @@ import { unsafeWindow } from "$";
 import { CINDER_COLOUR, MAX_PETAL_RARITY } from "./constants/constants";
 import { MENU_LIST } from "./constants/menuLists";
 import { Rarity } from "./enums";
+import { cinderSettingsMenu } from "./settings/settingsMenu";
 
 export type nil = null | undefined;
 
@@ -124,6 +125,12 @@ export function isShop(menu: Menu): menu is Shop {
  * Determines whether the cursor is currently hovering over any menu.
  */
 export function mouseOnMenu() {
+  // Check edge case of settings menu being active outside the main menu
+  if (cinderSettingsMenu.mouseInMenu()) {
+    return true;
+  }
+
+  // All other menus cannot be active outside the main menu
   if (unsafeWindow.state !== "menu") {
     return false;
   }
@@ -140,7 +147,7 @@ export function mouseOnMenu() {
         y: isShop(menu) ? menu.menu.y.val : menu.renderY,
         w: isShop(menu) ? 600 : menu.w,
         h: isShop(menu) ? 500 : menu.h,
-      }
+      },
     )) {
       return true;
     }

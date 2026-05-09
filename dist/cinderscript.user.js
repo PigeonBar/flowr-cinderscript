@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Flowr - Cinderscript
 // @namespace    npm/vite-plugin-monkey
-// @version      1.5.2
+// @version      1.5.3
 // @author       PigeonBar (original creator)
 // @description  A free, publicly available collection of QoL features for flowr.fun players.
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=flowr.fun
@@ -210,10 +210,6 @@
     "Plank",
     "Carrot"
   ]);
-  let settingsMap;
-  function initOptions(options) {
-    settingsMap = Object.freeze(options);
-  }
   const defaultSettings = Object.freeze({
     petalCraftPreview: true,
     autoCopyCodes: true,
@@ -228,6 +224,7 @@
     disablePetalStars: false,
     disablePetalAnimations: false,
     allowLockSlotsOneToFive: false,
+    hideSettingsDuringRuns: false,
     baseReciprocalOfFOV: 3,
     playerHpBarScale: 2.5,
     specialDropsScale: 2.5,
@@ -235,37 +232,82 @@
     petalRenderQualityThreshold: 400,
     craftAnimationLength: 0,
     petalLockShakeIntensity: 2,
-    specialDropsRarity: Rarity.TRANSCENDENT,
+    specialDropsRarity: Rarity.ETHEREAL,
     keybindStatsBox: "KeyG",
     keybindInvertAttack: "Comma",
     keybindInvertDefend: "Period",
     keybindLockSlot: "KeyL"
   });
   class SettingsManager {
-    savedSettings = { ...defaultSettings };
+    /**
+     * A list of saved settings. This is also saved to local storage every time
+     * the user edits any of the settings.
+     */
+    savedSettings;
+    /**
+     * A list of listeners to listen to the user selecting options in the
+     * settings menu.
+     */
+    listeners;
     constructor() {
+      this.savedSettings = { ...defaultSettings };
       const loadedSettings = JSON.parse(
         localStorage.getItem("cinderSettings") ?? "{}"
       );
-      this.savedSettings = { ...this.savedSettings, ...loadedSettings };
+      this.savedSettings = { ...defaultSettings, ...loadedSettings };
+      this.listeners = {
+        petalCraftPreview: [],
+        autoCopyCodes: [],
+        missileDrawPriority: [],
+        invertAttack: [],
+        invertDefend: [],
+        settingsTooltips: [],
+        craftingSearchBar: [],
+        inventoryExpandButton: [],
+        disableAllOptimizations: [],
+        petalStarCaching: [],
+        disablePetalStars: [],
+        disablePetalAnimations: [],
+        allowLockSlotsOneToFive: [],
+        hideSettingsDuringRuns: [],
+        baseReciprocalOfFOV: [],
+        playerHpBarScale: [],
+        specialDropsScale: [],
+        specialDropsQuantity: [],
+        petalRenderQualityThreshold: [],
+        craftAnimationLength: [],
+        petalLockShakeIntensity: [],
+        specialDropsRarity: [],
+        keybindStatsBox: [],
+        keybindInvertAttack: [],
+        keybindInvertDefend: [],
+        keybindLockSlot: []
+      };
     }
+    /**
+     * @param key The {@linkcode SettingsKey} being retrieved from.
+     * @returns The user's setting for this key.
+     */
     get(key) {
       return this.savedSettings[key];
     }
+    /**
+     * @param key The {@linkcode SettingsKey} being written to.
+     * @param value The settings value to write.
+     */
     set(key, value) {
       this.savedSettings[key] = value;
       localStorage.setItem("cinderSettings", JSON.stringify(this.savedSettings));
-      if (key === "invertAttack") {
-        settingsMap.invertAttack.state = value;
-      } else if (key === "invertDefend") {
-        settingsMap.invertDefend.state = value;
+      for (let listener of this.listeners[key]) {
+        listener(value);
       }
-      if (key === "specialDropsQuantity" || key === "specialDropsRarity") {
-        settingsMap.specialDropsScale.updateTooltip();
-      }
-      if (key === "craftingSearchBar") {
-        craftingMenu.updateSearchBarActive();
-      }
+    }
+    /**
+     * Adds a listener to {@linkcode listeners}, which will allow it to listen to
+     * all *future* choices made by the user.
+     */
+    addListener(key, listener) {
+      this.listeners[key].push(listener);
     }
   }
   let settings;
@@ -340,13 +382,21 @@
   }
   const cinderChangelogList = [
     {
-      text: `- Fixed some issues involving physical overlap with Flowrscript's menus (PR #33)
+      text: `- The settings menu is accessible again outside the main menu, reverted from previous update (PR #34)
+- [*] Fixed enemy missiles sometimes failing to display (PR #34)
+- [*] Fixed this script's petal locks not working at all (PR #34)
+- Made this changelog a bit wider (PR #34)
+- Default special drops threshold increased (1 Trans -> 1 Eth) (PR #34)`,
+      date: "Version 1.5.3"
+    },
+    {
+      text: `- [*] Fixed some issues involving physical overlap with Flowrscript's menus (PR #33)
 - Fixed the settings menu being active outside the main menu (PR #33)
 - This script now waits longer for Flowrscript to load its skins (200ms -> 1000ms) (PR #33)`,
       date: "Version 1.5.2"
     },
     {
-      text: `- Attempted fix for the settings menu not working if you are also using Flowrscript, Flowrmod, etc. (PR #32)`,
+      text: `- [*] Attempted fix for the settings menu not working at all (PR #32)`,
       date: "Version 1.5.1"
     },
     {
@@ -424,6 +474,7 @@
     generatedEntries;
     constructor() {
       super();
+      this.w = 600;
       this.generatedEntries = false;
       const originalOnMouseDown = _unsafeWindow.onmousedown;
       _unsafeWindow.onmousedown = (e) => {
@@ -464,20 +515,43 @@
     }
     draw() {
       super.draw();
-      ctx.translate(this.x, this.y + this.offset);
+      ctx.translate(this.x, this.renderY);
       ctx.fillStyle = "#9bb56b";
       ctx.beginPath();
       ctx.roundRect(5, 5, this.w - 50, 75);
       ctx.fill();
       ctx.closePath();
-      ctx.font = "900 30px Ubuntu";
+      ctx.font = "900 24px Ubuntu";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillStyle = "white";
       ctx.strokeStyle = "black";
-      ctx.lineWidth = 4;
-      ctx.strokeText("Cinderscript Changelog", this.w / 2, 40);
-      ctx.fillText("Cinderscript Changelog", this.w / 2, 40);
+      ctx.lineWidth = 3;
+      ctx.strokeText("Cinderscript Changelog", this.w / 2, 20);
+      ctx.fillText("Cinderscript Changelog", this.w / 2, 20);
+      ctx.font = "900 14px Ubuntu";
+      ctx.fillStyle = "#bbbbbb";
+      ctx.lineWidth = 2;
+      ctx.strokeText(
+        "The marker [*] denotes items that only affect users who",
+        this.w / 2,
+        48
+      );
+      ctx.fillText(
+        "The marker [*] denotes items that only affect users who",
+        this.w / 2,
+        48
+      );
+      ctx.strokeText(
+        "are using some variant of Flowrscript at the same time.",
+        this.w / 2,
+        68
+      );
+      ctx.fillText(
+        "are using some variant of Flowrscript at the same time.",
+        this.w / 2,
+        68
+      );
       ctx.translate(-this.x, -this.y - this.offset);
     }
     mouseDown(e) {
@@ -527,6 +601,10 @@
       }, 1e3);
     }
   }
+  let settingsMap;
+  function initOptions(options) {
+    settingsMap = Object.freeze(options);
+  }
   class TooltipBox {
     w;
     h;
@@ -547,6 +625,11 @@
       this.lines = [];
       this.text = text;
       this.generateDesc();
+      if (typeof text === "object") {
+        for (let key of text.dependentKeys) {
+          settings.addListener(key, () => this.generateDesc());
+        }
+      }
     }
     /**
      * Draws this tooltip at the given location.
@@ -611,7 +694,7 @@
       this.h = 20 - (TOOLTIP_TEXT_HEIGHT - 15);
       this.alpha = 0;
       ctx.font = "900 15px Ubuntu";
-      const text = typeof this.text === "string" ? this.text : this.text();
+      const text = typeof this.text === "string" ? this.text : this.text.fn();
       const splitText = text.split(" ").map((token) => token + " ");
       this.lines = [];
       let currentLine = [];
@@ -913,6 +996,7 @@
       this.settingsKey = settingsKey;
     }
     onClick() {
+      send({ attack: false });
       const rawValue = parseFloat(prompt(
         `You are editing the setting "${this.simpleName}".
 
@@ -948,6 +1032,7 @@ Please enter a number between ${this.minValue} and ${this.maxValue}.`
       return [Colors.rarities[this.state].name];
     }
     onClick() {
+      send({ attack: false });
       const response = prompt(
         `You are editing the setting "${this.simpleName}".
 
@@ -1104,6 +1189,11 @@ Please enter a Rarity.`
      * The {@linkcode KeybindOption} currently being edited, if applicable.
      */
     currentKeybindOption;
+    /**
+     * The timestamp for the most recent time that the player used a mouse wheel
+     * input to scroll this menu.
+     */
+    lastMouseWheelTime;
     _scroll;
     /**
      * The vertical offset of the mouse from the scrollbar's centre if the user
@@ -1116,13 +1206,29 @@ Please enter a Rarity.`
      * {@linkcode SETTINGS_OPTION_HEIGHT} times `this.options.length`.
      */
     totalHeight;
+    /**
+     * The position of the in-game settings button outside the main menu.
+     * 
+     * Having one html + css settings button and another manually drawn settings
+     * button is very spaghetti, but it is what it is.
+     */
+    inRunSettingsButton;
+    /**
+     * The gear icon for the in-run settings menu button.
+     */
+    settingsImage;
     constructor() {
       super();
+      this.lastMouseWheelTime = time - 1e4;
       this._scroll = 0;
       this.draggingScrollbarOffset = void 0;
       initOptions({
         invertAttack: new BooleanOption("Invert Attack", "invertAttack"),
         invertDefend: new BooleanOption("Invert Defend", "invertDefend"),
+        hideSettingsDuringRuns: new BooleanOption(
+          "Hide Settings Menu During Runs",
+          "hideSettingsDuringRuns"
+        ),
         craftingSearchBar: new BooleanOption(
           "Crafting Search Bar",
           "craftingSearchBar"
@@ -1167,7 +1273,16 @@ Please enter a Rarity.`
         missileDrawPriority: new BooleanOption(
           "Missile Rendering Priority",
           "missileDrawPriority",
-          "If turned on, all enemy missiles will be rendered above all actual enemies."
+          {
+            fn: () => {
+              if (isNil(flowrMod)) {
+                return "If turned on, all enemy missiles will be rendered above all actual enemies.";
+              } else {
+                return "Since you have installed some variant of Flowrscript (which handles this feature automatically), this setting does not affect anything.";
+              }
+            },
+            dependentKeys: []
+          }
         ),
         baseReciprocalOfFOV: new NumberOption(
           "Base Zoom Out",
@@ -1189,7 +1304,10 @@ Please enter a Rarity.`
           1,
           5,
           2,
-          () => `For this setting, a drop is considered 'Special' if it is worth at least $c${SETTINGS_GREEN} ${settings.get("specialDropsQuantity")} $c${Colors.rarities[settings.get("specialDropsRarity")].color} ${Colors.rarities[settings.get("specialDropsRarity")].name} $cwhite ${settings.get("specialDropsQuantity") === 1 ? "petal" : "petals"}, as configured below.`
+          {
+            fn: () => `For this setting, a drop is considered 'Special' if it is worth at least $c${SETTINGS_GREEN} ${settings.get("specialDropsQuantity")} $c${Colors.rarities[settings.get("specialDropsRarity")].color} ${Colors.rarities[settings.get("specialDropsRarity")].name} $cwhite ${settings.get("specialDropsQuantity") === 1 ? "petal" : "petals"}, as configured below.`,
+            dependentKeys: ["specialDropsRarity", "specialDropsQuantity"]
+          }
         ),
         specialDropsRarity: new RarityOption(
           "Special Drops Threshold Rarity",
@@ -1250,10 +1368,17 @@ Please enter a Rarity.`
       });
       this.h = 11.7 * SETTINGS_OPTION_HEIGHT;
       this.w = 480;
+      this.inRunSettingsButton = {
+        x: isNil(flowrMod) ? 75 : 140,
+        y: 10,
+        w: 45,
+        h: 45
+      };
       this.options = Object.freeze([
         new SettingsSectionHeading("General Gameplay"),
         settingsMap.invertAttack,
         settingsMap.invertDefend,
+        settingsMap.hideSettingsDuringRuns,
         settingsMap.craftingSearchBar,
         settingsMap.craftAnimationLength,
         settingsMap.autoCopyCodes,
@@ -1300,13 +1425,25 @@ Please enter a Rarity.`
           this.mouseUp();
         }
       };
-      const originalDraw = settingsMenu.draw;
-      settingsMenu.draw = function() {
-        originalDraw.apply(this);
-        cinderSettingsMenu.draw();
+      this.settingsImage = new Image(35, 35);
+      this.settingsImage.src = `gfx/gear.png?v=${ver}`;
+      this.settingsImage.draggable = false;
+      const originalRenderMenu = renderMenu;
+      renderMenu = (dt2) => {
+        originalRenderMenu(dt2);
+        this.x = 110;
+        this.draw();
+      };
+      const originalRenderGame = renderGame;
+      renderGame = (dt2) => {
+        originalRenderGame(dt2);
+        if (_unsafeWindow.state === "game" && !settings.get("hideSettingsDuringRuns")) {
+          this.drawInRunButton();
+          this.draw();
+        }
       };
       document.addEventListener("wheel", (e) => {
-        this.updateScroll(e);
+        this.mouseScroll(e);
       });
     }
     /**
@@ -1316,13 +1453,7 @@ Please enter a Rarity.`
       return this.currentHeight + SETTINGS_OPTION_HEIGHT / 2;
     }
     /**
-     * How much the menu's contents are currently shifted due to scrolling. This
-     * is directly controlled by user inputs.
-     * 
-     * I originally planned to have a separate "renderScroll" value that
-     * interpolates towards this value, just like most other Flowr UI elements,
-     * but I scrapped it because it was causing too much spaghetti code for
-     * little benefit.
+     * How much the menu's contents are currently shifted due to scrolling.
      */
     get scroll() {
       return this._scroll;
@@ -1348,16 +1479,16 @@ Please enter a Rarity.`
       }
     }
     // TODO: Make the scroll translation code less spaghetti
+    /**
+     * The main function to draw this menu.
+     */
     draw() {
-      if (_unsafeWindow.state !== "menu") {
-        return;
-      }
       this.offset = interpolate(this.offset, this.targetOffset, 0.3);
       if (!isNil(this.draggingScrollbarOffset)) {
         this.scrollbarPos = mouse.canvasY - this.draggingScrollbarOffset;
       }
       ctx.save();
-      ctx.translate(this.x, this.y + this.offset);
+      ctx.translate(this.x, this.renderY);
       ctx.beginPath();
       ctx.roundRect(0, 0, this.w, this.h, 3);
       ctx.clip();
@@ -1408,13 +1539,7 @@ Please enter a Rarity.`
       ctx.strokeStyle = "#8a8a8a";
       ctx.lineWidth = 8;
       ctx.beginPath();
-      ctx.roundRect(
-        this.x,
-        this.y + this.offset,
-        this.w,
-        this.h,
-        3
-      );
+      ctx.roundRect(this.x, this.renderY, this.w, this.h, 3);
       ctx.stroke();
       ctx.closePath();
       ctx.translate(0, -this.scroll);
@@ -1437,18 +1562,61 @@ Please enter a Rarity.`
       }
     }
     /**
+     * Draws this menu's in-run settings menu button during runs.
+     * 
+     * This function also handles moving the settings menu to the right of the
+     * in-run menu button.
+     */
+    drawInRunButton() {
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = CINDER_BORDER_COLOUR;
+      ctx.fillStyle = CINDER_COLOUR;
+      if (this.mouseOnInRunButton()) {
+        setCursor("pointer");
+        ctx.fillStyle = LIGHT_CINDER_COLOUR;
+      }
+      ctx.beginPath();
+      ctx.roundRect(
+        this.inRunSettingsButton.x,
+        this.inRunSettingsButton.y,
+        this.inRunSettingsButton.w,
+        this.inRunSettingsButton.h,
+        6
+      );
+      ctx.fill();
+      ctx.stroke();
+      ctx.closePath();
+      ctx.drawImage(
+        this.settingsImage,
+        this.inRunSettingsButton.x,
+        this.inRunSettingsButton.y,
+        this.inRunSettingsButton.w,
+        this.inRunSettingsButton.h
+      );
+      this.x = this.inRunSettingsButton.x + 65;
+    }
+    /**
      * Processes the user clicking on the settings menu. Each type of option is
      * processed differently. This code is adapted from Flowr's client code.
      */
     mouseDown(e) {
-      if (!this.active || _unsafeWindow.state !== "menu") {
-        return;
+      if (this.mouseOnInRunButton()) {
+        this.toggle();
       }
       if (!this.mouseInMenu()) {
+        if (this.active && _unsafeWindow.state !== "menu" && !this.mouseOnInRunButton()) {
+          this.toggle();
+        }
+        return;
+      }
+      if (!this.active) {
+        return;
+      }
+      if (_unsafeWindow.state !== "menu" && settings.get("hideSettingsDuringRuns")) {
         return;
       }
       if (this.mouseOnScrollbar()) {
-        this.draggingScrollbarOffset = mouse.canvasY - (this.y + this.offset + this.scrollbarPos);
+        this.draggingScrollbarOffset = mouse.canvasY - (this.renderY + this.scrollbarPos);
       }
       e.y += this.scroll;
       for (let option of this.options) {
@@ -1471,11 +1639,21 @@ Please enter a Rarity.`
     }
     /**
      * Scrolls this menu up/down in response to a mouse wheel input.
+     * 
+     * This does not handle the player dragging the scrollbar.
      */
-    updateScroll(e) {
+    mouseScroll(e) {
       if (this.active && this.mouseInMenu()) {
         this.scroll += e.deltaY / 2;
+        this.lastMouseWheelTime = time;
       }
+    }
+    /**
+     * Returns `true` iff this menu received a mouse wheel scroll input within
+     * the past 250ms.
+     */
+    hasRecentMouseScroll() {
+      return performance.now() - this.lastMouseWheelTime < 250;
     }
     toggle() {
       super.toggle();
@@ -1506,7 +1684,7 @@ Please enter a Rarity.`
     mouseInMenu() {
       return mouseInBox(
         { x: mouse.canvasX, y: mouse.canvasY },
-        { x: this.x + 4, y: this.y + 4, w: this.w - 8, h: this.h - 8 }
+        { x: this.x + 4, y: this.renderY + 4, w: this.w - 8, h: this.h - 8 }
       );
     }
     /**
@@ -1517,10 +1695,22 @@ Please enter a Rarity.`
         { x: mouse.canvasX, y: mouse.canvasY },
         {
           x: this.x + this.w - 24,
-          y: this.y + this.offset + this.scrollbarPos - SCROLLBAR_LENGTH / 2,
+          y: this.renderY + this.scrollbarPos - SCROLLBAR_LENGTH / 2,
           w: 16,
           h: SCROLLBAR_LENGTH
         }
+      );
+    }
+    /**
+     * Checks whether the mouse is on the in-run settings menu button.
+     * 
+     * Note: If we are currently in the main menu, then the in-run settings
+     * button is disabled, so this function returns `false`.
+     */
+    mouseOnInRunButton() {
+      return _unsafeWindow.state === "game" && mouseInBox(
+        { x: mouse.canvasX, y: mouse.canvasY },
+        this.inRunSettingsButton
       );
     }
   }
@@ -1537,11 +1727,11 @@ Please enter a Rarity.`
       cinderChangelog,
       globalInventory,
       craftingMenu,
-      mobGallery,
-      shop
+      mobGallery
     ];
     if (!isNil(flowrMod)) {
       rawList.push(
+        shop,
         flowrMod.flowrSettingsMenu,
         flowrMod.petalGallery
       );
@@ -1609,6 +1799,9 @@ Please enter a Rarity.`
     return menu.constructor === Shop;
   }
   function mouseOnMenu() {
+    if (cinderSettingsMenu.mouseInMenu()) {
+      return true;
+    }
     if (_unsafeWindow.state !== "menu") {
       return false;
     }
@@ -1690,7 +1883,7 @@ Please enter a Rarity.`
       fn: toggleScreenshotMode
     });
   }
-  const version = "1.5.2";
+  const version = "1.5.3";
   function addScriptVersionToDebugInfo() {
     const originalRenderDebug = renderDebug;
     renderDebug = () => {
@@ -1954,8 +2147,14 @@ Please enter a Rarity.`
     };
     craftingMenu.searchBarActive = false;
     craftingMenu.updateSearchBarActive();
+    settings.addListener("craftingSearchBar", () => {
+      craftingMenu.updateSearchBarActive();
+    });
   }
   function displayMissilesAboveEnemies() {
+    if (!isNil(flowrMod)) {
+      return;
+    }
     const originalRenderGame = renderGame;
     renderGame = (dt2) => {
       if (!settings.get("missileDrawPriority")) {
@@ -2025,6 +2224,23 @@ Please enter a Rarity.`
       }
       originalRenderHpBar(data, entity);
     };
+    function calculatePetalSize(petal) {
+      const desiredRarity = settings.get("specialDropsRarity");
+      const desiredQuantity = settings.get("specialDropsQuantity");
+      const effectiveQuantity = convertPetalValue(
+        petal.amount,
+        petal.rarity,
+        desiredRarity
+      );
+      if (effectiveQuantity >= desiredQuantity) {
+        const scale = settings.get("specialDropsScale");
+        petal.w = 50 * scale;
+        petal.h = 50 * scale;
+      } else {
+        petal.w = 50;
+        petal.h = 50;
+      }
+    }
     const originalNewPetalContainer = processGameMessageMap.newPetalContainer;
     processGameMessageMap.newPetalContainer = function(data, _me, _advanced) {
       const scale = settings.get("specialDropsScale");
@@ -2037,8 +2253,6 @@ Please enter a Rarity.`
       );
       if (effectiveQuantity >= desiredQuantity) {
         const originalSize = data.w;
-        data.w *= scale;
-        data.h *= scale;
         const dx = data.x - data.originalX;
         const dy = data.y - data.originalY;
         const d = Math.sqrt(dx * dx + dy * dy);
@@ -2048,7 +2262,19 @@ Please enter a Rarity.`
         }
       }
       originalNewPetalContainer(data, _me, _advanced);
+      const petal = room.petalContainers[data.id];
+      if (!isNil(petal)) {
+        calculatePetalSize(petal);
+      }
     };
+    function recalculateAllPetalSizes() {
+      for (let petal of Object.values(room.petalContainers)) {
+        calculatePetalSize(petal);
+      }
+    }
+    settings.addListener("specialDropsScale", recalculateAllPetalSizes);
+    settings.addListener("specialDropsRarity", recalculateAllPetalSizes);
+    settings.addListener("specialDropsQuantity", recalculateAllPetalSizes);
   }
   const expandIcon = new Image();
   expandIcon.src = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgoKPHN2ZwogICB3aWR0aD0iMjkuOTk5OTkybW0iCiAgIGhlaWdodD0iMzAuMDAwMDExbW0iCiAgIHZpZXdCb3g9IjAgMCAyOS45OTk5OTIgMzAuMDAwMDExIgogICB2ZXJzaW9uPSIxLjEiCiAgIGlkPSJzdmcxIgogICB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciCiAgIHhtbG5zOnN2Zz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxkZWZzCiAgICAgaWQ9ImRlZnMxIiAvPgogIDxnCiAgICAgaWQ9ImxheWVyMSIKICAgICB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtNzQsLTE1NC4wMDAwMSkiPgogICAgPHBhdGgKICAgICAgIHN0eWxlPSJmaWxsOiNmZmZmZmY7ZmlsbC1vcGFjaXR5OjE7c3Ryb2tlOiNmZmZmZmY7c3Ryb2tlLXdpZHRoOjAuMDE7c3Ryb2tlLWxpbmVjYXA6c3F1YXJlO3N0cm9rZS1taXRlcmxpbWl0OjA7cGFpbnQtb3JkZXI6bWFya2VycyBzdHJva2UgZmlsbCIKICAgICAgIGlkPSJwYXRoMSIKICAgICAgIGQ9Ik0gNzcuMTA4NTg4LDExNS40NDI5OSAzMi41NTEzNTgsMTAyLjc2MDQyIDY1LjgxMzQwMSw3MC41MTQwMTUgWiIKICAgICAgIHRyYW5zZm9ybT0ibWF0cml4KDAuMTY2OTA4LC0wLjA2Nzg5NDA2LDAuMTc2MjAyMDEsMC4yMzI0MzMzOCw1Ni41OTE3MzIsMTU2LjMyNDEpIiAvPgogICAgPHBhdGgKICAgICAgIHN0eWxlPSJmaWxsOiNmZmZmZmY7ZmlsbC1vcGFjaXR5OjE7c3Ryb2tlOiNmZmZmZmY7c3Ryb2tlLXdpZHRoOjAuMDE7c3Ryb2tlLWxpbmVjYXA6c3F1YXJlO3N0cm9rZS1taXRlcmxpbWl0OjA7cGFpbnQtb3JkZXI6bWFya2VycyBzdHJva2UgZmlsbCIKICAgICAgIGlkPSJwYXRoMS04IgogICAgICAgZD0iTSA3Ny4xMDg1ODgsMTE1LjQ0Mjk5IDMyLjU1MTM1OCwxMDIuNzYwNDIgNjUuODEzNDAxLDcwLjUxNDAxNSBaIgogICAgICAgdHJhbnNmb3JtPSJtYXRyaXgoLTAuMTY2OTA4LDAuMDY3ODk0MDYsLTAuMTc2MjAyMDEsLTAuMjMyNDMzMzgsMTIxLjQwODAzLDE4MS42NzYxMSkiIC8+CiAgICA8cmVjdAogICAgICAgc3R5bGU9ImZpbGw6I2ZmZmZmZjtmaWxsLW9wYWNpdHk6MTtzdHJva2U6I2ZmZmZmZjtzdHJva2Utd2lkdGg6MC4wMTQwNzQzO3N0cm9rZS1saW5lY2FwOnNxdWFyZTtzdHJva2UtbWl0ZXJsaW1pdDowO3BhaW50LW9yZGVyOm1hcmtlcnMgc3Ryb2tlIGZpbGwiCiAgICAgICBpZD0icmVjdDIiCiAgICAgICB3aWR0aD0iNC4xMTg1NTg0IgogICAgICAgaGVpZ2h0PSIxOC4zNTYzMzMiCiAgICAgICB4PSIxODAuNDYwNDUiCiAgICAgICB5PSI0Ny4xODQyODQiCiAgICAgICB0cmFuc2Zvcm09Im1hdHJpeCgwLjcwNzcyMTA1LDAuNzA2NDkxOTcsLTAuNzA4MTgxMzMsMC43MDYwMzA2LDAsMCkiIC8+CiAgICA8cmVjdAogICAgICAgc3R5bGU9ImZpbGw6I2ZmZmZmZjtmaWxsLW9wYWNpdHk6MDtzdHJva2U6I2ZmZmZmZjtzdHJva2Utd2lkdGg6MC4wMTg3MzQ7c3Ryb2tlLWxpbmVjYXA6c3F1YXJlO3N0cm9rZS1taXRlcmxpbWl0OjA7cGFpbnQtb3JkZXI6bWFya2VycyBzdHJva2UgZmlsbCIKICAgICAgIGlkPSJyZWN0MyIKICAgICAgIHdpZHRoPSIyOS45ODEyNjYiCiAgICAgICBoZWlnaHQ9IjI5Ljk4MTI2NiIKICAgICAgIHg9Ijc0LjAwOTM2OSIKICAgICAgIHk9IjE1NC4wMDkzNyIgLz4KICA8L2c+Cjwvc3ZnPgo=";
@@ -2720,7 +2946,6 @@ Please enter a Rarity.`
           "Invert Attack set to " + (newInvertAttack ? "ON" : "OFF") + "!",
           TEXT_LIGHT_RED
         );
-        send({ attack: rawAttacking });
       } }
     );
     addKeybindInstruction(
@@ -2731,9 +2956,16 @@ Please enter a Rarity.`
           "Invert Defend set to " + (newInvertDefend ? "ON" : "OFF") + "!",
           TEXT_LIGHT_BLUE
         );
-        send({ defend: rawDefending });
       } }
     );
+    settings.addListener("invertAttack", (option) => {
+      settingsMap.invertAttack.state = option;
+      send({ attack: rawAttacking });
+    });
+    settings.addListener("invertDefend", (option) => {
+      settingsMap.invertDefend.state = option;
+      send({ defend: rawDefending });
+    });
     const originalEnterGame = enterGame;
     enterGame = function() {
       originalEnterGame();
@@ -2984,6 +3216,9 @@ Please enter a Rarity.`
       originalEnterGame();
       fov = 1 / settings.get("baseReciprocalOfFOV");
     };
+    settings.addListener("baseReciprocalOfFOV", (option) => {
+      fov = 1 / option;
+    });
   }
   function optimizeHighQualityRenders() {
     const airCachedThisFrame = [];
@@ -3176,6 +3411,12 @@ Please enter a Rarity.`
       }
     }
   }
+  function patchFlowrscriptPrototypes() {
+    if (!isNil(flowrMod)) {
+      const OldInventory = inventory.constructor;
+      OldInventory.prototype.swapPetals = Inventory.prototype.swapPetals;
+    }
+  }
   function addPetalCraftPreview() {
     craftingMenu.previewPetalSlot = {
       x: craftingMenu.w * 0.83,
@@ -3268,9 +3509,14 @@ Please enter a Rarity.`
   petalLockIcon.src = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgoKPHN2ZwogICB3aWR0aD0iNTQuNTAwMzJtbSIKICAgaGVpZ2h0PSI2NC41MDAwMDhtbSIKICAgdmlld0JveD0iMCAwIDU0LjUwMDMyIDY0LjUwMDAwOCIKICAgdmVyc2lvbj0iMS4xIgogICBpZD0ic3ZnMSIKICAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogICB4bWxuczpzdmc9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8ZGVmcwogICAgIGlkPSJkZWZzMSIgLz4KICA8ZwogICAgIGlkPSJsYXllcjEiCiAgICAgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTY5Ljk5OTk5OSwtNzApIj4KICAgIDxyZWN0CiAgICAgICBzdHlsZT0iZmlsbDojZGYwMmZmO2ZpbGwtb3BhY2l0eTowO3N0cm9rZTojZmZmZmZmO3N0cm9rZS13aWR0aDo0LjQ5ODtzdHJva2UtbGluZWNhcDpzcXVhcmU7c3Ryb2tlLWxpbmVqb2luOnJvdW5kO3N0cm9rZS1taXRlcmxpbWl0OjE7c3Ryb2tlLWRhc2hhcnJheTpub25lO3N0cm9rZS1vcGFjaXR5OjE7cGFpbnQtb3JkZXI6bWFya2VycyBzdHJva2UgZmlsbCIKICAgICAgIGlkPSJyZWN0MiIKICAgICAgIHdpZHRoPSI1MC4wMDIzMTkiCiAgICAgICBoZWlnaHQ9IjUwLjAwMjMxOSIKICAgICAgIHg9IjcyLjI0OTAwMSIKICAgICAgIHk9IjcyLjI0OTAwMSIgLz4KICAgIDxyZWN0CiAgICAgICBzdHlsZT0iZmlsbDojZmZmZmZmO2ZpbGwtb3BhY2l0eToxO3N0cm9rZTojZmZmZmZmO3N0cm9rZS13aWR0aDowO3N0cm9rZS1saW5lY2FwOnNxdWFyZTtzdHJva2UtbGluZWpvaW46cm91bmQ7c3Ryb2tlLW1pdGVybGltaXQ6MTtzdHJva2UtZGFzaGFycmF5Om5vbmU7c3Ryb2tlLW9wYWNpdHk6MTtwYWludC1vcmRlcjptYXJrZXJzIHN0cm9rZSBmaWxsIgogICAgICAgaWQ9InJlY3QzIgogICAgICAgd2lkdGg9IjgiCiAgICAgICBoZWlnaHQ9IjUiCiAgICAgICB4PSI5My4yNSIKICAgICAgIHk9IjEyOS41IiAvPgogICAgPGVsbGlwc2UKICAgICAgIHN0eWxlPSJmaWxsOiNmZmZmZmY7ZmlsbC1vcGFjaXR5OjA7c3Ryb2tlOiNmZmZmZmY7c3Ryb2tlLXdpZHRoOjI7c3Ryb2tlLWxpbmVjYXA6c3F1YXJlO3N0cm9rZS1saW5lam9pbjpyb3VuZDtzdHJva2UtbWl0ZXJsaW1pdDoxO3N0cm9rZS1kYXNoYXJyYXk6bm9uZTtzdHJva2Utb3BhY2l0eToxO3BhaW50LW9yZGVyOm1hcmtlcnMgc3Ryb2tlIGZpbGwiCiAgICAgICBpZD0icGF0aDMiCiAgICAgICBjeD0iOTcuMjUiCiAgICAgICBjeT0iMTI5LjUiCiAgICAgICByeD0iMi41IgogICAgICAgcnk9IjQiIC8+CiAgPC9nPgo8L3N2Zz4K";
   function addPetalSlotLocking() {
     const lockManager = new LockManager();
-    const oldDraw = Inventory.prototype.draw;
-    Inventory.prototype.draw = function(alpha) {
-      oldDraw.apply(this, [alpha]);
+    const oldDrawInventory = inventory.draw;
+    inventory.draw = function(alpha) {
+      oldDrawInventory.apply(this, [alpha]);
+      lockManager.draw(this);
+    };
+    const oldDrawMenuInventory = menuInventory.draw;
+    menuInventory.draw = function(alpha) {
+      oldDrawMenuInventory.apply(this, [alpha]);
       lockManager.draw(this);
     };
     addKeybindInstruction({
@@ -3472,8 +3718,8 @@ Please enter a Rarity.`
       }
     });
     const originalRenderGame = renderGame;
-    const originalDrawStatsBox = PetalContainer.prototype.drawStatsBox;
     renderGame = (dt2) => {
+      const originalDrawStatsBox = PetalContainer.prototype.drawStatsBox;
       if (showQuickStatsBox) {
         PetalContainer.prototype.drawStatsBox = function(drawBelow, mob, x, y) {
           if (this.petals[0]?.constructor === Petal) {
@@ -3596,7 +3842,7 @@ Please enter a Rarity.`
   function allowEditingKeybinds() {
     const originalHandleKey = inputHandler.handleKey;
     inputHandler.handleKey = function(e) {
-      if (_unsafeWindow.state === "menu" && e.type === "keydown" && !e.repeat && !isNil(cinderSettingsMenu.currentKeybindOption)) {
+      if ((_unsafeWindow.state === "menu" || !settings.get("hideSettingsDuringRuns")) && e.type === "keydown" && !e.repeat && !isNil(cinderSettingsMenu.currentKeybindOption)) {
         if (e.code === "Delete") {
           cinderSettingsMenu.currentKeybindOption.finishEdit(KEYBIND_DELETED);
         } else {
@@ -3815,17 +4061,19 @@ Please enter a Rarity.`
         return false;
       }
     };
-    const originalDraw = Inventory.prototype.draw;
-    Inventory.prototype.draw = function(alpha) {
-      const originalDrawStatsBox = PetalContainer.prototype.drawStatsBox;
-      if (mouseOnMenu()) {
-        PetalContainer.prototype.drawStatsBox = function(drawBelow, mob, x, y) {
-          this.isHovered = false;
-          originalDrawStatsBox.apply(this, [drawBelow, mob, x, y]);
-        };
+    const originalDrawStats = PetalContainer.prototype.drawStatsBox;
+    PetalContainer.prototype.drawStatsBox = function(drawBelow, mob, x, y) {
+      if (isNil(this.hasParentMenu)) {
+        if (mob) {
+          this.hasParentMenu = this === mobGallery.rows[this.type]?.[this.rarity];
+        } else {
+          this.hasParentMenu = !Object.values(menuInventory.topPetalContainers).includes(this) && !Object.values(menuInventory.bottomPetalContainers).includes(this) && !Object.values(inventory.topPetalContainers).includes(this) && !Object.values(inventory.bottomPetalContainers).includes(this);
+        }
       }
-      originalDraw.apply(this, [alpha]);
-      PetalContainer.prototype.drawStatsBox = originalDrawStatsBox;
+      if (!this.hasParentMenu && mouseOnMenu()) {
+        this.isHovered = false;
+      }
+      originalDrawStats.apply(this, [drawBelow, mob, x, y]);
     };
     const originalGetClosest = menuInventory.getClosest;
     menuInventory.getClosest = function(p) {
@@ -3918,6 +4166,17 @@ Please enter a Rarity.`
       }
     }
   }
+  function blockFovChangeFromSettingsScroll() {
+    let previousFrameFov = fov;
+    const originalRenderGame = renderGame;
+    renderGame = (dt2) => {
+      if (cinderSettingsMenu.hasRecentMouseScroll()) {
+        fov = previousFrameFov;
+      }
+      previousFrameFov = fov;
+      originalRenderGame(dt2);
+    };
+  }
   function unfreezeObjects() {
     processGameMessageMap = { ...processGameMessageMap };
     Colors.rarities = structuredClone(Colors.rarities);
@@ -3933,11 +4192,12 @@ Please enter a Rarity.`
     initTheoryCraft();
     allowWsDataEditing();
     preventMenuOverlap();
-    allowEditingKeybinds();
     initKeybindHandling();
+    allowEditingKeybinds();
     addNewMenuButtons();
     handleMenuTranslations();
     initPetalDrawingUtils();
+    blockFovChangeFromSettingsScroll();
     addPetalCraftPreview();
     addCraftingSearchBar();
     addRandomizedSquadCodes();
@@ -3945,7 +4205,6 @@ Please enter a Rarity.`
     modifyBaseFOV();
     enlargeZoomedOutItems();
     fixNegativeRadiusFreeze();
-    addQuickStatsBoxHotkey();
     enableInvertAttackAndDefend();
     prioritizeRenderingStatsBoxes();
     preventClickingBehindMenus();
@@ -3958,10 +4217,12 @@ Please enter a Rarity.`
     addMobGalleryKillCounter();
     widerMobStatsBoxes();
     addGalleryCounterDropdownMenu();
+    addQuickStatsBoxHotkey();
     addScreenshotMode();
     addScriptVersionToDebugInfo();
     displayMobGalleryOutsideMenu();
     prioritizeRenderingDragPetal();
+    patchFlowrscriptPrototypes();
     refreezeObjects();
     resolve();
   });

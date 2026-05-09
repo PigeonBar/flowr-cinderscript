@@ -17,9 +17,18 @@ petalLockIcon.src = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZ
 export function addPetalSlotLocking() {
   const lockManager = new LockManager();
 
-  const oldDraw = Inventory.prototype.draw;
-  Inventory.prototype.draw = function(alpha?: number) {
-    oldDraw.apply(this, [alpha]);
+  // The game has two different "inventory" objects, and we set both of them to
+  // also draw the petal slot locks.
+  const oldDrawInventory = inventory.draw;
+  inventory.draw = function(alpha?: number) {
+    oldDrawInventory.apply(this, [alpha]);
+
+    // Draw the lock icons on top of the loadout
+    lockManager.draw(this);
+  }
+  const oldDrawMenuInventory = menuInventory.draw;
+  menuInventory.draw = function(alpha?: number) {
+    oldDrawMenuInventory.apply(this, [alpha]);
 
     // Draw the lock icons on top of the loadout
     lockManager.draw(this);

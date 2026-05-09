@@ -1,5 +1,6 @@
 import { unsafeWindow } from "$";
-import { SETTINGS_GREEN, SETTINGS_OPTION_HEIGHT, SCROLLBAR_LENGTH, SETTINGS_SCROLLBAR_MIN_POS } from "../constants/constants";
+import { SETTINGS_GREEN, SETTINGS_OPTION_HEIGHT, SCROLLBAR_LENGTH, SETTINGS_SCROLLBAR_MIN_POS, CINDER_BORDER_COLOUR, CINDER_COLOUR, LIGHT_CINDER_COLOUR } from "../constants/constants";
+import { flowrMod } from "../inits/initFlowrscriptPointer";
 import { isNil } from "../utils";
 import { settings } from "./settingsManager";
 import { initOptions, settingsMap } from "./settingsObjects";
@@ -16,6 +17,12 @@ export class CinderSettingsMenu extends SettingsMenu {
    */
   currentKeybindOption?: KeybindOption;
 
+  /**
+   * The timestamp for the most recent time that the player used a mouse wheel
+   * input to scroll this menu.
+   */
+  lastMouseWheelTime: number;
+
   private _scroll: number;
 
   /**
@@ -31,15 +38,32 @@ export class CinderSettingsMenu extends SettingsMenu {
    */
   totalHeight: number;
 
+  /**
+   * The position of the in-game settings button outside the main menu.
+   * 
+   * Having one html + css settings button and another manually drawn settings
+   * button is very spaghetti, but it is what it is.
+   */
+  inRunSettingsButton: { x: number, y: number, w: number, h: number };
+
+  /**
+   * The gear icon for the in-run settings menu button.
+   */
+  settingsImage: CanvasImageSource;
+
   constructor() {
     super();
 
+    this.lastMouseWheelTime = time - 10000;
     this._scroll = 0;
     this.draggingScrollbarOffset = undefined;
 
     initOptions({
       invertAttack: new BooleanOption("Invert Attack", "invertAttack"),
       invertDefend: new BooleanOption("Invert Defend", "invertDefend"),
+      hideSettingsDuringRuns: new BooleanOption(
+        "Hide Settings Menu During Runs", "hideSettingsDuringRuns",
+      ),
       craftingSearchBar: new BooleanOption(
         "Crafting Search Bar", "craftingSearchBar",
       ),
@@ -84,8 +108,19 @@ export class CinderSettingsMenu extends SettingsMenu {
       missileDrawPriority: new BooleanOption(
         "Missile Rendering Priority",
         "missileDrawPriority",
-        "If turned on, all enemy missiles will be rendered above all actual " +
-        "enemies.",
+        {
+          fn: () => {
+            if (isNil(flowrMod)) {
+              return "If turned on, all enemy missiles will be rendered " +
+                "above all actual enemies.";
+            } else {
+              return "Since you have installed some variant of Flowrscript " +
+                "(which handles this feature automatically), this setting " +
+                "does not affect anything.";
+            }
+          },
+          dependentKeys: [],
+        },
       ),
       baseReciprocalOfFOV: new NumberOption(
         "Base Zoom Out", "baseReciprocalOfFOV", 0.33, 5, 2,
@@ -99,14 +134,19 @@ export class CinderSettingsMenu extends SettingsMenu {
         1,
         5,
         2,
-        () => `For this setting, a drop is considered 'Special' if it is ` +
-        `worth at least ` +
-        `$c${SETTINGS_GREEN} ${settings.get("specialDropsQuantity")} ` +
-        `$c${Colors.rarities[settings.get("specialDropsRarity")].color} ` +
-        `${Colors.rarities[settings.get("specialDropsRarity")].name} ` +
-        `$cwhite ` +
-        `${settings.get("specialDropsQuantity") === 1 ? "petal" : "petals"}, ` +
-        `as configured below.`,
+        {
+          fn: () => `For this setting, a drop is considered 'Special' if it ` +
+            `is worth at least ` +
+            `$c${SETTINGS_GREEN} ${settings.get("specialDropsQuantity")} ` +
+            `$c${Colors.rarities[settings.get("specialDropsRarity")].color} ` +
+            `${Colors.rarities[settings.get("specialDropsRarity")].name} ` +
+            `$cwhite ` +
+            `${settings.get("specialDropsQuantity") === 1
+              ? "petal" : "petals"
+            }, ` +
+            `as configured below.`,
+          dependentKeys: ["specialDropsRarity", "specialDropsQuantity"],
+        }
       ),
       specialDropsRarity: new RarityOption(
         "Special Drops Threshold Rarity", "specialDropsRarity",
@@ -177,10 +217,21 @@ export class CinderSettingsMenu extends SettingsMenu {
     // make it clearer to the user that the menu should be scrollable.
     this.h = 11.7 * SETTINGS_OPTION_HEIGHT;
     this.w = 480;
+
+    // If Flowrscript is active, we move our own button further to the right to
+    // accomodate for Flowrscript's settings button.
+    this.inRunSettingsButton = {
+      x: isNil(flowrMod) ? 75 : 140,
+      y: 10,
+      w: 45,
+      h: 45,
+    };
+
     this.options = Object.freeze([
       new SettingsSectionHeading("General Gameplay"),
       settingsMap.invertAttack,
       settingsMap.invertDefend,
+      settingsMap.hideSettingsDuringRuns,
       settingsMap.craftingSearchBar,
       settingsMap.craftAnimationLength,
       settingsMap.autoCopyCodes,
@@ -237,15 +288,32 @@ export class CinderSettingsMenu extends SettingsMenu {
     }
     
     // Allow this menu to be drawn
-    const originalDraw = settingsMenu.draw;
-    settingsMenu.draw = function() {
-      originalDraw.apply(this);
-      cinderSettingsMenu.draw();
+    this.settingsImage = new Image(35, 35);
+    this.settingsImage.src = `gfx/gear.png?v=${ver}`;
+    this.settingsImage.draggable = false;
+
+    const originalRenderMenu = renderMenu;
+    renderMenu = (dt: number) => {
+      originalRenderMenu(dt);
+      this.x = 110;
+      this.draw();
+    }
+    const originalRenderGame = renderGame;
+    renderGame = (dt: number) => {
+      originalRenderGame(dt);
+
+      // Check that the game isn't in the "reconnecting" state
+      if (unsafeWindow.state === "game"
+        && !settings.get("hideSettingsDuringRuns")
+      ) {
+        this.drawInRunButton();
+        this.draw();
+      }
     }
 
     // Allow this menu to respond to scrolling inputs
     document.addEventListener("wheel", (e: WheelEvent) => {
-      this.updateScroll(e);
+      this.mouseScroll(e);
     });
   }
 
@@ -257,13 +325,7 @@ export class CinderSettingsMenu extends SettingsMenu {
   }
 
   /**
-   * How much the menu's contents are currently shifted due to scrolling. This
-   * is directly controlled by user inputs.
-   * 
-   * I originally planned to have a separate "renderScroll" value that
-   * interpolates towards this value, just like most other Flowr UI elements,
-   * but I scrapped it because it was causing too much spaghetti code for
-   * little benefit.
+   * How much the menu's contents are currently shifted due to scrolling.
    */
   get scroll(): number {
     return this._scroll;
@@ -297,12 +359,10 @@ export class CinderSettingsMenu extends SettingsMenu {
   }
 
   // TODO: Make the scroll translation code less spaghetti
-  draw() {
-    // Failsafe: Do not draw this settings menu outside of the game's main menu
-    if (unsafeWindow.state !== "menu") {
-      return;
-    }
-
+  /**
+   * The main function to draw this menu.
+   */
+  draw(): void {
     this.offset = interpolate(this.offset, this.targetOffset, 0.3);
 
     if (!isNil(this.draggingScrollbarOffset)) {
@@ -311,7 +371,7 @@ export class CinderSettingsMenu extends SettingsMenu {
     
     // Make sure that options do not get drawn outside the menu
     ctx.save();
-    ctx.translate(this.x, this.y + this.offset);
+    ctx.translate(this.x, this.renderY);
     ctx.beginPath();
     ctx.roundRect(0, 0, this.w, this.h, 3);
     ctx.clip();
@@ -381,9 +441,7 @@ export class CinderSettingsMenu extends SettingsMenu {
     ctx.strokeStyle = "#8a8a8a";
     ctx.lineWidth = 8;
     ctx.beginPath();
-    ctx.roundRect(
-      this.x, this.y + this.offset, this.w, this.h, 3
-    );
+    ctx.roundRect(this.x, this.renderY, this.w, this.h, 3);
     ctx.stroke();
     ctx.closePath();
 
@@ -412,22 +470,82 @@ export class CinderSettingsMenu extends SettingsMenu {
   }
 
   /**
+   * Draws this menu's in-run settings menu button during runs.
+   * 
+   * This function also handles moving the settings menu to the right of the
+   * in-run menu button.
+   */
+  drawInRunButton(): void {
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = CINDER_BORDER_COLOUR;
+    ctx.fillStyle = CINDER_COLOUR;
+    if (this.mouseOnInRunButton()) {
+      setCursor("pointer");
+      ctx.fillStyle = LIGHT_CINDER_COLOUR;
+    }
+
+    // Draw the main button shape
+    ctx.beginPath();
+    ctx.roundRect(
+      this.inRunSettingsButton.x,
+      this.inRunSettingsButton.y,
+      this.inRunSettingsButton.w,
+      this.inRunSettingsButton.h,
+      6,
+    );
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
+
+    // Draw the gear inside the button
+    ctx.drawImage(
+      this.settingsImage,
+      this.inRunSettingsButton.x,
+      this.inRunSettingsButton.y,
+      this.inRunSettingsButton.w,
+      this.inRunSettingsButton.h,
+    );
+
+    // Move the settings menu to the right of this button
+    this.x = this.inRunSettingsButton.x + 65;
+  }
+
+  /**
    * Processes the user clicking on the settings menu. Each type of option is
    * processed differently. This code is adapted from Flowr's client code.
    */
   mouseDown(e: CanvasMouseData): void {
-    if (!this.active || unsafeWindow.state !== "menu") {
+    // Process clicking the in-run settings menu button
+    if (this.mouseOnInRunButton()) {
+      this.toggle();
+    }
+
+    // Prevent clicking on off-screen options
+    if (!this.mouseInMenu()) {
+      // Close this menu when clicking outside the menu during a run
+      if (this.active
+        && unsafeWindow.state !== "menu"
+        && !this.mouseOnInRunButton()
+      ) {
+        this.toggle();
+      }
       return;
     }
-    if (!this.mouseInMenu()) {
-      // Prevent clicking on off-screen options
+
+    // Stop processing clicks if this menu is inactive
+    if (!this.active) {
+      return;
+    }
+    if (unsafeWindow.state !== "menu"
+      && settings.get("hideSettingsDuringRuns")
+    ) {
       return;
     }
 
     // Process clicking the scrollbar
     if (this.mouseOnScrollbar()) {
       this.draggingScrollbarOffset =
-        mouse.canvasY - (this.y + this.offset + this.scrollbarPos);
+        mouse.canvasY - (this.renderY + this.scrollbarPos);
     }
 
     e.y += this.scroll; // Apply scroll translation
@@ -453,13 +571,22 @@ export class CinderSettingsMenu extends SettingsMenu {
 
   /**
    * Scrolls this menu up/down in response to a mouse wheel input.
+   * 
+   * This does not handle the player dragging the scrollbar.
    */
-  updateScroll(e: WheelEvent) {
+  mouseScroll(e: WheelEvent): void {
     if (this.active && this.mouseInMenu()) {
-      // Right now the menu doesn't have many items, so the scrolling speed can
-      // be slower for now
       this.scroll += e.deltaY / 2;
+      this.lastMouseWheelTime = time;
     }
+  }
+
+  /**
+   * Returns `true` iff this menu received a mouse wheel scroll input within
+   * the past 250ms.
+   */
+  hasRecentMouseScroll(): boolean {
+    return performance.now() - this.lastMouseWheelTime < 250;
   }
 
   toggle(): void {
@@ -498,7 +625,7 @@ export class CinderSettingsMenu extends SettingsMenu {
   mouseInMenu(): boolean {
     return mouseInBox(
       {x: mouse.canvasX, y: mouse.canvasY},
-      {x: this.x + 4, y: this.y + 4, w: this.w - 8, h: this.h - 8},
+      {x: this.x + 4, y: this.renderY + 4, w: this.w - 8, h: this.h - 8},
     );
   }
 
@@ -510,10 +637,22 @@ export class CinderSettingsMenu extends SettingsMenu {
       {x: mouse.canvasX, y: mouse.canvasY},
       {
         x: this.x + this.w - 24,
-        y: this.y + this.offset + this.scrollbarPos - SCROLLBAR_LENGTH / 2,
+        y: this.renderY + this.scrollbarPos - SCROLLBAR_LENGTH / 2,
         w: 16,
         h: SCROLLBAR_LENGTH,
       },
+    );
+  }
+
+  /**
+   * Checks whether the mouse is on the in-run settings menu button.
+   * 
+   * Note: If we are currently in the main menu, then the in-run settings
+   * button is disabled, so this function returns `false`.
+   */
+  mouseOnInRunButton(): boolean {
+    return unsafeWindow.state === "game" && mouseInBox(
+      {x: mouse.canvasX, y: mouse.canvasY}, this.inRunSettingsButton,
     );
   }
 }

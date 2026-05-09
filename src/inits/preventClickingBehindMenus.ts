@@ -1,4 +1,4 @@
-import { mouseOnMenu } from "../utils";
+import { isNil, mouseOnMenu } from "../utils";
 
 /**
  * This feature prevents loadout petals from being clicked on or hovered when
@@ -27,25 +27,36 @@ export function preventClickingBehindMenus() {
       return false;
     }
   }
-  
+
   // Prevent hovering over petals behind menus for stat boxes
-  const originalDraw = Inventory.prototype.draw;
-  Inventory.prototype.draw = function(alpha?: number) {
-    // While drawing the loadout petals, treat all petals as not being hovered
-    // if the user's mouse is hovering over a menu
-    const originalDrawStatsBox = PetalContainer.prototype.drawStatsBox;
-    if (mouseOnMenu()) {
-      PetalContainer.prototype.drawStatsBox = function(
-        drawBelow?: boolean, mob?: boolean, x?: number, y?: number,
-      ) {
-        this.isHovered = false;
-        originalDrawStatsBox.apply(this, [drawBelow, mob, x, y]);
+  const originalDrawStats = PetalContainer.prototype.drawStatsBox;
+  PetalContainer.prototype.drawStatsBox = function(
+    drawBelow?: boolean, mob?: boolean, x?: number, y?: number,
+  ) {
+    if (isNil(this.hasParentMenu)) {
+      // Determine whether or not this petal has a parent menu
+      if (mob) {
+        // For enemy boxes, assume that the mob gallery is the only possible
+        // parent menu.
+        this.hasParentMenu =
+          (this === mobGallery.rows[this.type]?.[this.rarity]);
+      } else {
+        // For petal boxes, assume that equipped petals are the only non-menu
+        // petals that can display stat boxes.
+        this.hasParentMenu =
+          !Object.values(menuInventory.topPetalContainers).includes(this)
+          && !Object.values(menuInventory.bottomPetalContainers).includes(this)
+          && !Object.values(inventory.topPetalContainers).includes(this)
+          && !Object.values(inventory.bottomPetalContainers).includes(this);
       }
     }
 
-    originalDraw.apply(this, [alpha]);
-
-    PetalContainer.prototype.drawStatsBox = originalDrawStatsBox;
+    // We assume that the petal is behind all menus iff it does not belong to a
+    // parent menu.
+    if (!this.hasParentMenu && mouseOnMenu()) {
+      this.isHovered = false;
+    }
+    originalDrawStats.apply(this, [ drawBelow, mob, x, y ]);
   }
 
   // Prevent snapping a dragged petal to a loadout slot if hovering over a menu

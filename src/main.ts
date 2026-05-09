@@ -16,6 +16,7 @@ import { enableInvertAttackAndDefend } from "./features/invertAttackDefend";
 import { addMobGalleryKillCounter } from "./features/mobGalleryKillCounter";
 import { modifyBaseFOV } from "./features/modifyBaseFov";
 import { optimizeHighQualityRenders } from "./features/optimizeHqp";
+import { patchFlowrscriptPrototypes } from "./features/patchFlowrscriptPrototypes";
 import { addPetalCraftPreview } from "./features/petalCraftPreview";
 import { addPetalSlotLocking } from "./features/petalSlotLocking";
 import { addQuickStatsBoxHotkey } from "./features/quickStatsBoxHotkey";
@@ -32,6 +33,7 @@ import { addNewMenuButtons } from "./inits/newMenuButtons";
 import { initPetalDrawingUtils } from "./inits/petalDrawingUtils";
 import { preventClickingBehindMenus } from "./inits/preventClickingBehindMenus";
 import { preventMenuOverlap } from "./inits/preventMenuOverlap";
+import { blockFovChangeFromSettingsScroll } from "./inits/settingsScrollBlockFovChange";
 import { refreezeObjects, unfreezeObjects } from "./inits/unfreezeObjects";
 import { allowWsDataEditing } from "./inits/wsDataEditing";
 
@@ -44,16 +46,20 @@ const mainScriptPromise = new Promise<void>(async (resolve) => {
   initFlowrscriptPointer();
 
   // #region Inits
+  // Note: `allowEditingKeybinds` must be run after `initKeybindHandling` so
+  // that keybinds don't accidentally activate when the user is just trying to
+  // edit a keybind.
   initExportedObjects();
   unfreezeObjects();
   initTheoryCraft();
   allowWsDataEditing();
   preventMenuOverlap();
-  allowEditingKeybinds();
   initKeybindHandling();
+  allowEditingKeybinds();
   addNewMenuButtons();
   handleMenuTranslations();
   initPetalDrawingUtils();
+  blockFovChangeFromSettingsScroll();
 
   // #region Features
   addPetalCraftPreview();
@@ -63,7 +69,6 @@ const mainScriptPromise = new Promise<void>(async (resolve) => {
   modifyBaseFOV();
   enlargeZoomedOutItems();
   fixNegativeRadiusFreeze();
-  addQuickStatsBoxHotkey();
   enableInvertAttackAndDefend();
   prioritizeRenderingStatsBoxes();
   preventClickingBehindMenus();
@@ -76,6 +81,7 @@ const mainScriptPromise = new Promise<void>(async (resolve) => {
   addMobGalleryKillCounter();
   widerMobStatsBoxes();
   addGalleryCounterDropdownMenu();
+  addQuickStatsBoxHotkey();
 
   // #region Dev tools
   addScreenshotMode();
@@ -84,6 +90,7 @@ const mainScriptPromise = new Promise<void>(async (resolve) => {
 
   // #region Ending
   prioritizeRenderingDragPetal();
+  patchFlowrscriptPrototypes();
   refreezeObjects();
 
   resolve();

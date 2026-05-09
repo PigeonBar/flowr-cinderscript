@@ -1,6 +1,8 @@
 import { Rarity } from "../enums";
-import { settingsMap } from "./settingsObjects";
 
+/**
+ * Settings keys for settings that take a boolean value.
+ */
 export type BooleanSettingsKey = 
   "petalCraftPreview" |
   "autoCopyCodes" |
@@ -14,8 +16,12 @@ export type BooleanSettingsKey =
   "petalStarCaching" |
   "disablePetalStars" |
   "disablePetalAnimations" |
-  "allowLockSlotsOneToFive";
+  "allowLockSlotsOneToFive" |
+  "hideSettingsDuringRuns";
 
+/**
+ * Settings keys for settings that take a numerical value.
+ */
 export type NumberSettingsKey =
   "baseReciprocalOfFOV" |
   "playerHpBarScale" |
@@ -25,9 +31,15 @@ export type NumberSettingsKey =
   "craftAnimationLength" |
   "petalLockShakeIntensity";
 
+/**
+ * Settings keys for settings that take a Rarity value.
+ */
 export type RaritySettingsKey =
   "specialDropsRarity";
 
+/**
+ * Settings keys for settings that take a keybind value.
+ */
 export type KeybindSettingsKey =
   "keybindStatsBox" |
   "keybindInvertAttack" |
@@ -56,6 +68,7 @@ const defaultSettings: CinderSettings = Object.freeze({
   disablePetalStars: false,
   disablePetalAnimations: false,
   allowLockSlotsOneToFive: false,
+  hideSettingsDuringRuns: false,
   baseReciprocalOfFOV: 3,
   playerHpBarScale: 2.5,
   specialDropsScale: 2.5,
@@ -63,33 +76,77 @@ const defaultSettings: CinderSettings = Object.freeze({
   petalRenderQualityThreshold: 400,
   craftAnimationLength: 0,
   petalLockShakeIntensity: 2,
-  specialDropsRarity: Rarity.TRANSCENDENT,
+  specialDropsRarity: Rarity.ETHEREAL,
   keybindStatsBox: "KeyG",
   keybindInvertAttack: "Comma",
   keybindInvertDefend: "Period",
   keybindLockSlot: "KeyL",
 });
 
+/**
+ * A function to be run when the user edits a specific setting.
+ */
+type SettingsListener<T> = (option: T) => void;
+
+type ListenersMap = Record<SettingsKey, SettingsListener<any>[]>;
+
 export class SettingsManager {
-  savedSettings: CinderSettings = {...defaultSettings};
+  /**
+   * A list of saved settings. This is also saved to local storage every time
+   * the user edits any of the settings.
+   */
+  savedSettings: CinderSettings;
+
+  /**
+   * A list of listeners to listen to the user selecting options in the
+   * settings menu.
+   */
+  listeners: ListenersMap;
 
   constructor() {
+    this.savedSettings = {...defaultSettings};
+
     const loadedSettings = JSON.parse(
       localStorage.getItem("cinderSettings") ?? "{}"
     ) as CinderSettings;
 
-    this.savedSettings = {...this.savedSettings, ...loadedSettings};
+    this.savedSettings = {...defaultSettings, ...loadedSettings};
+
+    this.listeners = {
+      petalCraftPreview: [],
+      autoCopyCodes: [],
+      missileDrawPriority: [],
+      invertAttack: [],
+      invertDefend: [],
+      settingsTooltips: [],
+      craftingSearchBar: [],
+      inventoryExpandButton: [],
+      disableAllOptimizations: [],
+      petalStarCaching: [],
+      disablePetalStars: [],
+      disablePetalAnimations: [],
+      allowLockSlotsOneToFive: [],
+      hideSettingsDuringRuns: [],
+      baseReciprocalOfFOV: [],
+      playerHpBarScale: [],
+      specialDropsScale: [],
+      specialDropsQuantity: [],
+      petalRenderQualityThreshold: [],
+      craftAnimationLength: [],
+      petalLockShakeIntensity: [],
+      specialDropsRarity: [],
+      keybindStatsBox: [],
+      keybindInvertAttack: [],
+      keybindInvertDefend: [],
+      keybindLockSlot: [],
+    };
   }
 
   /**
    * @param key The {@linkcode SettingsKey} being retrieved from.
    * @returns The user's setting for this key.
    */
-  get(key: BooleanSettingsKey): boolean;
-  get(key: NumberSettingsKey): number;
-  get(key: RaritySettingsKey): Rarity;
-  get(key: KeybindSettingsKey): string;
-  get(key: SettingsKey): any {
+  get<K extends SettingsKey>(key: K): CinderSettings[K] {
     return this.savedSettings[key];
   }
 
@@ -97,30 +154,24 @@ export class SettingsManager {
    * @param key The {@linkcode SettingsKey} being written to.
    * @param value The settings value to write.
    */
-  set(key: BooleanSettingsKey, value: boolean): void;
-  set(key: NumberSettingsKey, value: number): void;
-  set(key: RaritySettingsKey, value: Rarity): void;
-  set(key: KeybindSettingsKey, value: string): void;
-  set<K extends SettingsKey>(key: K, value: any): void {
+  set<K extends SettingsKey>(key: K, value: CinderSettings[K]): void {
     // Note: The "<K extends SettingsKey>" is mandatory, or else
     // `this.savedSettings[key]` has type `never`. I have no idea why.
     this.savedSettings[key] = value;
     localStorage.setItem("cinderSettings", JSON.stringify(this.savedSettings));
 
-    // Some more code to make certain things update to settings changes
-    if (key === "invertAttack") {
-      settingsMap.invertAttack.state = value;
-    } else if (key === "invertDefend") {
-      settingsMap.invertDefend.state = value;
+    for (let listener of this.listeners[key]) {
+      listener(value);
     }
-
-    if (key === "specialDropsQuantity" || key === "specialDropsRarity") {
-      settingsMap.specialDropsScale.updateTooltip();
-    }
-
-    if (key === "craftingSearchBar") {
-      craftingMenu.updateSearchBarActive();
-    }
+  }
+  /**
+   * Adds a listener to {@linkcode listeners}, which will allow it to listen to
+   * all *future* choices made by the user.
+   */
+  addListener<K extends SettingsKey>(
+    key: K, listener: (option: CinderSettings[K]) => void
+  ) {
+    this.listeners[key].push(listener);
   }
 }
 

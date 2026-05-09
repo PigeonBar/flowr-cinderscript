@@ -306,6 +306,9 @@ export class NumberOption extends DisplayValueOption {
   }
 
   onClick(): void {
+    // Undo the player's click before opening the prompt
+    send({attack: false});
+
     // Prompt the user for a new value, then check its validity
     const rawValue = parseFloat(prompt(
       `You are editing the setting "${this.simpleName}".\n\n` +
@@ -356,6 +359,9 @@ export class RarityOption extends DisplayValueOption {
   }
 
   onClick(): void {
+    // Undo the player's click before opening the prompt
+    send({attack: false});
+
     // Prompt the user for a new value, then check its validity
     const response = prompt(
       `You are editing the setting "${this.simpleName}".\n\n` +
