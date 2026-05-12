@@ -21,13 +21,13 @@ export function initMenuList(): void {
     globalInventory,
     craftingMenu,
     mobGallery,
-    shop,
   ];
   
   // If Flowrscript is also being used, add its settings menu and its petal
   // gallery to the menu list.
   if (!isNil(flowrMod)) {
     rawList.push(
+      shop,
       flowrMod.flowrSettingsMenu,
       flowrMod.petalGallery,
     );

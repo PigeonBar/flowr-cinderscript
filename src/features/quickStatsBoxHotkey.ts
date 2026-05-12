@@ -18,8 +18,9 @@ export function addQuickStatsBoxHotkey() {
   });
 
   const originalRenderGame = renderGame;
-  const originalDrawStatsBox = PetalContainer.prototype.drawStatsBox;
   renderGame = (dt) => {
+    const originalDrawStatsBox = PetalContainer.prototype.drawStatsBox;
+
     if (showQuickStatsBox) {
       // Hide all other enemy stat boxes for now
       PetalContainer.prototype.drawStatsBox = function(

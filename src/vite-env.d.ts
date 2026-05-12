@@ -683,6 +683,11 @@ declare global {
      * petal's background gradients.
      */
     shouldDrawCachedAir: boolean;
+    
+    /**
+     * Whether this petal has a parent menu (e.g., inventory, mob gallery).
+     */
+    hasParentMenu?: boolean;
 
     constructor(
       petals: Petal[],
@@ -836,6 +841,11 @@ declare global {
      * lucky; `undefined` otherwise.
      */
     shinyWave?: number;
+
+    /**
+     * A list of petal drops that are currently on the ground.
+     */
+    petalContainers: Record<number, PetalContainer>;
   }
 
   let room: Room;

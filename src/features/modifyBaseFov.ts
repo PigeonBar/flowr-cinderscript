@@ -19,4 +19,9 @@ export function modifyBaseFOV(): void {
     originalEnterGame();
     fov = 1 / settings.get("baseReciprocalOfFOV");
   }
+
+  // Also set the FOV to the settings' base FOV when the setting gets edited
+  settings.addListener("baseReciprocalOfFOV", (option: number) => {
+    fov = 1 / option;
+  });
 }

@@ -1,11 +1,17 @@
 import { unsafeWindow } from "$";
 
 const cinderChangelogList: ChangelogEntry[] = [
-  {text: `- Fixed some issues involving physical overlap with Flowrscript's menus (PR #33)
+  {text: `- The settings menu is accessible again outside the main menu, reverted from previous update (PR #34)
+- [*] Fixed enemy missiles sometimes failing to display (PR #34)
+- [*] Fixed this script's petal locks not working at all (PR #34)
+- Made this changelog a bit wider (PR #34)
+- Default special drops threshold increased (1 Trans -> 1 Eth) (PR #34)`,
+  date: "Version 1.5.3"},
+  {text: `- [*] Fixed some issues involving physical overlap with Flowrscript's menus (PR #33)
 - Fixed the settings menu being active outside the main menu (PR #33)
 - This script now waits longer for Flowrscript to load its skins (200ms -> 1000ms) (PR #33)`,
   date: "Version 1.5.2"},
-  {text: `- Attempted fix for the settings menu not working if you are also using Flowrscript, Flowrmod, etc. (PR #32)`,
+  {text: `- [*] Attempted fix for the settings menu not working at all (PR #32)`,
   date: "Version 1.5.1"},
   {text: `- The mob gallery now has more types of mob counters, such as a spawn counter! (PR #31)
 - Tooltip text boxes are now fully opaque (PR #31)`,
@@ -63,6 +69,7 @@ export class CinderChangelog extends Changelog {
 
   constructor() {
     super();
+    this.w = 600;
 
     this.generatedEntries = false;
 
@@ -115,7 +122,7 @@ export class CinderChangelog extends Changelog {
     super.draw();
 
     // Cover the changelog's previous title
-    ctx.translate(this.x, this.y + this.offset);
+    ctx.translate(this.x, this.renderY);
     ctx.fillStyle = "#9bb56b";
     ctx.beginPath();
     ctx.roundRect(5, 5, this.w - 50, 75);
@@ -123,14 +130,39 @@ export class CinderChangelog extends Changelog {
     ctx.closePath();
 
     // Redraw the title so that it says "Cinderscript Changelog"
-    ctx.font = "900 30px Ubuntu";
+    ctx.font = "900 24px Ubuntu";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = "white";
     ctx.strokeStyle = "black";
-    ctx.lineWidth = 4;
-    ctx.strokeText("Cinderscript Changelog", this.w / 2, 40);
-    ctx.fillText("Cinderscript Changelog", this.w / 2, 40);
+    ctx.lineWidth = 3;
+    ctx.strokeText("Cinderscript Changelog", this.w / 2, 20);
+    ctx.fillText("Cinderscript Changelog", this.w / 2, 20);
+
+    // Draw the [*] marker explanation
+    ctx.font = "900 14px Ubuntu";
+    ctx.fillStyle = "#bbbbbb";
+    ctx.lineWidth = 2;
+    ctx.strokeText(
+      "The marker [*] denotes items that only affect users who",
+      this.w / 2,
+      48,
+    );
+    ctx.fillText(
+      "The marker [*] denotes items that only affect users who",
+      this.w / 2,
+      48,
+    );
+    ctx.strokeText(
+      "are using some variant of Flowrscript at the same time.",
+      this.w / 2,
+      68,
+    );
+    ctx.fillText(
+      "are using some variant of Flowrscript at the same time.",
+      this.w / 2,
+      68,
+    );
     ctx.translate(-this.x, -this.y - this.offset);
   }
 

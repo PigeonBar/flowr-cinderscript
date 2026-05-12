@@ -1,6 +1,17 @@
 import { SETTINGS_BUTTON_SIZE, TOOLTIP_BLUE, TOOLTIP_BORDER_BLUE, TOOLTIP_ICON_SIZE, TOOLTIP_TEXT_HEIGHT, TOOLTIP_WIDTH_CAP } from "../constants/constants";
+import { settings, type SettingsKey } from "./settingsManager";
 
-export type Tooltip = string | (() => string);
+/**
+ * The data structure for a settings tooltip. This can be either a simple
+ * string or a dynamically changing string. Dynamically changing strings are
+ * handled by using a function `fn` that automatically updates the tooltip's
+ * displayed text whenever one of the settings corresponding to `dependentKeys`
+ * is edited by the user.
+ */
+export type Tooltip = string | {
+  fn: () => string,
+  dependentKeys: SettingsKey[];
+};
 
 /**
  * A text box that displays tooltips for settings.
@@ -31,6 +42,16 @@ class TooltipBox {
     this.text = text;
 
     this.generateDesc();
+
+    /**
+     * If the text needs to be dynamically changing, add settings listeners to
+     * update this text when one of the dependent settings is edited.
+     */
+    if (typeof text === "object") {
+      for (let key of text.dependentKeys) {
+        settings.addListener(key, () => this.generateDesc());
+      }
+    }
   }
 
   /**
@@ -109,7 +130,7 @@ class TooltipBox {
 
     // Prepare to measure the text
     ctx.font = "900 15px Ubuntu"; // Set font for measuring text width
-    const text = (typeof this.text === "string") ? this.text : this.text();
+    const text = (typeof this.text === "string") ? this.text : this.text.fn();
     const splitText = text.split(" ").map(token => token + " ");
     this.lines = [];
     let currentLine: string[] = [];

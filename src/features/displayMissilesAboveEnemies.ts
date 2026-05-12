@@ -1,4 +1,6 @@
+import { flowrMod } from "../inits/initFlowrscriptPointer";
 import { settings } from "../settings/settingsManager";
+import { isNil } from "../utils";
 
 /**
  * This script ensures that enemy missiles are always drawn above the enemies
@@ -10,6 +12,12 @@ import { settings } from "../settings/settingsManager";
  * through the list of enemies in increasing order of ID.
  */
 export function displayMissilesAboveEnemies() {
+  // Flowrscript also has the same feature, so if it is being used, then we
+  // must cancel running the code below to prevent interference.
+  if (!isNil(flowrMod)) {
+    return;
+  }
+
   const originalRenderGame = renderGame;
 
   renderGame = (dt: number) => {

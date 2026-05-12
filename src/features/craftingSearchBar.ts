@@ -215,4 +215,9 @@ export function addCraftingSearchBar() {
   // Apply the current settings right now
   craftingMenu.searchBarActive = false;
   craftingMenu.updateSearchBarActive();
+
+  // Also add a listener for future edits to the above setting
+  settings.addListener("craftingSearchBar", () => {
+    craftingMenu.updateSearchBarActive();
+  });
 }
