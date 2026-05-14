@@ -149,7 +149,7 @@ export class CinderSettingsMenu extends SettingsMenu {
         }
       ),
       specialDropsRarity: new RarityOption(
-        "Special Drops Threshold Rarity", "specialDropsRarity",
+        "Special Drops Threshold", "specialDropsRarity",
       ),
       specialDropsQuantity: new NumberOption(
         "Special Drops Threshold Amount", "specialDropsQuantity", 0.1, 999, 1,

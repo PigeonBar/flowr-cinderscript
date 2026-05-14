@@ -1,5 +1,6 @@
 import { unsafeWindow } from "$";
 import { MAX_RARITY } from "../constants/constants";
+import { flowrMod } from "../inits/initFlowrscriptPointer";
 import { settings } from "../settings/settingsManager";
 import { isNil } from "../utils";
 
@@ -87,7 +88,7 @@ export function optimizeHighQualityRenders() {
     //    petal's border if we were to use the cached background + border).
     if (settings.get("disableAllOptimizations")
       || this === airPetals[this.rarity]
-      || !unsafeWindow.hqp 
+      || (!unsafeWindow.hqp || flowrMod?.noFancy)
       || this.shouldAnimate() 
       || (inGame && !isNil(number) && !isNil(petalReloadData[number]))
     ) {
@@ -98,6 +99,7 @@ export function optimizeHighQualityRenders() {
       const originalGradient = staticGradients[this.rarity];
       const originalBorder = Colors.rarities[this.rarity].border;
       const originalFill = ctx.fill;
+      const originalRoundRect = ctx.roundRect;
 
       originalDrawPetal.apply(this, [inGame, number]);
 
@@ -105,8 +107,14 @@ export function optimizeHighQualityRenders() {
       this.shouldDrawCachedAir = false;
       staticGradients[this.rarity] = originalGradient;
       Colors.rarities[this.rarity].border = originalBorder;
-      unsafeWindow.hqp = true;
       ctx.fill = originalFill;
+      ctx.roundRect = originalRoundRect;
+      
+      if (!isNil(flowrMod)) {
+        flowrMod.noFancy = false;
+      } else {
+        unsafeWindow.hqp = true;
+      }
     }
   }
 
@@ -174,6 +182,20 @@ export function optimizeHighQualityRenders() {
         }
       }
 
+      // If Flowrscript is active, also cancel it drawing a gray border around
+      // every non-hqp petal.
+      if (!isNil(flowrMod)) {
+        const originalRoundRect = ctx.roundRect;
+        ctx.roundRect = function(x, y, w, h, radii) {
+          if (ctx.globalAlpha === 0.5
+            && (ctx.fillStyle === "white" || ctx.fillStyle === "#ffffff")
+          ) {
+            return;
+          }
+          originalRoundRect.apply(this, [x, y, w, h, radii])
+        }
+      }
+
       // Draw the Air petal (without any stars) if it has not been drawn yet
       const newCtx = airCtx[this.rarity];
       if (!airCachedThisFrame[this.rarity] && !isNil(newCtx)) {
@@ -197,7 +219,11 @@ export function optimizeHighQualityRenders() {
       Colors.rarities[this.rarity].border = "transparent";
 
       // Draw the rest of the petal with High Quality Renders turned off
-      unsafeWindow.hqp = false;
+      if (!isNil(flowrMod)) {
+        flowrMod.noFancy = true;
+      } else {
+        unsafeWindow.hqp = false;
+      }
 
       ctx.restore();
     }
@@ -241,7 +267,7 @@ export function optimizeHighQualityRenders() {
 
   PetalContainer.prototype.drawStars = function() {
     const totalStars = Colors.rarities[this.rarity].fancy?.stars;
-    if (!isNil(totalStars) && unsafeWindow.hqp) {
+    if (!isNil(totalStars) && (unsafeWindow.hqp && !flowrMod?.noFancy)) {
       if (isNil(this.stars)) {
         // Initialize shiny stars
         this.stars = [];

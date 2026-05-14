@@ -1,6 +1,15 @@
 import { unsafeWindow } from "$";
 
 const cinderChangelogList: ChangelogEntry[] = [
+  {text: `- [*] With this update, this script should now generally be ready for use by Flowrscript users!
+- [*] Fixed inventory menu not being expandable (PR #35)
+- [*] Fixed stat boxes being rendered far away from the cursor (PR #35)
+- [*] Fixed crafting search bar extending to edge of screen (PR #35)
+- [*] The build saver is no longer clickable behind other menus (PR #35)
+- [*] Fixed some petal render optimizations not activating (PR #35)
+- Rarity settings now also use rarity index numbers (PR #35)
+- Changed inventory menu's padding to Flowrscript's more familiar layout (PR #35)`,
+  date: "Version 1.6.0 (Flowrscript Compatibility Update)"},
   {text: `- The settings menu is accessible again outside the main menu, reverted from previous update (PR #34)
 - [*] Fixed enemy missiles sometimes failing to display (PR #34)
 - [*] Fixed this script's petal locks not working at all (PR #34)

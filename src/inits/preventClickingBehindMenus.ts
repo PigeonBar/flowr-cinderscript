@@ -1,3 +1,4 @@
+import { unsafeWindow } from "$";
 import { isNil, mouseOnMenu } from "../utils";
 
 /**
@@ -103,6 +104,17 @@ export function preventClickingBehindMenus() {
   biomeManager.mouseDown = function({ mouseX, mouseY }: CanvasMouseData2) {
     if (!mouseOnMenu()) {
       originalBiomeMouseDown.apply(this, [{ mouseX, mouseY }]);
+    }
+  }
+
+  // Prevent `mouse.clickPosition` from triggering clicks on stuff behind menus
+  // (this mainly affects Flowrscript's build saver).
+  const originalWindowMouseDown = unsafeWindow.onmousedown;
+  unsafeWindow.onmousedown = function(e: MouseEvent) {
+    originalWindowMouseDown?.apply(unsafeWindow, [e]);
+
+    if (mouseOnMenu()) {
+      mouse.clickPosition = "up";
     }
   }
 }

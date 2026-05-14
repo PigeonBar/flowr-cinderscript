@@ -59,8 +59,17 @@ export function convertPetalValue(
 /**
  * Determines the rarity index corresponding to the given rarity name.
  */
-export function rarityToIndex(rarity: string): Rarity {
-  return Rarity[rarity.toUpperCase() as keyof typeof Rarity];
+export function rarityToIndex(rarity: string): Rarity | undefined {
+  const ret = Rarity[rarity.toUpperCase() as keyof typeof Rarity];
+  if (isNil(ret)) {
+    return undefined;
+  } else if (!isNaN(Number(rarity))) {
+    // Since enums are bidirectional, we must check here if `rarity` is a
+    // rarity name (string) or a rarity index (number).
+    return Number(rarity);
+  } else {
+    return ret;
+  }
 }
 
 /**
