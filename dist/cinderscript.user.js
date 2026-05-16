@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Flowr - Cinderscript
 // @namespace    npm/vite-plugin-monkey
-// @version      1.5.3
-// @author       PigeonBar (original creator)
+// @version      1.6.0
+// @author       Applepie (Ideas + bugfixes), PigeonBar (some technical stuff)
 // @description  A free, publicly available collection of QoL features for flowr.fun players.
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=flowr.fun
 // @downloadURL  https://github.com/PigeonBar/flowr-cinderscript/raw/refs/heads/main/dist/cinderscript.user.js
@@ -381,6 +381,17 @@
     }
   }
   const cinderChangelogList = [
+    {
+      text: `- [*] With this update, this script should now generally be ready for use by Flowrscript users!
+- [*] Fixed inventory menu not being expandable (PR #35)
+- [*] Fixed stat boxes being rendered far away from the cursor (PR #35)
+- [*] Fixed crafting search bar extending to edge of screen (PR #35)
+- [*] The build saver is no longer clickable behind other menus (PR #35)
+- [*] Fixed some petal render optimizations not activating (PR #35)
+- Rarity settings now also use rarity index numbers (PR #35)
+- Changed inventory menu's padding to Flowrscript's more familiar layout (PR #35)`,
+      date: "Version 1.6.0 (Flowrscript Compatibility Update)"
+    },
     {
       text: `- The settings menu is accessible again outside the main menu, reverted from previous update (PR #34)
 - [*] Fixed enemy missiles sometimes failing to display (PR #34)
@@ -830,12 +841,6 @@
       return false;
     }
     /**
-     * @returns `true` iff this is a {@linkcode RarityOption}.
-     */
-    isRarityOption() {
-      return false;
-    }
-    /**
      * Determines whether or not the given mouse coordinates are inside this
      * option's button.
      */
@@ -953,7 +958,7 @@
       ctx.font = "900 17px Ubuntu";
       ctx.textAlign = "left";
       ctx.textBaseline = "middle";
-      ctx.fillStyle = this.isRarityOption() ? "#cfcfcf" : "white";
+      ctx.fillStyle = "white";
       ctx.strokeStyle = "black";
       ctx.lineWidth = 2;
       ctx.strokeText(
@@ -1022,14 +1027,14 @@ Please enter a number between ${this.minValue} and ${this.maxValue}.`
       this.state = settings.get(settingsKey);
       this.settingsKey = settingsKey;
     }
-    isRarityOption() {
-      return true;
-    }
     getValueFillStyles() {
-      return [this.getFlashColour(Colors.rarities[this.state].color)];
+      return [
+        this.getFlashColour(Colors.rarities[this.state].color),
+        this.getFlashColour(SETTINGS_GREEN)
+      ];
     }
     getDisplayedValues() {
-      return [Colors.rarities[this.state].name];
+      return [Colors.rarities[this.state].name, ` (${this.state})`];
     }
     onClick() {
       send({ attack: false });
@@ -1310,7 +1315,7 @@ Please enter a Rarity.`
           }
         ),
         specialDropsRarity: new RarityOption(
-          "Special Drops Threshold Rarity",
+          "Special Drops Threshold",
           "specialDropsRarity"
         ),
         specialDropsQuantity: new NumberOption(
@@ -1764,7 +1769,14 @@ Please enter a Rarity.`
     return amount;
   }
   function rarityToIndex(rarity) {
-    return Rarity[rarity.toUpperCase()];
+    const ret = Rarity[rarity.toUpperCase()];
+    if (isNil(ret)) {
+      return void 0;
+    } else if (!isNaN(Number(rarity))) {
+      return Number(rarity);
+    } else {
+      return ret;
+    }
   }
   function deepCopy(obj, depth = 5) {
     if (depth === 0) {
@@ -1883,7 +1895,7 @@ Please enter a Rarity.`
       fn: toggleScreenshotMode
     });
   }
-  const version = "1.5.3";
+  const version = "1.6.0";
   function addScriptVersionToDebugInfo() {
     const originalRenderDebug = renderDebug;
     renderDebug = () => {
@@ -1969,6 +1981,17 @@ Please enter a Rarity.`
         this._hqp = value;
       }
     });
+    if (!isNil(flowrMod)) {
+      flowrMod._noFancy = flowrMod.noFancy;
+      Object.defineProperty(flowrMod, "noFancy", {
+        get: function() {
+          return this._noFancy || disableHqp && !settings.get("disableAllOptimizations");
+        },
+        set: function(value) {
+          this._noFancy = value;
+        }
+      });
+    }
     const originalDrawPetal = PetalContainer.prototype.draw;
     PetalContainer.prototype.draw = function(inGame, number) {
       if (settings.get("disableAllOptimizations")) {
@@ -2042,6 +2065,10 @@ Please enter a Rarity.`
         return;
       }
       originalDraw.apply(this, [alpha]);
+      this.searchBarDimensions.w = Math.min(
+        craftingMenu.inventorySpace.w - 8,
+        craftingMenu.w - 42
+      );
       ctx.translate(130, this.renderY);
       ctx.fillStyle = "white";
       ctx.strokeStyle = "black";
@@ -2279,8 +2306,20 @@ Please enter a Rarity.`
   const expandIcon = new Image();
   expandIcon.src = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgoKPHN2ZwogICB3aWR0aD0iMjkuOTk5OTkybW0iCiAgIGhlaWdodD0iMzAuMDAwMDExbW0iCiAgIHZpZXdCb3g9IjAgMCAyOS45OTk5OTIgMzAuMDAwMDExIgogICB2ZXJzaW9uPSIxLjEiCiAgIGlkPSJzdmcxIgogICB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciCiAgIHhtbG5zOnN2Zz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxkZWZzCiAgICAgaWQ9ImRlZnMxIiAvPgogIDxnCiAgICAgaWQ9ImxheWVyMSIKICAgICB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtNzQsLTE1NC4wMDAwMSkiPgogICAgPHBhdGgKICAgICAgIHN0eWxlPSJmaWxsOiNmZmZmZmY7ZmlsbC1vcGFjaXR5OjE7c3Ryb2tlOiNmZmZmZmY7c3Ryb2tlLXdpZHRoOjAuMDE7c3Ryb2tlLWxpbmVjYXA6c3F1YXJlO3N0cm9rZS1taXRlcmxpbWl0OjA7cGFpbnQtb3JkZXI6bWFya2VycyBzdHJva2UgZmlsbCIKICAgICAgIGlkPSJwYXRoMSIKICAgICAgIGQ9Ik0gNzcuMTA4NTg4LDExNS40NDI5OSAzMi41NTEzNTgsMTAyLjc2MDQyIDY1LjgxMzQwMSw3MC41MTQwMTUgWiIKICAgICAgIHRyYW5zZm9ybT0ibWF0cml4KDAuMTY2OTA4LC0wLjA2Nzg5NDA2LDAuMTc2MjAyMDEsMC4yMzI0MzMzOCw1Ni41OTE3MzIsMTU2LjMyNDEpIiAvPgogICAgPHBhdGgKICAgICAgIHN0eWxlPSJmaWxsOiNmZmZmZmY7ZmlsbC1vcGFjaXR5OjE7c3Ryb2tlOiNmZmZmZmY7c3Ryb2tlLXdpZHRoOjAuMDE7c3Ryb2tlLWxpbmVjYXA6c3F1YXJlO3N0cm9rZS1taXRlcmxpbWl0OjA7cGFpbnQtb3JkZXI6bWFya2VycyBzdHJva2UgZmlsbCIKICAgICAgIGlkPSJwYXRoMS04IgogICAgICAgZD0iTSA3Ny4xMDg1ODgsMTE1LjQ0Mjk5IDMyLjU1MTM1OCwxMDIuNzYwNDIgNjUuODEzNDAxLDcwLjUxNDAxNSBaIgogICAgICAgdHJhbnNmb3JtPSJtYXRyaXgoLTAuMTY2OTA4LDAuMDY3ODk0MDYsLTAuMTc2MjAyMDEsLTAuMjMyNDMzMzgsMTIxLjQwODAzLDE4MS42NzYxMSkiIC8+CiAgICA8cmVjdAogICAgICAgc3R5bGU9ImZpbGw6I2ZmZmZmZjtmaWxsLW9wYWNpdHk6MTtzdHJva2U6I2ZmZmZmZjtzdHJva2Utd2lkdGg6MC4wMTQwNzQzO3N0cm9rZS1saW5lY2FwOnNxdWFyZTtzdHJva2UtbWl0ZXJsaW1pdDowO3BhaW50LW9yZGVyOm1hcmtlcnMgc3Ryb2tlIGZpbGwiCiAgICAgICBpZD0icmVjdDIiCiAgICAgICB3aWR0aD0iNC4xMTg1NTg0IgogICAgICAgaGVpZ2h0PSIxOC4zNTYzMzMiCiAgICAgICB4PSIxODAuNDYwNDUiCiAgICAgICB5PSI0Ny4xODQyODQiCiAgICAgICB0cmFuc2Zvcm09Im1hdHJpeCgwLjcwNzcyMTA1LDAuNzA2NDkxOTcsLTAuNzA4MTgxMzMsMC43MDYwMzA2LDAsMCkiIC8+CiAgICA8cmVjdAogICAgICAgc3R5bGU9ImZpbGw6I2ZmZmZmZjtmaWxsLW9wYWNpdHk6MDtzdHJva2U6I2ZmZmZmZjtzdHJva2Utd2lkdGg6MC4wMTg3MzQ7c3Ryb2tlLWxpbmVjYXA6c3F1YXJlO3N0cm9rZS1taXRlcmxpbWl0OjA7cGFpbnQtb3JkZXI6bWFya2VycyBzdHJva2UgZmlsbCIKICAgICAgIGlkPSJyZWN0MyIKICAgICAgIHdpZHRoPSIyOS45ODEyNjYiCiAgICAgICBoZWlnaHQ9IjI5Ljk4MTI2NiIKICAgICAgIHg9Ijc0LjAwOTM2OSIKICAgICAgIHk9IjE1NC4wMDkzNyIgLz4KICA8L2c+Cjwvc3ZnPgo=";
   function addInventoryMenuExpansion() {
-    const petalContainerSize = 65;
-    const petalContainerTotalSpace = petalContainerSize + 10;
+    const petalSize = {
+      /**
+       * The raw side length of each square petal container, without padding.
+       */
+      raw: 65,
+      /**
+       * Petal size + 20 units of horizontal padding.
+       */
+      horizontal: 65 + 20,
+      /**
+       * Petal size + 12 units of vertical padding.
+       */
+      vertical: 65 + 12
+    };
     const menuLeftPadding = 35;
     const menuRightPadding = 50;
     const menuTopPadding = 100;
@@ -2305,13 +2344,13 @@ Please enter a Rarity.`
           const column = petalIndex % globalInventory.petalsPerRow;
           Object.defineProperties(pc, {
             x: {
-              get: () => petalContainerSize / 2 + menuLeftPadding + column * petalContainerTotalSpace,
+              get: () => petalSize.raw / 2 + menuLeftPadding + column * petalSize.horizontal,
               set: () => {
               },
               configurable: true
             },
             y: {
-              get: () => petalContainerSize / 2 + menuTopPadding + row * petalContainerTotalSpace + globalInventory.render.scroll,
+              get: () => petalSize.raw / 2 + menuTopPadding + row * petalSize.vertical + globalInventory.render.scroll,
               set: () => {
               },
               configurable: true
@@ -2333,12 +2372,19 @@ Please enter a Rarity.`
       if (this.expanded) {
         this.h = canvas.h - screenTopPadding - screenBottomPadding;
         const maxInventorySpaceWidth = canvas.w - screenLeftPadding - screenRightPadding - menuLeftPadding - menuRightPadding;
-        this.petalsPerRow = Math.floor(maxInventorySpaceWidth / petalContainerTotalSpace);
+        this.petalsPerRow = Math.floor(maxInventorySpaceWidth / petalSize.horizontal);
       } else {
-        this.petalsPerRow = 5;
+        this.petalsPerRow = flowrMod?.newinventory ? 6 : 5;
         this.h = originalHeight;
       }
-      this.w = petalContainerTotalSpace * this.petalsPerRow + menuLeftPadding + menuRightPadding;
+      Object.defineProperty(this, "w", {
+        get: function() {
+          return petalSize.horizontal * this.petalsPerRow + menuLeftPadding + menuRightPadding;
+        },
+        set: () => {
+        },
+        configurable: true
+      });
     };
     globalInventory.toggleExpansion = function() {
       if (!settings.get("inventoryExpandButton")) {
@@ -3261,7 +3307,7 @@ Please enter a Rarity.`
           star.y = Infinity;
         }
       }
-      if (settings.get("disableAllOptimizations") || this === airPetals[this.rarity] || !_unsafeWindow.hqp || this.shouldAnimate() || inGame && !isNil(number) && !isNil(petalReloadData[number])) {
+      if (settings.get("disableAllOptimizations") || this === airPetals[this.rarity] || (!_unsafeWindow.hqp || flowrMod?.noFancy) || this.shouldAnimate() || inGame && !isNil(number) && !isNil(petalReloadData[number])) {
         originalDrawPetal.apply(this, [inGame, number]);
         return;
       } else {
@@ -3269,12 +3315,18 @@ Please enter a Rarity.`
         const originalGradient = staticGradients[this.rarity];
         const originalBorder = Colors.rarities[this.rarity].border;
         const originalFill = ctx.fill;
+        const originalRoundRect = ctx.roundRect;
         originalDrawPetal.apply(this, [inGame, number]);
         this.shouldDrawCachedAir = false;
         staticGradients[this.rarity] = originalGradient;
         Colors.rarities[this.rarity].border = originalBorder;
-        _unsafeWindow.hqp = true;
         ctx.fill = originalFill;
+        ctx.roundRect = originalRoundRect;
+        if (!isNil(flowrMod)) {
+          flowrMod.noFancy = false;
+        } else {
+          _unsafeWindow.hqp = true;
+        }
       }
     };
     const originalInterpolate = PetalContainer.prototype.updateInterpolate;
@@ -3317,6 +3369,15 @@ Please enter a Rarity.`
             originalFill.apply(this);
           };
         }
+        if (!isNil(flowrMod)) {
+          const originalRoundRect = ctx.roundRect;
+          ctx.roundRect = function(x, y, w, h, radii) {
+            if (ctx.globalAlpha === 0.5 && (ctx.fillStyle === "white" || ctx.fillStyle === "#ffffff")) {
+              return;
+            }
+            originalRoundRect.apply(this, [x, y, w, h, radii]);
+          };
+        }
         const newCtx = airCtx[this.rarity];
         if (!airCachedThisFrame[this.rarity] && !isNil(newCtx)) {
           const oldCtx = ctx;
@@ -3330,7 +3391,11 @@ Please enter a Rarity.`
         this.drawStars();
         staticGradients[this.rarity] = "transparent";
         Colors.rarities[this.rarity].border = "transparent";
-        _unsafeWindow.hqp = false;
+        if (!isNil(flowrMod)) {
+          flowrMod.noFancy = true;
+        } else {
+          _unsafeWindow.hqp = false;
+        }
         ctx.restore();
       }
     };
@@ -3357,7 +3422,7 @@ Please enter a Rarity.`
     }
     PetalContainer.prototype.drawStars = function() {
       const totalStars = Colors.rarities[this.rarity].fancy?.stars;
-      if (!isNil(totalStars) && _unsafeWindow.hqp) {
+      if (!isNil(totalStars) && (_unsafeWindow.hqp && !flowrMod?.noFancy)) {
         if (isNil(this.stars)) {
           this.stars = [];
           for (let starnum = 0; starnum < totalStars; starnum++) {
@@ -3458,13 +3523,14 @@ Please enter a Rarity.`
       const mouseX = mouse.canvasX;
       const mouseY = mouse.canvasY;
       const container = this.previewPetalContainer;
-      if (container !== void 0) {
-        container.draw();
+      container?.draw();
+      ctx.translate(-130, -this.renderY);
+      if (!isNil(container)) {
         if (mouseInBox(
           { x: mouseX, y: mouseY },
           {
             x: container.render.x - container.w / 2 + 130,
-            y: container.render.y - container.h / 2 + canvas.h - this.h - 20,
+            y: container.render.y - container.h / 2 + this.renderY,
             w: container.w,
             h: container.h
           }
@@ -3474,11 +3540,10 @@ Please enter a Rarity.`
         container.drawStatsBox(
           false,
           false,
-          130 + container.render.x,
-          canvas.h - this.h - 20 + container.render.y
+          container.render.x + 130,
+          container.render.y + this.renderY
         );
       }
-      ctx.translate(-130, -this.renderY);
     };
     const originalAddPetal = craftingMenu.addCraftingPetalContainers;
     craftingMenu.addCraftingPetalContainers = function(type, rarity, amount, attempt) {
@@ -3816,7 +3881,7 @@ Please enter a Rarity.`
       if (!isNil(statsBoxCtx)) {
         ctx = statsBoxCtx;
         ctx.globalAlpha = originalCtx.globalAlpha;
-        ctx.setTransform(savedRenderTransform);
+        ctx.setTransform(originalCtx.getTransform());
       }
       originalStatsBoxDraw.apply(this);
       ctx = originalCtx;
@@ -4104,6 +4169,13 @@ Please enter a Rarity.`
     biomeManager.mouseDown = function({ mouseX, mouseY }) {
       if (!mouseOnMenu()) {
         originalBiomeMouseDown.apply(this, [{ mouseX, mouseY }]);
+      }
+    };
+    const originalWindowMouseDown = _unsafeWindow.onmousedown;
+    _unsafeWindow.onmousedown = function(e) {
+      originalWindowMouseDown?.apply(_unsafeWindow, [e]);
+      if (mouseOnMenu()) {
+        mouse.clickPosition = "up";
       }
     };
   }

@@ -1,4 +1,5 @@
 import { CINDER_BORDER_COLOUR, CINDER_COLOUR, LIGHT_CINDER_COLOUR } from "../constants/constants";
+import { flowrMod } from "../inits/initFlowrscriptPointer";
 import { settings } from "../settings/settingsManager";
 import { isNil } from "../utils";
 
@@ -13,16 +14,22 @@ expandIcon.src = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGlu
  * Thanks to ykitsnathan for suggesting this idea!
  */
 export function addInventoryMenuExpansion() {
-  /**
-   * The raw side length of each square petal container.
-   */
-  const petalContainerSize = 65;
+  const petalSize = {
+    /**
+     * The raw side length of each square petal container, without padding.
+     */
+    raw: 65,
+    
+    /**
+     * Petal size + 20 units of horizontal padding.
+     */
+    horizontal: 65 + 20,
 
-  /**
-   * The total width/height each petal container takes up, after accounting
-   * for padding.
-   */
-  const petalContainerTotalSpace = petalContainerSize + 10;
+    /**
+     * Petal size + 12 units of vertical padding.
+     */
+    vertical: 65 + 12,
+  };
 
   /**
    * The padding between the menu's left side and the petals' left side.
@@ -96,14 +103,14 @@ export function addInventoryMenuExpansion() {
         // to recalculate each petal's position using 5 petals per row
         Object.defineProperties(pc, {
           x: {
-            get: () => petalContainerSize / 2 + menuLeftPadding
-              + column * petalContainerTotalSpace,
+            get: () => petalSize.raw / 2 + menuLeftPadding
+              + column * petalSize.horizontal,
             set: () => {},
             configurable: true,
           },
           y: {
-            get: () => petalContainerSize / 2 + menuTopPadding
-              + row * petalContainerTotalSpace
+            get: () => petalSize.raw / 2 + menuTopPadding
+              + row * petalSize.vertical
               + globalInventory.render.scroll,
             set: () => {},
             configurable: true,
@@ -130,13 +137,22 @@ export function addInventoryMenuExpansion() {
         canvas.w - screenLeftPadding - screenRightPadding
         - menuLeftPadding - menuRightPadding;
       this.petalsPerRow =
-        Math.floor(maxInventorySpaceWidth / petalContainerTotalSpace);
+        Math.floor(maxInventorySpaceWidth / petalSize.horizontal);
     } else {
-      this.petalsPerRow = 5;
+      this.petalsPerRow = flowrMod?.newinventory ? 6 : 5;
       this.h = originalHeight;
     }
-    this.w = petalContainerTotalSpace * this.petalsPerRow
-      + menuLeftPadding + menuRightPadding;
+
+    // We must use defineProperty here or else Flowrscript will overwrite it if
+    // we try to expand this inventory.
+    Object.defineProperty(this, "w", {
+      get: function(this: GlobalInventory) {
+        return petalSize.horizontal * this.petalsPerRow
+          + menuLeftPadding + menuRightPadding;
+      },
+      set: () => {},
+      configurable: true,
+    });
   }
 
   globalInventory.toggleExpansion = function() {

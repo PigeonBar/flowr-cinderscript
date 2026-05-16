@@ -61,19 +61,24 @@ export function addPetalCraftPreview(): void {
     ctx.strokeText("Preview", slot.x, slot.y - 55);
     ctx.fillText("Preview", slot.x, slot.y - 55);
 
-    // Draw the petal being previewed, as well as its stats box
+    // Draw the petal being previewed
     const mouseX = mouse.canvasX;
     const mouseY = mouse.canvasY;
     const container = this.previewPetalContainer;
-    if (container !== undefined) {
-      container.draw();
+    container?.draw();
 
+    // Undo translation here. This is required because the game enforces
+    // drawing stats boxes within the canvas's boundaries.
+    ctx.translate(-130, -this.renderY);
+
+    // Draw the previewed petal's stats box
+    if (!isNil(container)) {
       // Check if player is hovering over the preview container
       if (mouseInBox(
         { x: mouseX, y: mouseY },
         {
           x: container.render.x - container.w / 2 + 130,
-          y: container.render.y - container.h / 2 + canvas.h - this.h - 20,
+          y: container.render.y - container.h / 2 + this.renderY,
           w: container.w,
           h: container.h,
         }
@@ -84,13 +89,10 @@ export function addPetalCraftPreview(): void {
       container.drawStatsBox(
         false,
         false,
-        130 + container.render.x,
-        (canvas.h - this.h - 20) + container.render.y
+        container.render.x + 130,
+        container.render.y + this.renderY,
       );
     }
-
-    // Undo translation
-    ctx.translate(-130, -this.renderY);
   }
 
   const originalAddPetal = craftingMenu.addCraftingPetalContainers;

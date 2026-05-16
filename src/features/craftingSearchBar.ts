@@ -66,6 +66,13 @@ export function addCraftingSearchBar() {
 
     originalDraw.apply(this, [alpha]);
 
+    // Update the search bar's width, since Flowrscript dynamically changes the
+    // crafting menu's width based on the number of rarities that it holds.
+    this.searchBarDimensions.w = Math.min(
+      craftingMenu.inventorySpace.w - 8,
+      craftingMenu.w - 42,
+    );
+
     // Draw the search bar
     ctx.translate(130, this.renderY);
     ctx.fillStyle = "white";

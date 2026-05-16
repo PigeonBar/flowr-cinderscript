@@ -66,10 +66,31 @@ declare global {
   }
 
   type FlowrMod = {
+    /**
+     * Flowrscript's own settings menu.
+     */
     flowrSettingsMenu: TopMenu & {
       drawIcon(alpha?: number): void;
-    },
+    };
+
+    /**
+     * Flowrscript's petal gallery, which is a copy of
+     * {@linkcode globalInventory} that instead displays every possible petal
+     * of every possible rarity.
+     */
     petalGallery: GlobalInventory;
+
+    /**
+     * Whether or not Flowrscript's "Bigger Inventory" setting is toggled on.
+     */
+    newinventory: boolean;
+
+    _noFancy: boolean;
+
+    /**
+     * Whether or not Flowrscript's "No Gradients" setting is toggled on.
+     */
+    noFancy: boolean;
   };
 
   type PetalType = string; // TODO: List of actually existing petal types?

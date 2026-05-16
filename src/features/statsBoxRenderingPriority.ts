@@ -24,7 +24,7 @@ export function prioritizeRenderingStatsBoxes() {
       // Draw all stats boxes using the new canvas
       ctx = statsBoxCtx;
       ctx.globalAlpha = originalCtx.globalAlpha;
-      ctx.setTransform(savedRenderTransform);
+      ctx.setTransform(originalCtx.getTransform());
     }
     originalStatsBoxDraw.apply(this);
     ctx = originalCtx;

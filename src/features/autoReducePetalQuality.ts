@@ -1,5 +1,7 @@
 import { unsafeWindow } from "$";
+import { flowrMod } from "../inits/initFlowrscriptPointer";
 import { settings } from "../settings/settingsManager";
+import { isNil } from "../utils";
 
 /**
  * Tracks the number of petals that have been drawn during the current frame.
@@ -30,6 +32,20 @@ export function autoReducePetalQuality() {
       this._hqp = value;
     }
   });
+
+  if (!isNil(flowrMod)) {
+    // Also enforce activating Flowrscript's "No Gradients" setting
+    flowrMod._noFancy = flowrMod.noFancy;
+    Object.defineProperty(flowrMod, "noFancy", {
+      get: function(this: FlowrMod) {
+        return this._noFancy
+          || (disableHqp && !settings.get("disableAllOptimizations"));
+      },
+      set: function(this: FlowrMod, value: boolean) {
+        this._noFancy = value;
+      }
+    });
+  }
 
   // Count number of petals being drawn
   const originalDrawPetal = PetalContainer.prototype.draw;

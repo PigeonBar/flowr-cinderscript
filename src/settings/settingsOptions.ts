@@ -79,13 +79,6 @@ export abstract class SettingsOption {
   }
 
   /**
-   * @returns `true` iff this is a {@linkcode RarityOption}.
-   */
-  isRarityOption(): this is RarityOption {
-    return false;
-  }
-
-  /**
    * Determines whether or not the given mouse coordinates are inside this
    * option's button.
    */
@@ -238,9 +231,7 @@ export abstract class DisplayValueOption extends SettingsOption {
     ctx.font = "900 17px Ubuntu";
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    // If this is a Rarity option, we display the name as light-gray to
-    // visually distinguish it from the Transcendent rarity.
-    ctx.fillStyle = this.isRarityOption() ? "#cfcfcf" : "white";
+    ctx.fillStyle = "white";
     ctx.strokeStyle = "black";
     ctx.lineWidth = 2;
     ctx.strokeText(
@@ -342,20 +333,18 @@ export class RarityOption extends DisplayValueOption {
     this.state = settings.get(settingsKey);
     this.settingsKey = settingsKey;
   }
-
-  isRarityOption(): this is this {
-    return true;
-  }
-
   getValueFillStyles(): string[] {
     // The value is now displayed using the rarity's colour, and it still
     // flashes white over 1.5s when the player edits it.
-    return [this.getFlashColour(Colors.rarities[this.state].color)];
+    return [
+      this.getFlashColour(Colors.rarities[this.state].color),
+      this.getFlashColour(SETTINGS_GREEN),
+    ];
   }
 
   getDisplayedValues(): string[] {
     // Display the name of the rarity
-    return [Colors.rarities[this.state].name];
+    return [Colors.rarities[this.state].name, ` (${this.state})`];
   }
 
   onClick(): void {
