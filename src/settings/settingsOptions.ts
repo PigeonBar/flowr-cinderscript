@@ -1,7 +1,7 @@
 import { CINDER_COLOUR, EDIT_ICON_SIZE, KEYBIND_DELETED, SETTINGS_BUTTON_PADDING, SETTINGS_BUTTON_SIZE, SETTINGS_GREEN, SETTINGS_OPTION_HEIGHT, TOOLTIP_ICON_SIZE } from "../constants/constants";
 import type { Rarity } from "../enums";
-import { isNil, rarityToIndex } from "../utils";
-import { settings, type BooleanSettingsKey, type KeybindSettingsKey, type NumberSettingsKey, type RaritySettingsKey } from "./settingsManager";
+import { isHexCode, isNil, rarityToIndex } from "../utils";
+import { settings, type BooleanSettingsKey, type ColourSettingsKey, type KeybindSettingsKey, type NumberSettingsKey, type RaritySettingsKey } from "./settingsManager";
 import { type CinderSettingsMenu } from "./settingsMenu";
 import { TooltipIcon, type Tooltip } from "./tooltips";
 
@@ -161,6 +161,13 @@ export abstract class DisplayValueOption extends SettingsOption {
   }
 
   /**
+   * @returns `true` iff this is a {@linkcode ColourOption}.
+   */
+  isColourOption(): this is ColourOption {
+    return false;
+  }
+
+  /**
    * Processes `originalColour` to make it flash white if the user has edited
    * this setting within the past 1.5s.
    */
@@ -257,6 +264,16 @@ export abstract class DisplayValueOption extends SettingsOption {
       currentX += ctx.measureText(text).width;
     }
 
+    if (this.isColourOption() && !this.editingState) {
+      // Display the selected colour in a small square
+      ctx.strokeStyle = "black";
+      ctx.fillStyle = this.state;
+      ctx.lineWidth = 2;
+      currentX += 10;
+      ctx.fillRect(currentX, menu.midHeight - 10, 20, 20);
+      ctx.strokeRect(currentX, menu.midHeight - 10, 20, 20);
+    }
+
     menu.currentHeight += SETTINGS_OPTION_HEIGHT;
   }
 
@@ -265,6 +282,81 @@ export abstract class DisplayValueOption extends SettingsOption {
    * edit button.
    */
   abstract onClick(menu: CinderSettingsMenu): void;
+}
+
+export class ColourOption extends DisplayValueOption {
+  state: string;
+  settingsKey: ColourSettingsKey;
+  
+  /**
+   * Whether or not the player is currently editing this setting.
+   */
+  editingState: boolean;
+
+  constructor(
+    name: string,
+    settingsKey: ColourSettingsKey,
+    tooltip?: Tooltip,
+  ) {
+    super(name, tooltip);
+
+    this.state = settings.get(settingsKey);
+    this.settingsKey = settingsKey;
+    this.editingState = false;
+  }
+
+  isColourOption(): this is this {
+    return true;
+  }
+
+  getDisplayedValues(): string[] {
+    // Also display an "Editing..." status if this is being edited
+    if (this.editingState) {
+      return [this.state, " (Editing...)"];
+    } else {
+      return [this.state];
+    }
+  }
+
+  getValueFillStyles(): string[] {
+    // Also display an "Editing..." status if this is being edited
+    const colour1 = this.getFlashColour(SETTINGS_GREEN);
+    if (this.editingState) {
+      return [colour1, CINDER_COLOUR];
+    } else {
+      return [colour1];
+    }
+  }
+
+  onClick(menu: CinderSettingsMenu): void {
+    if (!this.editingState) {
+      menu.setCurrentColourOption(this);
+      this.editingState = true;
+    } else {
+      // Also let the user manually cancel editing
+      menu.cancelColourOption();
+    }
+  }
+
+  /**
+   * Saves the given colour to the settings.
+   */
+  saveColour(newColour: string): void {
+    if (!isHexCode(newColour)) {
+      console.warn(newColour + " is not a valid hex code!");
+      return;
+    }
+    this.changeTime = performance.now();
+    this.state = newColour;
+    settings.set(this.settingsKey, newColour);
+  }
+
+  /**
+   * Ends this option's editing state.
+   */
+  finishEdit(): void {
+    this.editingState = false;
+  }
 }
 
 export class NumberOption extends DisplayValueOption {

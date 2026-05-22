@@ -32,6 +32,18 @@ export type NumberSettingsKey =
   "petalLockShakeIntensity";
 
 /**
+ * Settings keys for settings that take a colour hex code value.
+ */
+export type ColourSettingsKey =
+  "gardenBackground" |
+  "desertBackground" |
+  "oceanBackground" |
+  "savannaBackground" |
+  "swampBackground" |
+  "zooBackground" |
+  "deepZooBackground";
+
+/**
  * Settings keys for settings that take a Rarity value.
  */
 export type RaritySettingsKey =
@@ -49,6 +61,7 @@ export type KeybindSettingsKey =
 type CinderSettings =
   Record<BooleanSettingsKey, boolean> &
   Record<NumberSettingsKey, number> &
+  Record<ColourSettingsKey, string> &
   Record<RaritySettingsKey, Rarity> &
   Record<KeybindSettingsKey, string>;
 
@@ -76,6 +89,13 @@ const defaultSettings: CinderSettings = Object.freeze({
   petalRenderQualityThreshold: 400,
   craftAnimationLength: 0,
   petalLockShakeIntensity: 2,
+  gardenBackground: Colors.biomes.garden.background,
+  desertBackground: Colors.biomes.desert.background,
+  oceanBackground: Colors.biomes.ocean.background,
+  savannaBackground: Colors.biomes.savanna.background,
+  swampBackground: Colors.biomes.swamp.background,
+  zooBackground: Colors.biomes.zoo.background,
+  deepZooBackground: Colors.biomes.deepzoo.background,
   specialDropsRarity: Rarity.ETHEREAL,
   keybindStatsBox: "KeyG",
   keybindInvertAttack: "Comma",
@@ -134,6 +154,13 @@ export class SettingsManager {
       petalRenderQualityThreshold: [],
       craftAnimationLength: [],
       petalLockShakeIntensity: [],
+      gardenBackground: [],
+      desertBackground: [],
+      oceanBackground: [],
+      savannaBackground: [],
+      swampBackground: [],
+      zooBackground: [],
+      deepZooBackground: [],
       specialDropsRarity: [],
       keybindStatsBox: [],
       keybindInvertAttack: [],
@@ -148,6 +175,14 @@ export class SettingsManager {
    */
   get<K extends SettingsKey>(key: K): CinderSettings[K] {
     return this.savedSettings[key];
+  }
+
+  /**
+   * @param key The {@linkcode SettingsKey} being retrieved from.
+   * @returns The default setting for this key.
+   */
+  getDefault<K extends SettingsKey>(key: K): CinderSettings[K] {
+    return defaultSettings[key];
   }
 
   /**

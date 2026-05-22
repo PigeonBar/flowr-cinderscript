@@ -60,6 +60,18 @@ declare global {
     lastMessageTimeReceived: number;
 
     /**
+     * The UI for asking the player whether or not they want to ascend. This UI
+     * only exists if the player is not Ascended.
+     */
+    ascendUI?: AscendUI;
+
+    /**
+     * The UI for letting Ascended players select which character to use. This
+     * Ui only exists if the player is Ascended.
+     */
+    characterSelector?: CharacterSelector;
+
+    /**
      * An object used by Flowrscript.
      */
     flowrMod?: FlowrMod;
@@ -110,6 +122,13 @@ declare global {
 
   const Colors: {
     rarities: {name: string, color: string, border: string, fancy?: any}[];
+    biomes: Record<string, {
+      background: string,
+      grid: string,
+      fancyBase: string,
+      fancyPaths: string[],
+      fancyOpacity: number[],
+    }>;
   }
 
   /**
@@ -993,6 +1012,23 @@ declare global {
 
   let renderHpBar: (data: HpBarData, entity?: HpEntityData) => void;
 
+  /**
+   * The base game's UI for displaying the player's level and xp.
+   */
+  class LevelBar {
+    /**
+     * Initializes the level bar for a player with a given xp amount. This is
+     * also responsible for initializing a {@linkcode CharacterSelector} if the
+     * user is an Ascended player.
+     */
+    init(xp: number);
+  }
+
+  /**
+   * The base game's UI for displaying the player's level and xp.
+   */
+  const levelBar: LevelBar;
+
   const chatDiv: HTMLDivElement;
 
   function appendChatAnnouncement(msg: string, color: string);
@@ -1076,6 +1112,53 @@ declare global {
   type ChangelogEntry = {text: string, date: string};
 
   const changeloglist: ChangelogEntry[];
+
+  /**
+   * The UI for asking the player whether or not they want to ascend.
+   */
+  class AscendUI {
+    /**
+     * The position of the button that the user can click on to ascend.
+     */
+    buttonDimensions: { x: number, y: number, w: number, h: number };
+
+    /**
+     * The vertical translation of this ui, which can be set to a negative
+     * number to hide this ui temporarily.
+     * 
+     * This is exclusively used by Cinderscript.
+     */
+    offset?: number;
+
+    draw(): void;
+  }
+
+  /**
+   * The UI for letting Ascended players select which character to use.
+   */
+  class CharacterSelector {
+    /**
+     * The vertical translation of this ui, which can be set to a negative
+     * number to hide this ui temporarily.
+     * 
+     * This is exclusively used by Cinderscript.
+     */
+    offset?: number;
+
+    /**
+     * The positions of the buttons that the user can click on to select a
+     * character.
+     */
+    characters: {
+      name: string,
+      x: number,
+      y: number,
+      radius?: number,
+      src?: string,
+    }[];
+
+    draw(): void;
+  }
 
   class SquadUI {
     render(dt: number);

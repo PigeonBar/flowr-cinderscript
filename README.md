@@ -12,8 +12,6 @@ Welcome! This is a free, publicly available script containing a collection of Qo
 
 I intend to comply with all guidelines and conditions set by the flowr developers. Please report any compliance-related issues to me as needed, and I will fix them asap.
 
-Also, if you would like to use an additional feature that lets you customize biome background colours (which needs some more polishing and may contain bugs), then please navigate to the branch "background-colour-draft" on this repository, then install the script from there.
-
 Finally, this project is not associated with Flamescript in any way. I just thought that "Cinderscript" would be a cool name for my script, given the existence of an old script named "Flamescript".
 
 # Installation steps
