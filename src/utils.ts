@@ -133,7 +133,7 @@ export function isShop(menu: Menu): menu is Shop {
 /**
  * Determines whether the cursor is currently hovering over any menu.
  */
-export function mouseOnMenu() {
+export function mouseOnMenu(): boolean {
   // Check edge case of settings menu being active outside the main menu
   if (cinderSettingsMenu.mouseInMenu()) {
     return true;
@@ -163,4 +163,22 @@ export function mouseOnMenu() {
   }
 
   return false;
+}
+
+/**
+ * A helper function to perform `ctx.strokeText` followed by `ctx.fillText`.
+ */
+export function ctxDrawText(
+  ...params: Parameters<typeof ctx.strokeText>
+): void {
+  ctx.strokeText(...params);
+  ctx.fillText(...params);
+}
+
+/**
+ * Determines whether or not the given string is a valid hex code (i.e., a `#`
+ * followed by 6 hexadecimal characters).
+ */
+export function isHexCode(str: string): boolean {
+  return !isNil(str.match(new RegExp("^#[0-9a-fA-F]{6}$")));
 }

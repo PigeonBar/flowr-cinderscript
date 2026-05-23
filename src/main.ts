@@ -3,6 +3,7 @@ import { addScreenshotMode } from "./dev/addScreenshotMode";
 import { addScriptVersionToDebugInfo } from "./dev/displayScriptVersion";
 import { displayMobGalleryOutsideMenu } from "./dev/mobGalleryOutsideMenu";
 import { autoReducePetalQuality } from "./features/autoReducePetalQuality";
+import { handleBackgroundColourSettings } from "./features/backgroundColour";
 import { addCraftingSearchBar } from "./features/craftingSearchBar";
 import { displayMissilesAboveEnemies } from "./features/displayMissilesAboveEnemies";
 import { prioritizeRenderingDragPetal } from "./features/draggingPetalRenderingPriority";
@@ -82,6 +83,7 @@ const mainScriptPromise = new Promise<void>(async (resolve) => {
   widerMobStatsBoxes();
   addGalleryCounterDropdownMenu();
   addQuickStatsBoxHotkey();
+  handleBackgroundColourSettings();
 
   // #region Dev tools
   addScreenshotMode();

@@ -1,10 +1,11 @@
 import { unsafeWindow } from "$";
-import { SETTINGS_GREEN, SETTINGS_OPTION_HEIGHT, SCROLLBAR_LENGTH, SETTINGS_SCROLLBAR_MIN_POS, CINDER_BORDER_COLOUR, CINDER_COLOUR, LIGHT_CINDER_COLOUR } from "../constants/constants";
+import { SETTINGS_GREEN, SETTINGS_OPTION_HEIGHT, SCROLLBAR_LENGTH, SETTINGS_SCROLLBAR_MIN_POS, CINDER_BORDER_COLOUR, CINDER_COLOUR, LIGHT_CINDER_COLOUR, SETTINGS_GRAY, SETTINGS_GRAY_BORDER } from "../constants/constants";
 import { flowrMod } from "../inits/initFlowrscriptPointer";
+import { ColourSelectorUi } from "../ui/colourSelectorUi";
 import { isNil } from "../utils";
 import { settings } from "./settingsManager";
 import { initOptions, settingsMap } from "./settingsObjects";
-import { BooleanOption, KeybindOption, NumberOption, RarityOption, SettingsOption, SettingsSectionHeading } from "./settingsOptions";
+import { BooleanOption, ColourOption, KeybindOption, NumberOption, RarityOption, SettingsOption, SettingsSectionHeading } from "./settingsOptions";
 
 /**
  * A menu for displaying this script's settings.
@@ -16,6 +17,17 @@ export class CinderSettingsMenu extends SettingsMenu {
    * The {@linkcode KeybindOption} currently being edited, if applicable.
    */
   currentKeybindOption?: KeybindOption;
+
+  /**
+   * The {@linkcode ColourOption} currently being edited, if applicable.
+   */
+  currentColourOption?: ColourOption;
+
+  /**
+   * The {@linkcode ColourSelectorUi} that is used for editing this menu's
+   * {@linkcode ColourOption ColourOptions}.
+   */
+  colourSelectorUi: ColourSelectorUi;
 
   /**
    * The timestamp for the most recent time that the player used a mouse wheel
@@ -121,6 +133,27 @@ export class CinderSettingsMenu extends SettingsMenu {
           },
           dependentKeys: [],
         },
+      ),
+      gardenBackground: new ColourOption(
+        "Garden Background Colour", "gardenBackground",
+      ),
+      desertBackground: new ColourOption(
+        "Desert Background Colour", "desertBackground",
+      ),
+      oceanBackground: new ColourOption(
+        "Ocean Background Colour", "oceanBackground",
+      ),
+      savannaBackground: new ColourOption(
+        "Savanna Background Colour", "savannaBackground",
+      ),
+      swampBackground: new ColourOption(
+        "Swamp Background Colour", "swampBackground",
+      ),
+      zooBackground: new ColourOption(
+        "Zoo Background Colour", "zooBackground",
+      ),
+      deepZooBackground: new ColourOption(
+        "Deep Zoo Background Colour", "deepZooBackground",
       ),
       baseReciprocalOfFOV: new NumberOption(
         "Base Zoom Out", "baseReciprocalOfFOV", 0.33, 5, 2,
@@ -242,6 +275,14 @@ export class CinderSettingsMenu extends SettingsMenu {
       settingsMap.inventoryExpandButton,
       settingsMap.petalLockShakeIntensity,
       settingsMap.missileDrawPriority,
+      new SettingsSectionHeading("Background Colours"),
+      settingsMap.gardenBackground,
+      settingsMap.desertBackground,
+      settingsMap.oceanBackground,
+      settingsMap.savannaBackground,
+      settingsMap.swampBackground,
+      settingsMap.zooBackground,
+      settingsMap.deepZooBackground,
       new SettingsSectionHeading("Zoom Settings"),
       settingsMap.baseReciprocalOfFOV,
       settingsMap.playerHpBarScale,
@@ -315,6 +356,9 @@ export class CinderSettingsMenu extends SettingsMenu {
     document.addEventListener("wheel", (e: WheelEvent) => {
       this.mouseScroll(e);
     });
+    
+    // Give this menu a colour selector ui
+    this.colourSelectorUi = new ColourSelectorUi(this);
   }
 
   /**
@@ -378,7 +422,7 @@ export class CinderSettingsMenu extends SettingsMenu {
     ctx.closePath();
 
     // Draw the menu's background before we apply scroll translation
-    ctx.fillStyle = "#aaaaaa";
+    ctx.fillStyle = SETTINGS_GRAY;
     ctx.beginPath();
     ctx.roundRect(0, 0, this.w, this.h, 3);
     ctx.fill();
@@ -438,7 +482,7 @@ export class CinderSettingsMenu extends SettingsMenu {
 
     // Draw the menu's border here so it does not get covered by the options
     ctx.restore(); // Reenable drawing outside the menu's border
-    ctx.strokeStyle = "#8a8a8a";
+    ctx.strokeStyle = SETTINGS_GRAY_BORDER;
     ctx.lineWidth = 8;
     ctx.beginPath();
     ctx.roundRect(this.x, this.renderY, this.w, this.h, 3);
@@ -453,6 +497,9 @@ export class CinderSettingsMenu extends SettingsMenu {
       option.drawTooltipBox(e);
     }
     ctx.translate(0, this.scroll);
+
+    // Draw the colour selector UI after drawing this entire menu
+    this.colourSelectorUi.draw();
   }
 
   /**
@@ -542,6 +589,9 @@ export class CinderSettingsMenu extends SettingsMenu {
       return;
     }
 
+    // Process clicking the colour selector UI
+    this.colourSelectorUi.mouseDown();
+
     // Process clicking the scrollbar
     if (this.mouseOnScrollbar()) {
       this.draggingScrollbarOffset =
@@ -567,6 +617,7 @@ export class CinderSettingsMenu extends SettingsMenu {
    */
   mouseUp(): void {
     this.draggingScrollbarOffset = undefined;
+    this.colourSelectorUi.mouseUp();
   }
 
   /**
@@ -575,7 +626,7 @@ export class CinderSettingsMenu extends SettingsMenu {
    * This does not handle the player dragging the scrollbar.
    */
   mouseScroll(e: WheelEvent): void {
-    if (this.active && this.mouseInMenu()) {
+    if (this.active && this.mouseInPrimaryMenu()) {
       this.scroll += e.deltaY / 2;
       this.lastMouseWheelTime = time;
     }
@@ -592,12 +643,58 @@ export class CinderSettingsMenu extends SettingsMenu {
   toggle(): void {
     super.toggle();
 
-    // When toggling this menu off, also cancel editing current keybind option
+    // When toggling this menu off, also cancel editing current active options
     // and cancel dragging the scrollbar.
     if (!this.active) {
       this.cancelKeybind();
+      this.cancelColourOption();
       this.mouseUp();
     }
+  }
+
+  /**
+   * Sets a {@linkcode ColourOption} to be edited, and cancel the previous
+   * colour option if applicable.
+   * 
+   * This function also handles setting {@linkcode colourSelectorUi} to be
+   * editing the new colour option, if it exists.
+   */
+  setCurrentColourOption(option?: ColourOption): void {
+    if (!isNil(this.currentColourOption)) {
+      this.currentColourOption.finishEdit();
+    }
+
+    // If the colour selector has unsaved changes and we are in the main menu
+    // (NOT during a run), prompt the user to save before closing the selector.
+    if (this.colourSelectorUi.active && unsafeWindow.state === "menu") {
+      this.colourSelectorUi.saveBeforeClosingPrompt();
+    }
+
+    this.currentColourOption = option;
+
+    if (!isNil(this.currentColourOption)) {
+      this.colourSelectorUi.active = true;
+      this.colourSelectorUi.setColour(this.currentColourOption.state);
+      this.colourSelectorUi.setDefaultColour(
+        settings.getDefault(this.currentColourOption.settingsKey)
+      );
+    } else {
+      this.colourSelectorUi.active = false;
+    }
+  }
+
+  /**
+   * Cancels editing the current colour option.
+   */
+  cancelColourOption(): void {
+    this.setCurrentColourOption(undefined);
+  }
+
+  /**
+   * Saves the given colour to the currently edited colour option.
+   */
+  saveColour(colour: string): void {
+    this.currentColourOption?.saveColour(colour);
   }
 
   /**
@@ -620,13 +717,22 @@ export class CinderSettingsMenu extends SettingsMenu {
   }
 
   /**
-   * Checks whether the mouse is inside this menu, excluding its borders.
+   * Checks whether the mouse is inside this menu, excluding its colour
+   * selector UI.
    */
-  mouseInMenu(): boolean {
+  mouseInPrimaryMenu(): boolean {
     return mouseInBox(
       {x: mouse.canvasX, y: mouse.canvasY},
       {x: this.x + 4, y: this.renderY + 4, w: this.w - 8, h: this.h - 8},
     );
+  }
+
+  /**
+   * Checks whether the mouse is inside this menu (including its colour
+   * selector UI), excluding its borders.
+   */
+  mouseInMenu(): boolean {
+    return this.mouseInPrimaryMenu() || this.colourSelectorUi.mouseInMenu();
   }
 
   /**

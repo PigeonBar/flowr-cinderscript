@@ -1,5 +1,6 @@
 import { unsafeWindow } from "$";
 import { MENU_LIST } from "../constants/menuLists";
+import { cinderSettingsMenu } from "../settings/settingsMenu";
 import { isNil, isShop, isTopMenu } from "../utils";
 import { flowrMod } from "./initFlowrscriptPointer";
 
@@ -52,6 +53,77 @@ export function preventMenuOverlap() {
 
         // Then, toggle this menu as usual.
         originalToggle.apply(menu);
+      }
+    }
+  }
+  
+  // Move the ascend ui out of the way if the colour selector is open
+  const ascendUI = unsafeWindow.ascendUI;
+  if (!isNil(ascendUI)) {
+    const originalDraw = ascendUI.draw;
+    ascendUI.draw = function() {
+      if (isNil(this.offset)) {
+        this.offset = 0;
+      }
+
+      if (cinderSettingsMenu.colourSelectorUi.active) {
+        this.offset = interpolate(this.offset, -200, 0.2);
+      } else {
+        this.offset = interpolate(this.offset, 0, 0.2);
+      }
+
+      ctx.translate(0, this.offset);
+
+      originalDraw.apply(this);
+
+      ctx.translate(0, -this.offset);
+    }
+
+    // Also make sure that the ascend prompt's button gets moved out of the way
+    Object.defineProperty(ascendUI, "buttonDimensions", {
+      get: function(this: AscendUI) {
+        return {
+          x: canvas.w / 2 - 34.2266 * 4 / 2,
+          y: 18.5 * 2 + (this.offset ?? 0),
+          w: 34.2266 * 4,
+          h: 40,
+        };
+      },
+      set: () => {},
+    });
+  }
+
+  // Also move the ascended character selector out of the way if the colour
+  // selector is open. Here we inject this code after `levelBar.init()`
+  // because that function is responsible for initializing the char selector.
+  const originalLevelInit = levelBar.init;
+  levelBar.init = function(xp: number) {
+    originalLevelInit.apply(this, [xp]);
+    
+    const charSelector = unsafeWindow.characterSelector;
+    if (!isNil(charSelector)) {
+      const originalDraw = charSelector.draw;
+      charSelector.draw = function() {
+        if (isNil(this.offset)) {
+          this.offset = 0;
+        }
+
+        if (cinderSettingsMenu.colourSelectorUi.active) {
+          this.offset = interpolate(this.offset, -200, 0.2);
+        } else {
+          this.offset = interpolate(this.offset, 0, 0.2);
+        }
+
+        ctx.translate(0, this.offset);
+
+        originalDraw.apply(this);
+
+        ctx.translate(0, -this.offset);
+
+        // Also move the button hitboxes out of the way
+        for (let char of this.characters) {
+          char.y += this.offset;
+        }
       }
     }
   }
