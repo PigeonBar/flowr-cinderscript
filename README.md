@@ -1,4 +1,4 @@
-Before we get started: This branch (background-colour-draft) contains **experimental features** that may need more polishing and may contain bugs. If you did not intend to come here, please navigate back to the "main" branch on this repository.
+**The features from this branch have been merged into the main branch, so this branch is no longer being updated. Please use the main branch instead.**
 
 # Quick start guide
 
