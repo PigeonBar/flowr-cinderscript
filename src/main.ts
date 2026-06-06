@@ -2,6 +2,7 @@ import { unsafeWindow } from "$";
 import { addScreenshotMode } from "./dev/addScreenshotMode";
 import { addScriptVersionToDebugInfo } from "./dev/displayScriptVersion";
 import { displayMobGalleryOutsideMenu } from "./dev/mobGalleryOutsideMenu";
+import { addMinimap } from "./features/addMinimap";
 import { autoReducePetalQuality } from "./features/autoReducePetalQuality";
 import { handleBackgroundColourSettings } from "./features/backgroundColour";
 import { addCraftingSearchBar } from "./features/craftingSearchBar";
@@ -84,6 +85,7 @@ const mainScriptPromise = new Promise<void>(async (resolve) => {
   addGalleryCounterDropdownMenu();
   addQuickStatsBoxHotkey();
   handleBackgroundColourSettings();
+  addMinimap();
 
   // #region Dev tools
   addScreenshotMode();

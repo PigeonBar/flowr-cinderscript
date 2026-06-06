@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Flowr - Cinderscript
 // @namespace    npm/vite-plugin-monkey
-// @version      1.7.0
+// @version      1.8.0
 // @author       Applepie (Ideas + bugfixes), PigeonBar (some technical stuff)
 // @description  A free, publicly available collection of QoL features for flowr.fun players.
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=flowr.fun
@@ -79,8 +79,9 @@
   const TOOLTIP_BORDER_BLUE = "#3f3fff";
   const TEXT_LIGHT_RED = "#ffbfbf";
   const TEXT_LIGHT_BLUE = "#bfbfff";
-  const MAX_PETAL_RARITY = Rarity.CHAOS;
-  const MAX_RARITY = Rarity.UNREAL;
+  const MINIMAP_GREEN = "#00ff00";
+  const MINIMAP_YELLOW = "#ffe763";
+  const MINIMAP_RED = "#bb0000";
   const SETTINGS_OPTION_HEIGHT = 50;
   const SETTINGS_BUTTON_SIZE = 28;
   const SETTINGS_BUTTON_PADDING = 13;
@@ -96,6 +97,8 @@
   const DROPDOWN_UI_PADDING = 13;
   const PETAL_BORDER_RATIO = 0.18;
   const KEYBIND_DELETED = "<None>";
+  const MAX_PETAL_RARITY = Rarity.CHAOS;
+  const MAX_RARITY = Rarity.UNREAL;
   const NON_ANIM_PETALS = Object.freeze([
     "Basic",
     "Rubber",
@@ -211,7 +214,69 @@
     "Trinket of the Sea",
     "Trinket of the Wild",
     "Plank",
-    "Carrot"
+    "Carrot",
+    "Wax"
+  ]);
+  const LOW_SPEED_MOBS = Object.freeze([
+    "Rock",
+    "Sandstone",
+    "Soil",
+    "Plastic",
+    "Shiny Plastic",
+    "Dandelion",
+    "Baby Ant",
+    "Baby Termite",
+    "Termite Mound",
+    "Gnat Swarm",
+    "Termite Egg",
+    "Fire Ant Burrow",
+    "Baby Fire Ant",
+    "Ant Egg",
+    "Fire Ant Egg",
+    "Shiny Ant Egg",
+    "Sea Floor Burrow",
+    "Ant Burrow",
+    "Shiny Ant Burrow",
+    "Tree",
+    "Root",
+    "Cactus",
+    "Shiny Cactus",
+    "Sandstorm",
+    "BossRose",
+    "BossRose2",
+    "BossBud",
+    "BossTrident",
+    "Square",
+    "Pentagon",
+    "Hexagon",
+    "Wax",
+    "Bubble",
+    "Sponge",
+    "Mushroom",
+    "Coral",
+    "Lilypad",
+    "Flowering Lilypad",
+    "Whirlpool"
+  ]);
+  const RARE_MOBS = Object.freeze([
+    "Shiny Plastic",
+    "Queen Fire Ant",
+    "Queen Shiny Ant",
+    "Soldier Shiny Ant",
+    "Shiny Ant Burrow",
+    "Evil Desert Centipede",
+    "Shiny Cactus",
+    "Golden Ladybug",
+    "Ocean Ladybug",
+    "Shiny Beetle",
+    "Dark Beetle",
+    "Ruby Frog",
+    "Square",
+    "Pentagon",
+    "Hexagon",
+    "Dark Electric Eel",
+    "Shiny Electric Eel",
+    "Shiny Lilypad"
   ]);
   const defaultSettings = Object.freeze({
     petalCraftPreview: true,
@@ -228,6 +293,9 @@
     disablePetalAnimations: false,
     allowLockSlotsOneToFive: false,
     hideSettingsDuringRuns: false,
+    minimapAlwaysShowBosses: true,
+    minimapAlwaysShowRareMobs: true,
+    minimapRareMobAura: true,
     baseReciprocalOfFOV: 3,
     playerHpBarScale: 2.5,
     specialDropsScale: 2.5,
@@ -235,6 +303,7 @@
     petalRenderQualityThreshold: 400,
     craftAnimationLength: 0,
     petalLockShakeIntensity: 2,
+    minimapNumberOfMobs: 5,
     gardenBackground: Colors.biomes.garden.background,
     desertBackground: Colors.biomes.desert.background,
     oceanBackground: Colors.biomes.ocean.background,
@@ -243,10 +312,12 @@
     zooBackground: Colors.biomes.zoo.background,
     deepZooBackground: Colors.biomes.deepzoo.background,
     specialDropsRarity: Rarity.ETHEREAL,
+    minimapAlwaysShowRarity: Rarity.COMMON,
     keybindStatsBox: "KeyG",
     keybindInvertAttack: "Comma",
     keybindInvertDefend: "Period",
-    keybindLockSlot: "KeyL"
+    keybindLockSlot: "KeyL",
+    keybindMinimap: "KeyM"
   });
   class SettingsManager {
     /**
@@ -280,6 +351,9 @@
         disablePetalAnimations: [],
         allowLockSlotsOneToFive: [],
         hideSettingsDuringRuns: [],
+        minimapAlwaysShowBosses: [],
+        minimapAlwaysShowRareMobs: [],
+        minimapRareMobAura: [],
         baseReciprocalOfFOV: [],
         playerHpBarScale: [],
         specialDropsScale: [],
@@ -287,6 +361,7 @@
         petalRenderQualityThreshold: [],
         craftAnimationLength: [],
         petalLockShakeIntensity: [],
+        minimapNumberOfMobs: [],
         gardenBackground: [],
         desertBackground: [],
         oceanBackground: [],
@@ -295,10 +370,12 @@
         zooBackground: [],
         deepZooBackground: [],
         specialDropsRarity: [],
+        minimapAlwaysShowRarity: [],
         keybindStatsBox: [],
         keybindInvertAttack: [],
         keybindInvertDefend: [],
-        keybindLockSlot: []
+        keybindLockSlot: [],
+        keybindMinimap: []
       };
     }
     /**
@@ -405,6 +482,10 @@
     }
   }
   const cinderChangelogList = [
+    {
+      text: `- Added a toggleable minimap (default keybind: [M]) (PR #37)`,
+      date: "Version 1.8.0 (Minimap Update)"
+    },
     {
       text: `- Added settings to customize biome background colours (PR #36)`,
       date: "Version 1.7.0 (Customizable Background Update)"
@@ -2023,6 +2104,32 @@ Please enter a Rarity.`
             dependentKeys: []
           }
         ),
+        minimapNumberOfMobs: new NumberOption(
+          "Number of Mobs",
+          "minimapNumberOfMobs",
+          0,
+          20,
+          0
+        ),
+        minimapAlwaysShowBosses: new BooleanOption(
+          "Always Show Bosses",
+          "minimapAlwaysShowBosses",
+          "If this is turned on, the minimap will always show bosses, regardless of the mob cap selected above."
+        ),
+        minimapAlwaysShowRareMobs: new BooleanOption(
+          "Always Show Rare Mobs",
+          "minimapAlwaysShowRareMobs",
+          "If this is turned on, the minimap will always show rare/valuable mobs, regardless of the mob cap selected above."
+        ),
+        minimapAlwaysShowRarity: new RarityOption(
+          "Always Show Rarity",
+          "minimapAlwaysShowRarity",
+          `The minimap will always show mobs that are at least this rarity, regardless of the mob cap selected above. $n $n You can disable this by setting this to $c${Colors.rarities[0].color} Common $c${SETTINGS_GREEN} (0).`
+        ),
+        minimapRareMobAura: new BooleanOption(
+          "Rare Mob Aura",
+          "minimapRareMobAura"
+        ),
         gardenBackground: new ColourOption(
           "Garden Background Colour",
           "gardenBackground"
@@ -2122,6 +2229,10 @@ Please enter a Rarity.`
           "Invert Defend",
           "keybindInvertDefend"
         ),
+        keybindMinimap: new KeybindOption(
+          "Toggle Minimap",
+          "keybindMinimap"
+        ),
         keybindStatsBox: new KeybindOption(
           "Quick Stats Box",
           "keybindStatsBox",
@@ -2156,6 +2267,12 @@ Please enter a Rarity.`
         settingsMap.inventoryExpandButton,
         settingsMap.petalLockShakeIntensity,
         settingsMap.missileDrawPriority,
+        new SettingsSectionHeading("Minimap Options"),
+        settingsMap.minimapNumberOfMobs,
+        settingsMap.minimapAlwaysShowBosses,
+        settingsMap.minimapAlwaysShowRareMobs,
+        settingsMap.minimapAlwaysShowRarity,
+        settingsMap.minimapRareMobAura,
         new SettingsSectionHeading("Background Colours"),
         settingsMap.gardenBackground,
         settingsMap.desertBackground,
@@ -2182,6 +2299,7 @@ Please enter a Rarity.`
         ),
         settingsMap.keybindInvertAttack,
         settingsMap.keybindInvertDefend,
+        settingsMap.keybindMinimap,
         settingsMap.keybindStatsBox,
         settingsMap.keybindLockSlot
       ]);
@@ -2722,7 +2840,7 @@ Please enter a Rarity.`
       fn: toggleScreenshotMode
     });
   }
-  const version = "1.7.0";
+  const version = "1.8.0";
   function addScriptVersionToDebugInfo() {
     const originalRenderDebug = renderDebug;
     renderDebug = () => {
@@ -2794,6 +2912,335 @@ Please enter a Rarity.`
     }
     if (mobGallery.menuActive !== mobGallery.activeOutsideMenu) {
       mobGallery.toggleMenu();
+    }
+  }
+  function addMinimap() {
+    const minimap = new Minimap();
+    addKeybindInstruction({
+      type: "settings",
+      settingsKey: "keybindMinimap",
+      fn: () => {
+        minimap.toggle();
+      }
+    });
+    const originalDraw = CollectedMenu.prototype.draw;
+    CollectedMenu.prototype.draw = function(mini) {
+      const fullOffset = canvas.w + 20 - (this.dimensions?.x ?? canvas.w);
+      const offset = fullOffset * minimap.openRatio;
+      ctx.translate(offset, 0);
+      originalDraw.apply(this, [mini]);
+      ctx.translate(-offset, 0);
+    };
+    const originalRenderGame = renderGame;
+    renderGame = function(dt2) {
+      originalRenderGame(dt2);
+      minimap.draw();
+    };
+    const originalEnterGame = enterGame;
+    enterGame = function() {
+      originalEnterGame();
+      minimap.active = false;
+      minimap.openRatio = 0;
+    };
+  }
+  class Minimap {
+    /**
+     * The x-position of this minimap on the canvas.
+     */
+    x;
+    /**
+     * The y-position of this minimap on the canvas.
+     */
+    y;
+    /**
+     * The width of this minimap.
+     */
+    w;
+    /**
+     * The height of this minimap.
+     */
+    h;
+    /**
+     * The radius of the room drawn onto the minimap.
+     */
+    roomRadius;
+    /**
+     * The x-position of the user inside the game's room.
+     */
+    playerX;
+    /**
+     * The y-position of the user inside the game's room.
+     */
+    playerY;
+    /**
+     * Whether or not the player has toggled open this minimap.
+     */
+    active;
+    /**
+     * A number from 0 (fully closed) to 1 (fully open) that controls this
+     * minimap's position. This number smoothly moves towards 0 or 1 based on
+     * whether the minimap is currently opening or closing.
+     * 
+     * This also controls the {@linkcode CollectedMenu}'s position, so that it
+     * does not overlap with this minimap.
+     */
+    openRatio;
+    /**
+     * A tooltip icon, displayed in the bottom-left corner of this UI.
+     */
+    tooltipIcon;
+    /**
+     * The coordinates for the tooltip icon.
+     */
+    tooltipPos;
+    constructor() {
+      this.w = 320;
+      this.h = 320;
+      this.x = canvas.w - this.w - 20;
+      this.y = 20;
+      this.roomRadius = this.w / 2 - 20;
+      this.playerX = 0;
+      this.playerY = 0;
+      this.active = false;
+      this.openRatio = 0;
+      this.tooltipIcon = new TooltipIcon(
+        `Minimap legend: $n $c${MINIMAP_GREEN} Green $cwhite circle: Your position $n $c${MINIMAP_YELLOW} Yellow $cwhite circles: Squadmates $n $c${MINIMAP_RED} Red $cwhite X: Your death position $n Triangles: Regular enemies $n Stars: Boss enemies $n $n In the settings, you can configure the number of enemies shown in this minimap. This minimap shows the highest-rarity mobs currently alive, with ties broken by each mob's distance from your character.`
+      );
+      this.tooltipPos = { x: 0, y: 0 };
+    }
+    /**
+     * Toggles this minimap to be open/closed.
+     */
+    toggle() {
+      this.active = !this.active;
+    }
+    /**
+     * The main function for drawing this minimap.
+     */
+    draw() {
+      if (this.active) {
+        this.openRatio = interpolate(this.openRatio, 1, 0.3);
+      } else {
+        this.openRatio = interpolate(this.openRatio, 0, 0.3);
+      }
+      const offset = (this.openRatio - 1) * (this.y + this.h + 20);
+      this.x = canvas.w - this.w - 20;
+      ctx.save();
+      ctx.translate(this.x + this.w / 2, this.y + offset + this.w / 2);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(-this.w / 2, -this.w / 2, this.w, this.h);
+      ctx.arc(0, 0, this.roomRadius, 0, 2 * Math.PI);
+      ctx.clip("evenodd");
+      ctx.closePath();
+      ctx.globalAlpha = 0.3;
+      ctx.fillStyle = "black";
+      ctx.beginPath();
+      ctx.roundRect(-this.w / 2, -this.w / 2, this.w, this.h, 5);
+      ctx.fill();
+      ctx.closePath();
+      ctx.restore();
+      ctx.globalAlpha = 0.3;
+      ctx.fillStyle = "white";
+      ctx.beginPath();
+      ctx.arc(0, 0, this.roomRadius, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.closePath();
+      ctx.globalAlpha = this.openRatio;
+      let userId = _unsafeWindow.selfId ?? -1;
+      if (_unsafeWindow.spectating && Object.keys(room.flowers).length > 0) {
+        userId = Math.min(
+          ...Object.keys(room.flowers).map((id) => Number.parseInt(id))
+        );
+      }
+      const user = room.flowers[userId];
+      const userAlive = !isNil(user) && !user.dead;
+      if (userAlive) {
+        this.playerX = user.x;
+        this.playerY = user.y;
+      }
+      const enemyList = Object.values(room.enemies).filter((e) => this.checkEligibleEnemy(e));
+      const enemyListWithDistance = enemyList.map((e) => {
+        return {
+          enemy: e,
+          dist: (e.x - this.playerX) ** 2 + (e.y - this.playerY) ** 2,
+          drawn: false
+        };
+      });
+      enemyListWithDistance.sort((a, b) => {
+        if (a.enemy.rarity > b.enemy.rarity) {
+          return -1;
+        } else if (b.enemy.rarity > a.enemy.rarity) {
+          return 1;
+        }
+        return a.dist - b.dist;
+      });
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 2;
+      const enemyCount = Math.min(
+        settings.get("minimapNumberOfMobs"),
+        enemyListWithDistance.length
+      );
+      for (let i = 0; i < enemyCount; i++) {
+        const enemy = enemyListWithDistance[i].enemy;
+        this.drawEnemy(enemy);
+        enemyListWithDistance[i].drawn = true;
+      }
+      for (let entry of enemyListWithDistance) {
+        const enemy = entry.enemy;
+        if (this.checkMustDraw(enemy) && !entry.drawn) {
+          this.drawEnemy(enemy);
+          entry.drawn = true;
+        }
+      }
+      this.drawFlowers(userAlive);
+      ctx.restore();
+      this.tooltipPos = { x: this.x + 30, y: this.y + offset + this.h - 30 };
+      this.tooltipIcon.drawIcon(this.tooltipPos);
+      this.tooltipIcon.drawText(
+        this.tooltipPos,
+        { x: mouse.canvasX, y: mouse.canvasY }
+      );
+    }
+    /**
+     * A helper function to decide whether or not the given enemy is eligible to
+     * be added to the minimap. Right now, the following enemies are excluded:
+     * - Missiles/projectiles
+     * - Eggs laid by Queen Ants and such
+     * - Non-head leech segments
+     */
+    checkEligibleEnemy(enemy) {
+      return !enemy.type.includes("Missile") && !enemy.type.includes("Egg") && (enemy.isHead || !enemy.type.includes("Eel")) && (enemy.isHead || !enemy.type.includes("Leech"));
+    }
+    /**
+     * A helper function to decide whether or not the given enemy must be drawn
+     * regardless of the mob cap. Right now, the following enemies are included:
+     * - Bosses, if the "Always Show Bosses" setting is turned on.
+     * - Enemies belonging to {@linkcode RARE_MOBS}, if the "Always Show Rare
+     *   Mobs" setting in turned on.
+     * - Enemies with rarity at least the "Always Show Rarity" setting if this
+     *   setting is enabled (i.e., greater than 0).
+     */
+    checkMustDraw(enemy) {
+      if (settings.get("minimapAlwaysShowBosses") && enemy.isBoss) {
+        return true;
+      }
+      if (settings.get("minimapAlwaysShowRareMobs") && RARE_MOBS.includes(enemy.type)) {
+        return true;
+      }
+      const alwaysShowRarity = settings.get("minimapAlwaysShowRarity");
+      if (alwaysShowRarity > 0 && enemy.rarity >= alwaysShowRarity) {
+        return true;
+      }
+      return false;
+    }
+    /**
+     * A helper function to draw a single enemy icon on the minimap.
+     */
+    drawEnemy(enemy) {
+      const drawSize = Math.max(
+        enemy.radius * this.roomRadius / room.radius,
+        10
+      );
+      ctx.save();
+      ctx.translate(
+        enemy.x * this.roomRadius / room.radius,
+        enemy.y * this.roomRadius / room.radius
+      );
+      if (settings.get("minimapRareMobAura") && RARE_MOBS.includes(enemy.type)) {
+        const auraSize = drawSize * (1.35 + 0.25 * Math.sin(time / 500));
+        const aura = ctx.createRadialGradient(0, 0, 0, 0, 0, auraSize);
+        aura.addColorStop(0, MINIMAP_YELLOW);
+        aura.addColorStop(0.3, MINIMAP_YELLOW);
+        aura.addColorStop(1, MINIMAP_YELLOW + "00");
+        ctx.fillStyle = aura;
+        ctx.beginPath();
+        ctx.arc(0, 0, auraSize, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.closePath();
+      }
+      ctx.fillStyle = Colors.rarities[enemy.rarity].color;
+      if (enemy.isBoss) {
+        ctx.beginPath();
+        ctx.moveTo(0, -1.25 * drawSize);
+        for (let i = 1; i <= 10; i++) {
+          const r = drawSize * (1 + 0.25 * Math.cos(i * Math.PI));
+          const angle = Math.PI * (-0.5 + i / 5);
+          ctx.lineTo(r * Math.cos(angle), r * Math.sin(angle));
+        }
+        ctx.fill();
+        ctx.stroke();
+        ctx.closePath();
+      } else if (LOW_SPEED_MOBS.includes(enemy.type)) {
+        ctx.beginPath();
+        const r = 1.1 * drawSize;
+        ctx.moveTo(0, -r);
+        for (let i = 1; i <= 3; i++) {
+          const angle = Math.PI * (-0.5 + i * 2 / 3);
+          ctx.lineTo(r * Math.cos(angle), r * Math.sin(angle));
+        }
+        ctx.fill();
+        ctx.stroke();
+        ctx.closePath();
+      } else {
+        ctx.rotate(enemy.angle);
+        ctx.beginPath();
+        ctx.moveTo(1.25 * drawSize, 0);
+        ctx.lineTo(-0.7 * drawSize, 0.7 * drawSize);
+        ctx.lineTo(-0.7 * drawSize, -0.7 * drawSize);
+        ctx.lineTo(1.25 * drawSize, 0);
+        ctx.fill();
+        ctx.stroke();
+        ctx.closePath();
+      }
+      ctx.restore();
+    }
+    /**
+     * A helper function to draw all flowers (players) on the minimap.
+     */
+    drawFlowers(userAlive) {
+      if (!_unsafeWindow.spectating) {
+        const drawPlayerX = this.playerX * this.roomRadius / room.radius;
+        const drawPlayerY = this.playerY * this.roomRadius / room.radius;
+        if (userAlive) {
+          ctx.strokeStyle = "black";
+          ctx.fillStyle = MINIMAP_GREEN;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(drawPlayerX, drawPlayerY, 10, 0, 2 * Math.PI);
+          ctx.fill();
+          ctx.stroke();
+          ctx.closePath();
+        } else {
+          ctx.strokeStyle = MINIMAP_RED;
+          ctx.lineWidth = 5;
+          ctx.beginPath();
+          ctx.moveTo(drawPlayerX - 10, drawPlayerY - 10);
+          ctx.lineTo(drawPlayerX + 10, drawPlayerY + 10);
+          ctx.moveTo(drawPlayerX + 10, drawPlayerY - 10);
+          ctx.lineTo(drawPlayerX - 10, drawPlayerY + 10);
+          ctx.stroke();
+          ctx.closePath();
+        }
+      }
+      ctx.strokeStyle = "black";
+      ctx.fillStyle = MINIMAP_YELLOW;
+      ctx.lineWidth = 1;
+      for (let flower of Object.values(room.flowers)) {
+        if (flower.id !== _unsafeWindow.selfId) {
+          ctx.beginPath();
+          ctx.arc(
+            flower.x * this.roomRadius / room.radius,
+            flower.y * this.roomRadius / room.radius,
+            8,
+            0,
+            2 * Math.PI
+          );
+          ctx.fill();
+          ctx.stroke();
+          ctx.closePath();
+        }
+      }
     }
   }
   let renderCounter = 0;
@@ -5201,6 +5648,7 @@ Please enter a Rarity.`
     addGalleryCounterDropdownMenu();
     addQuickStatsBoxHotkey();
     handleBackgroundColourSettings();
+    addMinimap();
     addScreenshotMode();
     addScriptVersionToDebugInfo();
     displayMobGalleryOutsideMenu();

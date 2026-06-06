@@ -58,14 +58,19 @@ export const TEXT_LIGHT_RED = "#ffbfbf";
 export const TEXT_LIGHT_BLUE = "#bfbfff";
 
 /**
- * The maximum rarity whose petal stats have been configured by the Flowr devs.
+ * A colour used for green minimap icons.
  */
-export const MAX_PETAL_RARITY = Rarity.CHAOS;
+export const MINIMAP_GREEN = "#00ff00";
 
 /**
- * The maximum rarity overall that has been configured by the Flowr devs.
+ * A colour used for yellow minimap icons.
  */
-export const MAX_RARITY = Rarity.UNREAL;
+export const MINIMAP_YELLOW = "#ffe763";
+
+/**
+ * A colour used for red minimap icons.
+ */
+export const MINIMAP_RED = "#bb0000";
 
 /**
  * The total height of an option in the settings menu, from Flowr's base code.
@@ -146,6 +151,16 @@ export const PETAL_BORDER_RATIO = 0.18;
  * A special key to indicate that a keybind setting was deleted by the user.
  */
 export const KEYBIND_DELETED = "<None>";
+
+/**
+ * The maximum rarity whose petal stats have been configured by the Flowr devs.
+ */
+export const MAX_PETAL_RARITY = Rarity.CHAOS;
+
+/**
+ * The maximum rarity overall that has been configured by the Flowr devs.
+ */
+export const MAX_RARITY = Rarity.UNREAL;
 
 /**
  * A list of petals that are not animated when displayed in a petal container.
@@ -268,4 +283,77 @@ export const NON_ANIM_PETALS = Object.freeze([
   "Trinket of the Wild",
   "Plank",
   "Carrot",
+  "Wax",
+]);
+
+/**
+ * A list of mob species that have a low movement speed. This includes fully
+ * stationary mobs (e.g., Cactus) and mobs with random slow movements
+ * (e.g., Sandstorm).
+ */
+export const LOW_SPEED_MOBS = Object.freeze([
+  "Rock",
+  "Sandstone",
+  "Soil",
+  "Plastic",
+  "Shiny Plastic",
+  "Dandelion",
+  "Baby Ant",
+  "Baby Termite",
+  "Termite Mound",
+  "Gnat Swarm",
+  "Termite Egg",
+  "Fire Ant Burrow",
+  "Baby Fire Ant",
+  "Ant Egg",
+  "Fire Ant Egg",
+  "Shiny Ant Egg",
+  "Sea Floor Burrow",
+  "Ant Burrow",
+  "Shiny Ant Burrow",
+  "Tree",
+  "Root",
+  "Cactus",
+  "Shiny Cactus",
+  "Sandstorm",
+  "BossRose",
+  "BossRose2",
+  "BossBud",
+  "BossTrident",
+  "Square",
+  "Pentagon",
+  "Hexagon",
+  "Wax",
+  "Bubble",
+  "Sponge",
+  "Mushroom",
+  "Coral",
+  "Lilypad",
+  "Flowering Lilypad",
+  "Whirlpool",
+]);
+
+/**
+ * A list of mob species that are rarer and more valuable than other similar
+ * species (e.g., Shiny mobs).
+ */
+export const RARE_MOBS = Object.freeze([
+  "Shiny Plastic",
+  "Queen Fire Ant",
+  "Queen Shiny Ant",
+  "Soldier Shiny Ant",
+  "Shiny Ant Burrow",
+  "Evil Desert Centipede",
+  "Shiny Cactus",
+  "Golden Ladybug",
+  "Ocean Ladybug",
+  "Shiny Beetle",
+  "Dark Beetle",
+  "Ruby Frog",
+  "Square",
+  "Pentagon",
+  "Hexagon",
+  "Dark Electric Eel",
+  "Shiny Electric Eel",
+  "Shiny Lilypad",
 ]);

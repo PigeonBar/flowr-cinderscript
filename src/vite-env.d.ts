@@ -560,10 +560,25 @@ declare global {
   let addDiscoveredEnemy: (type?: EnemyType, rarity?: Rarity) => void;
 
   class DeadMenu {
-    draw();
+    draw(): void;
   }
   
   const deadMenu: DeadMenu;
+
+  /**
+   * The menu that shows the player which petals they collected during the
+   * current run.
+   */
+  class CollectedMenu {
+    dimensions?: {
+      x: number;
+      y: number;
+      w: number;
+      h: number;
+    };
+
+    draw(mini?: boolean): void;
+  }
 
   /**
    * The current loadout, which stores petals that the user *is* equipping.
@@ -611,12 +626,21 @@ declare global {
   const inventory: Inventory;
 
   class Enemy {
+    x: number;
+    y: number;
+    radius: number;
+    angle: number;
     type: EnemyType;
     rarity: Rarity;
     xp: number;
     isBoss?: boolean;
     statsBoxAlpha: number;
     isHovered?: boolean;
+    render: {
+      x: number;
+      y: number;
+      radius: number;
+    };
 
     /**
      * Whether or not this mob is the head segment of a Leech-like mob.
@@ -635,6 +659,10 @@ declare global {
   }
 
   class Flower {
+    id: number;
+    x: number;
+    y: number;
+    dead: boolean;
     attacking: boolean;
     defending: boolean;
   }
@@ -872,6 +900,7 @@ declare global {
   }
 
   class Room {
+    radius: number;
     enemies: Record<number, Enemy>;
     enemyBoxes: enemyBox[];
     flowers: Record<number, Flower>;

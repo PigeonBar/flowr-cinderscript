@@ -134,6 +134,36 @@ export class CinderSettingsMenu extends SettingsMenu {
           dependentKeys: [],
         },
       ),
+      minimapNumberOfMobs: new NumberOption(
+        "Number of Mobs",
+        "minimapNumberOfMobs",
+        0,
+        20,
+        0,
+      ),
+      minimapAlwaysShowBosses: new BooleanOption(
+        "Always Show Bosses",
+        "minimapAlwaysShowBosses",
+        "If this is turned on, the minimap will always show bosses, " +
+        "regardless of the mob cap selected above.",
+      ),
+      minimapAlwaysShowRareMobs: new BooleanOption(
+        "Always Show Rare Mobs",
+        "minimapAlwaysShowRareMobs",
+        "If this is turned on, the minimap will always show rare/valuable " +
+        "mobs, regardless of the mob cap selected above.",
+      ),
+      minimapAlwaysShowRarity: new RarityOption(
+        "Always Show Rarity",
+        "minimapAlwaysShowRarity",
+        "The minimap will always show mobs that are at least this rarity, " +
+        "regardless of the mob cap selected above. $n $n " +
+        "You can disable this by setting this to " +
+        `$c${Colors.rarities[0].color} Common $c${SETTINGS_GREEN} (0).`,
+      ),
+      minimapRareMobAura: new BooleanOption(
+        "Rare Mob Aura", "minimapRareMobAura",
+      ),
       gardenBackground: new ColourOption(
         "Garden Background Colour", "gardenBackground",
       ),
@@ -228,6 +258,9 @@ export class CinderSettingsMenu extends SettingsMenu {
       keybindInvertDefend: new KeybindOption(
         "Invert Defend", "keybindInvertDefend",
       ),
+      keybindMinimap: new KeybindOption(
+        "Toggle Minimap", "keybindMinimap",
+      ),
       keybindStatsBox: new KeybindOption(
         "Quick Stats Box",
         "keybindStatsBox",
@@ -275,6 +308,12 @@ export class CinderSettingsMenu extends SettingsMenu {
       settingsMap.inventoryExpandButton,
       settingsMap.petalLockShakeIntensity,
       settingsMap.missileDrawPriority,
+      new SettingsSectionHeading("Minimap Options"),
+      settingsMap.minimapNumberOfMobs,
+      settingsMap.minimapAlwaysShowBosses,
+      settingsMap.minimapAlwaysShowRareMobs,
+      settingsMap.minimapAlwaysShowRarity,
+      settingsMap.minimapRareMobAura,
       new SettingsSectionHeading("Background Colours"),
       settingsMap.gardenBackground,
       settingsMap.desertBackground,
@@ -305,6 +344,7 @@ export class CinderSettingsMenu extends SettingsMenu {
       ),
       settingsMap.keybindInvertAttack,
       settingsMap.keybindInvertDefend,
+      settingsMap.keybindMinimap,
       settingsMap.keybindStatsBox,
       settingsMap.keybindLockSlot,
     ]);

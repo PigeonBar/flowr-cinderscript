@@ -17,7 +17,10 @@ export type BooleanSettingsKey =
   "disablePetalStars" |
   "disablePetalAnimations" |
   "allowLockSlotsOneToFive" |
-  "hideSettingsDuringRuns";
+  "hideSettingsDuringRuns" |
+  "minimapAlwaysShowBosses" |
+  "minimapAlwaysShowRareMobs" |
+  "minimapRareMobAura";
 
 /**
  * Settings keys for settings that take a numerical value.
@@ -29,7 +32,8 @@ export type NumberSettingsKey =
   "specialDropsQuantity" |
   "petalRenderQualityThreshold" |
   "craftAnimationLength" |
-  "petalLockShakeIntensity";
+  "petalLockShakeIntensity" |
+  "minimapNumberOfMobs";
 
 /**
  * Settings keys for settings that take a colour hex code value.
@@ -47,7 +51,8 @@ export type ColourSettingsKey =
  * Settings keys for settings that take a Rarity value.
  */
 export type RaritySettingsKey =
-  "specialDropsRarity";
+  "specialDropsRarity" |
+  "minimapAlwaysShowRarity";
 
 /**
  * Settings keys for settings that take a keybind value.
@@ -56,7 +61,8 @@ export type KeybindSettingsKey =
   "keybindStatsBox" |
   "keybindInvertAttack" |
   "keybindInvertDefend" |
-  "keybindLockSlot";
+  "keybindLockSlot" |
+  "keybindMinimap";
 
 type CinderSettings =
   Record<BooleanSettingsKey, boolean> &
@@ -82,6 +88,9 @@ const defaultSettings: CinderSettings = Object.freeze({
   disablePetalAnimations: false,
   allowLockSlotsOneToFive: false,
   hideSettingsDuringRuns: false,
+  minimapAlwaysShowBosses: true,
+  minimapAlwaysShowRareMobs: true,
+  minimapRareMobAura: true,
   baseReciprocalOfFOV: 3,
   playerHpBarScale: 2.5,
   specialDropsScale: 2.5,
@@ -89,6 +98,7 @@ const defaultSettings: CinderSettings = Object.freeze({
   petalRenderQualityThreshold: 400,
   craftAnimationLength: 0,
   petalLockShakeIntensity: 2,
+  minimapNumberOfMobs: 5,
   gardenBackground: Colors.biomes.garden.background,
   desertBackground: Colors.biomes.desert.background,
   oceanBackground: Colors.biomes.ocean.background,
@@ -97,10 +107,12 @@ const defaultSettings: CinderSettings = Object.freeze({
   zooBackground: Colors.biomes.zoo.background,
   deepZooBackground: Colors.biomes.deepzoo.background,
   specialDropsRarity: Rarity.ETHEREAL,
+  minimapAlwaysShowRarity: Rarity.COMMON,
   keybindStatsBox: "KeyG",
   keybindInvertAttack: "Comma",
   keybindInvertDefend: "Period",
   keybindLockSlot: "KeyL",
+  keybindMinimap: "KeyM",
 });
 
 /**
@@ -147,6 +159,9 @@ export class SettingsManager {
       disablePetalAnimations: [],
       allowLockSlotsOneToFive: [],
       hideSettingsDuringRuns: [],
+      minimapAlwaysShowBosses: [],
+      minimapAlwaysShowRareMobs: [],
+      minimapRareMobAura: [],
       baseReciprocalOfFOV: [],
       playerHpBarScale: [],
       specialDropsScale: [],
@@ -154,6 +169,7 @@ export class SettingsManager {
       petalRenderQualityThreshold: [],
       craftAnimationLength: [],
       petalLockShakeIntensity: [],
+      minimapNumberOfMobs: [],
       gardenBackground: [],
       desertBackground: [],
       oceanBackground: [],
@@ -162,10 +178,12 @@ export class SettingsManager {
       zooBackground: [],
       deepZooBackground: [],
       specialDropsRarity: [],
+      minimapAlwaysShowRarity: [],
       keybindStatsBox: [],
       keybindInvertAttack: [],
       keybindInvertDefend: [],
       keybindLockSlot: [],
+      keybindMinimap: [],
     };
   }
 
