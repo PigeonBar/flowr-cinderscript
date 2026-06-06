@@ -1,6 +1,8 @@
 import { unsafeWindow } from "$";
 
 const cinderChangelogList: ChangelogEntry[] = [
+  {text: `- Added a toggleable minimap (default keybind: [M]) (PR #37)`,
+  date: "Version 1.8.0 (Minimap Update)"},
   {text: `- Added settings to customize biome background colours (PR #36)`,
   date: "Version 1.7.0 (Customizable Background Update)"},
   {text: `- [*] With this update, this script should now generally be ready for use by Flowrscript users!
