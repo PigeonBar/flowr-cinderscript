@@ -96,10 +96,11 @@ export class CinderSettingsMenu extends SettingsMenu {
         "automatically copies the squad code to your clipboard.",
       ),
       allowLockSlotsOneToFive: new BooleanOption(
-        "Allow Locking Petal Slots 1 to 5",
+        "Allow Hard Locking Petal Slots 1 to 5",
         "allowLockSlotsOneToFive",
-        "Tip: It is recommended not to lock petal slots 1 to 5, since the " +
-        "Plastic boss's Mania could force you to swap those slots.",
+        "Tip: It is recommended not to $c#ff0000 hard lock $c#ffffff slots 1 " +
+        "to 5, since the Plastic boss's Mania could force you to swap those " +
+        "slots.",
       ),
       settingsTooltips: new BooleanOption(
         "Settings Tooltips", "settingsTooltips",
@@ -140,29 +141,34 @@ export class CinderSettingsMenu extends SettingsMenu {
         0,
         20,
         0,
+        "The minimap will always try to show this many mobs. The settings " +
+        "below may also show more mobs in addition to this mob count.",
       ),
       minimapAlwaysShowBosses: new BooleanOption(
         "Always Show Bosses",
         "minimapAlwaysShowBosses",
         "If this is turned on, the minimap will always show bosses, " +
-        "regardless of the mob cap selected above.",
+        "regardless of the mob count selected above.",
       ),
       minimapAlwaysShowRareMobs: new BooleanOption(
         "Always Show Rare Mobs",
         "minimapAlwaysShowRareMobs",
         "If this is turned on, the minimap will always show rare/valuable " +
-        "mobs, regardless of the mob cap selected above.",
+        "mobs, regardless of the mob count selected above.",
       ),
       minimapAlwaysShowRarity: new RarityOption(
         "Always Show Rarity",
         "minimapAlwaysShowRarity",
-        "The minimap will always show mobs that are at least this rarity, " +
+        "The minimap will show all mobs that are at least this rarity, " +
         "regardless of the mob cap selected above. $n $n " +
         "You can disable this by setting this to " +
         `$c${Colors.rarities[0].color} Common $c${SETTINGS_GREEN} (0).`,
       ),
       minimapRareMobAura: new BooleanOption(
-        "Rare Mob Aura", "minimapRareMobAura",
+        "Rare Mob Aura",
+        "minimapRareMobAura",
+        "If this is turned on, all rare/valuable mobs shown on the minimap " +
+        "will have a glowing aura."
       ),
       gardenBackground: new ColourOption(
         "Garden Background Colour", "gardenBackground",
@@ -270,12 +276,21 @@ export class CinderSettingsMenu extends SettingsMenu {
       keybindLockSlot: new KeybindOption(
         "Lock Petal Slot",
         "keybindLockSlot",
-        "You can lock/unlock petal slots while holding down this key. " +
-        "When a slot is locked, you cannot swap it with its bottom petal " +
-        "until you unlock it. $n $n " +
-        "By default, you cannot lock petal slots 1 to 5. You can change " +
-        "this behaviour at Settings > General Gameplay > Allow Locking " +
-        "Petal Slots 1 to 5.",
+        "While holding down this key, you can press a petal slot's number " +
+        "key to cycle its lock state in the following order: $n " +
+        "Unlocked > Soft Lock > $c#ff0000 Hard Lock $c#ffffff > Unlocked. " +
+        "$n $n " +
+        "When a slot is soft locked, it does not get swapped by the [R] " +
+        "hotkey, but you can still swap the petal using all other methods. " +
+        "(i.e., Flowrscript's system) $n $n " +
+        "When a slot is $c#ff0000 hard locked $c#ffffff , you cannot swap " +
+        "it with its bottom petal at all. $n $n " +
+        "By default, you cannot $c#ff0000 hard lock $c#ffffff slots 1 to 5. " +
+        "You can change this behaviour at (Settings > General Gameplay > " +
+        "Allow Hard Locking Petal Slots 1 to 5).",
+      ),
+      disableWelcomeMessage: new BooleanOption(
+        "Disable Welcome Message", "disableWelcomeMessage",
       ),
     });
 
@@ -347,6 +362,8 @@ export class CinderSettingsMenu extends SettingsMenu {
       settingsMap.keybindMinimap,
       settingsMap.keybindStatsBox,
       settingsMap.keybindLockSlot,
+      new SettingsSectionHeading("Welcome"),
+      settingsMap.disableWelcomeMessage,
     ]);
     this.totalHeight = SETTINGS_OPTION_HEIGHT * this.options.length;
 

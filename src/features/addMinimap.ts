@@ -136,9 +136,9 @@ class Minimap {
       `$c${MINIMAP_RED} Red $cwhite X: Your death position $n ` +
       `Triangles: Regular enemies $n ` +
       `Stars: Boss enemies $n $n ` +
-      `In the settings, you can configure the number of enemies shown in ` +
-      `this minimap. This minimap shows the highest-rarity mobs currently ` +
-      `alive, with ties broken by each mob's distance from your character.`
+      `In the settings, you can configure the number of enemies displayed. ` +
+      `This minimap shows the highest-rarity mobs in the room, with ties ` +
+      `broken by each mob's distance from your character.`
     );
     this.tooltipPos = { x: 0, y: 0 };
   }

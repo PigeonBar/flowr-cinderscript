@@ -559,8 +559,20 @@ declare global {
    */
   let addDiscoveredEnemy: (type?: EnemyType, rarity?: Rarity) => void;
 
+  /**
+   * The menu that appears when the player dies. Its main purpose is to let the
+   * dead player return to the main menu.
+   */
   class DeadMenu {
+    /**
+     * The main function to draw this menu.
+     */
     draw(): void;
+
+    /**
+     * Processes the player no longer being dead (e.g., due to being revived).
+     */
+    unGameOver(): void;
   }
   
   const deadMenu: DeadMenu;
