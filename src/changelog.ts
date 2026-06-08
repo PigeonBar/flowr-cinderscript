@@ -1,6 +1,12 @@
 import { unsafeWindow } from "$";
 
 const cinderChangelogList: ChangelogEntry[] = [
+  {text: `- Overhauled the petal lock system, please see the tooltip in the settings menu for more details (PR #38)
+- Attempted fix for inverted attack/defend breaking if you die and then revive (PR #38)
+- Added more tooltips to clarify minimap settings (PR #38)
+- Added a "Welcome" message directing new users to the settings menu (PR #38)
+- Default special drops threshold increased (1 Eth -> 1 Gala) (PR #38)`,
+  date: "Version 1.8.1"},
   {text: `- Added a toggleable minimap (default keybind: [M]) (PR #37)`,
   date: "Version 1.8.0 (Minimap Update)"},
   {text: `- Added settings to customize biome background colours (PR #36)`,

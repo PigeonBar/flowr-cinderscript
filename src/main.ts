@@ -24,6 +24,7 @@ import { addPetalSlotLocking } from "./features/petalSlotLocking";
 import { addQuickStatsBoxHotkey } from "./features/quickStatsBoxHotkey";
 import { addRandomizedSquadCodes } from "./features/randomizedSquadCode";
 import { prioritizeRenderingStatsBoxes } from "./features/statsBoxRenderingPriority";
+import { displayWelcomeMessage } from "./features/welcomeMessage";
 import { widerMobStatsBoxes } from "./features/widerMobStatsBoxes";
 import { allowEditingKeybinds } from "./inits/allowEditingKeybinds";
 import { handleMenuTranslations } from "./inits/handleMenuTranslations";
@@ -86,6 +87,7 @@ const mainScriptPromise = new Promise<void>(async (resolve) => {
   addQuickStatsBoxHotkey();
   handleBackgroundColourSettings();
   addMinimap();
+  displayWelcomeMessage();
 
   // #region Dev tools
   addScreenshotMode();

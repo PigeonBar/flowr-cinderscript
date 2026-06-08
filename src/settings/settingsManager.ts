@@ -20,7 +20,8 @@ export type BooleanSettingsKey =
   "hideSettingsDuringRuns" |
   "minimapAlwaysShowBosses" |
   "minimapAlwaysShowRareMobs" |
-  "minimapRareMobAura";
+  "minimapRareMobAura" |
+  "disableWelcomeMessage";
 
 /**
  * Settings keys for settings that take a numerical value.
@@ -91,6 +92,7 @@ const defaultSettings: CinderSettings = Object.freeze({
   minimapAlwaysShowBosses: true,
   minimapAlwaysShowRareMobs: true,
   minimapRareMobAura: true,
+  disableWelcomeMessage: false,
   baseReciprocalOfFOV: 3,
   playerHpBarScale: 2.5,
   specialDropsScale: 2.5,
@@ -106,7 +108,7 @@ const defaultSettings: CinderSettings = Object.freeze({
   swampBackground: Colors.biomes.swamp.background,
   zooBackground: Colors.biomes.zoo.background,
   deepZooBackground: Colors.biomes.deepzoo.background,
-  specialDropsRarity: Rarity.ETHEREAL,
+  specialDropsRarity: Rarity.GALACTIC,
   minimapAlwaysShowRarity: Rarity.COMMON,
   keybindStatsBox: "KeyG",
   keybindInvertAttack: "Comma",
@@ -162,6 +164,7 @@ export class SettingsManager {
       minimapAlwaysShowBosses: [],
       minimapAlwaysShowRareMobs: [],
       minimapRareMobAura: [],
+      disableWelcomeMessage: [],
       baseReciprocalOfFOV: [],
       playerHpBarScale: [],
       specialDropsScale: [],

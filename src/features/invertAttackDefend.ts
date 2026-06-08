@@ -112,4 +112,17 @@ export function enableInvertAttackAndDefend() {
     send({attack: false});
     send({defend: false});
   }
+
+  // Also reset inputs and process input inversion when player is revived
+  const originalUnGameOver = DeadMenu.prototype.unGameOver;
+  DeadMenu.prototype.unGameOver = function() {
+    originalUnGameOver.apply(this);
+
+    // For some reason, if we try to reset inputs immediately, it doesn't work
+    // because the player is still considered to be dead.
+    setTimeout(() => {
+      send({attack: false});
+      send({defend: false});
+    }, 0);
+  }
 }

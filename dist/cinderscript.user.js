@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Flowr - Cinderscript
 // @namespace    npm/vite-plugin-monkey
-// @version      1.8.0
+// @version      1.8.1
 // @author       Applepie (Ideas + bugfixes), PigeonBar (some technical stuff)
 // @description  A free, publicly available collection of QoL features for flowr.fun players.
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=flowr.fun
@@ -296,6 +296,7 @@
     minimapAlwaysShowBosses: true,
     minimapAlwaysShowRareMobs: true,
     minimapRareMobAura: true,
+    disableWelcomeMessage: false,
     baseReciprocalOfFOV: 3,
     playerHpBarScale: 2.5,
     specialDropsScale: 2.5,
@@ -311,7 +312,7 @@
     swampBackground: Colors.biomes.swamp.background,
     zooBackground: Colors.biomes.zoo.background,
     deepZooBackground: Colors.biomes.deepzoo.background,
-    specialDropsRarity: Rarity.ETHEREAL,
+    specialDropsRarity: Rarity.GALACTIC,
     minimapAlwaysShowRarity: Rarity.COMMON,
     keybindStatsBox: "KeyG",
     keybindInvertAttack: "Comma",
@@ -354,6 +355,7 @@
         minimapAlwaysShowBosses: [],
         minimapAlwaysShowRareMobs: [],
         minimapRareMobAura: [],
+        disableWelcomeMessage: [],
         baseReciprocalOfFOV: [],
         playerHpBarScale: [],
         specialDropsScale: [],
@@ -482,6 +484,14 @@
     }
   }
   const cinderChangelogList = [
+    {
+      text: `- Overhauled the petal lock system, please see the tooltip in the settings menu for more details (PR #38)
+- Attempted fix for inverted attack/defend breaking if you die and then revive (PR #38)
+- Added more tooltips to clarify minimap settings (PR #38)
+- Added a "Welcome" message directing new users to the settings menu (PR #38)
+- Default special drops threshold increased (1 Eth -> 1 Gala) (PR #38)`,
+      date: "Version 1.8.1"
+    },
     {
       text: `- Added a toggleable minimap (default keybind: [M]) (PR #37)`,
       date: "Version 1.8.0 (Minimap Update)"
@@ -2067,9 +2077,9 @@ Please enter a Rarity.`
           "If this is turned on and you generate a random squad code, it automatically copies the squad code to your clipboard."
         ),
         allowLockSlotsOneToFive: new BooleanOption(
-          "Allow Locking Petal Slots 1 to 5",
+          "Allow Hard Locking Petal Slots 1 to 5",
           "allowLockSlotsOneToFive",
-          "Tip: It is recommended not to lock petal slots 1 to 5, since the Plastic boss's Mania could force you to swap those slots."
+          "Tip: It is recommended not to $c#ff0000 hard lock $c#ffffff slots 1 to 5, since the Plastic boss's Mania could force you to swap those slots."
         ),
         settingsTooltips: new BooleanOption(
           "Settings Tooltips",
@@ -2109,26 +2119,28 @@ Please enter a Rarity.`
           "minimapNumberOfMobs",
           0,
           20,
-          0
+          0,
+          "The minimap will always try to show this many mobs. The settings below may also show more mobs in addition to this mob count."
         ),
         minimapAlwaysShowBosses: new BooleanOption(
           "Always Show Bosses",
           "minimapAlwaysShowBosses",
-          "If this is turned on, the minimap will always show bosses, regardless of the mob cap selected above."
+          "If this is turned on, the minimap will always show bosses, regardless of the mob count selected above."
         ),
         minimapAlwaysShowRareMobs: new BooleanOption(
           "Always Show Rare Mobs",
           "minimapAlwaysShowRareMobs",
-          "If this is turned on, the minimap will always show rare/valuable mobs, regardless of the mob cap selected above."
+          "If this is turned on, the minimap will always show rare/valuable mobs, regardless of the mob count selected above."
         ),
         minimapAlwaysShowRarity: new RarityOption(
           "Always Show Rarity",
           "minimapAlwaysShowRarity",
-          `The minimap will always show mobs that are at least this rarity, regardless of the mob cap selected above. $n $n You can disable this by setting this to $c${Colors.rarities[0].color} Common $c${SETTINGS_GREEN} (0).`
+          `The minimap will show all mobs that are at least this rarity, regardless of the mob cap selected above. $n $n You can disable this by setting this to $c${Colors.rarities[0].color} Common $c${SETTINGS_GREEN} (0).`
         ),
         minimapRareMobAura: new BooleanOption(
           "Rare Mob Aura",
-          "minimapRareMobAura"
+          "minimapRareMobAura",
+          "If this is turned on, all rare/valuable mobs shown on the minimap will have a glowing aura."
         ),
         gardenBackground: new ColourOption(
           "Garden Background Colour",
@@ -2241,7 +2253,11 @@ Please enter a Rarity.`
         keybindLockSlot: new KeybindOption(
           "Lock Petal Slot",
           "keybindLockSlot",
-          "You can lock/unlock petal slots while holding down this key. When a slot is locked, you cannot swap it with its bottom petal until you unlock it. $n $n By default, you cannot lock petal slots 1 to 5. You can change this behaviour at Settings > General Gameplay > Allow Locking Petal Slots 1 to 5."
+          "While holding down this key, you can press a petal slot's number key to cycle its lock state in the following order: $n Unlocked > Soft Lock > $c#ff0000 Hard Lock $c#ffffff > Unlocked. $n $n When a slot is soft locked, it does not get swapped by the [R] hotkey, but you can still swap the petal using all other methods. (i.e., Flowrscript's system) $n $n When a slot is $c#ff0000 hard locked $c#ffffff , you cannot swap it with its bottom petal at all. $n $n By default, you cannot $c#ff0000 hard lock $c#ffffff slots 1 to 5. You can change this behaviour at (Settings > General Gameplay > Allow Hard Locking Petal Slots 1 to 5)."
+        ),
+        disableWelcomeMessage: new BooleanOption(
+          "Disable Welcome Message",
+          "disableWelcomeMessage"
         )
       });
       this.h = 11.7 * SETTINGS_OPTION_HEIGHT;
@@ -2301,7 +2317,9 @@ Please enter a Rarity.`
         settingsMap.keybindInvertDefend,
         settingsMap.keybindMinimap,
         settingsMap.keybindStatsBox,
-        settingsMap.keybindLockSlot
+        settingsMap.keybindLockSlot,
+        new SettingsSectionHeading("Welcome"),
+        settingsMap.disableWelcomeMessage
       ]);
       this.totalHeight = SETTINGS_OPTION_HEIGHT * this.options.length;
       const originalOnMouseDown = _unsafeWindow.onmousedown;
@@ -2840,7 +2858,7 @@ Please enter a Rarity.`
       fn: toggleScreenshotMode
     });
   }
-  const version = "1.8.0";
+  const version = "1.8.1";
   function addScriptVersionToDebugInfo() {
     const originalRenderDebug = renderDebug;
     renderDebug = () => {
@@ -3004,7 +3022,7 @@ Please enter a Rarity.`
       this.active = false;
       this.openRatio = 0;
       this.tooltipIcon = new TooltipIcon(
-        `Minimap legend: $n $c${MINIMAP_GREEN} Green $cwhite circle: Your position $n $c${MINIMAP_YELLOW} Yellow $cwhite circles: Squadmates $n $c${MINIMAP_RED} Red $cwhite X: Your death position $n Triangles: Regular enemies $n Stars: Boss enemies $n $n In the settings, you can configure the number of enemies shown in this minimap. This minimap shows the highest-rarity mobs currently alive, with ties broken by each mob's distance from your character.`
+        `Minimap legend: $n $c${MINIMAP_GREEN} Green $cwhite circle: Your position $n $c${MINIMAP_YELLOW} Yellow $cwhite circles: Squadmates $n $c${MINIMAP_RED} Red $cwhite X: Your death position $n Triangles: Regular enemies $n Stars: Boss enemies $n $n In the settings, you can configure the number of enemies displayed. This minimap shows the highest-rarity mobs in the room, with ties broken by each mob's distance from your character.`
       );
       this.tooltipPos = { x: 0, y: 0 };
     }
@@ -4322,6 +4340,14 @@ Please enter a Rarity.`
       send({ attack: false });
       send({ defend: false });
     };
+    const originalUnGameOver = DeadMenu.prototype.unGameOver;
+    DeadMenu.prototype.unGameOver = function() {
+      originalUnGameOver.apply(this);
+      setTimeout(() => {
+        send({ attack: false });
+        send({ defend: false });
+      }, 0);
+    };
   }
   function addMobGalleryKillCounter() {
     mobGallery.setCountMode = function(value) {
@@ -4874,8 +4900,6 @@ Please enter a Rarity.`
       this.previewPetalContainer = void 0;
     };
   }
-  const petalLockIcon = new Image();
-  petalLockIcon.src = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgoKPHN2ZwogICB3aWR0aD0iNTQuNTAwMzJtbSIKICAgaGVpZ2h0PSI2NC41MDAwMDhtbSIKICAgdmlld0JveD0iMCAwIDU0LjUwMDMyIDY0LjUwMDAwOCIKICAgdmVyc2lvbj0iMS4xIgogICBpZD0ic3ZnMSIKICAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogICB4bWxuczpzdmc9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8ZGVmcwogICAgIGlkPSJkZWZzMSIgLz4KICA8ZwogICAgIGlkPSJsYXllcjEiCiAgICAgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTY5Ljk5OTk5OSwtNzApIj4KICAgIDxyZWN0CiAgICAgICBzdHlsZT0iZmlsbDojZGYwMmZmO2ZpbGwtb3BhY2l0eTowO3N0cm9rZTojZmZmZmZmO3N0cm9rZS13aWR0aDo0LjQ5ODtzdHJva2UtbGluZWNhcDpzcXVhcmU7c3Ryb2tlLWxpbmVqb2luOnJvdW5kO3N0cm9rZS1taXRlcmxpbWl0OjE7c3Ryb2tlLWRhc2hhcnJheTpub25lO3N0cm9rZS1vcGFjaXR5OjE7cGFpbnQtb3JkZXI6bWFya2VycyBzdHJva2UgZmlsbCIKICAgICAgIGlkPSJyZWN0MiIKICAgICAgIHdpZHRoPSI1MC4wMDIzMTkiCiAgICAgICBoZWlnaHQ9IjUwLjAwMjMxOSIKICAgICAgIHg9IjcyLjI0OTAwMSIKICAgICAgIHk9IjcyLjI0OTAwMSIgLz4KICAgIDxyZWN0CiAgICAgICBzdHlsZT0iZmlsbDojZmZmZmZmO2ZpbGwtb3BhY2l0eToxO3N0cm9rZTojZmZmZmZmO3N0cm9rZS13aWR0aDowO3N0cm9rZS1saW5lY2FwOnNxdWFyZTtzdHJva2UtbGluZWpvaW46cm91bmQ7c3Ryb2tlLW1pdGVybGltaXQ6MTtzdHJva2UtZGFzaGFycmF5Om5vbmU7c3Ryb2tlLW9wYWNpdHk6MTtwYWludC1vcmRlcjptYXJrZXJzIHN0cm9rZSBmaWxsIgogICAgICAgaWQ9InJlY3QzIgogICAgICAgd2lkdGg9IjgiCiAgICAgICBoZWlnaHQ9IjUiCiAgICAgICB4PSI5My4yNSIKICAgICAgIHk9IjEyOS41IiAvPgogICAgPGVsbGlwc2UKICAgICAgIHN0eWxlPSJmaWxsOiNmZmZmZmY7ZmlsbC1vcGFjaXR5OjA7c3Ryb2tlOiNmZmZmZmY7c3Ryb2tlLXdpZHRoOjI7c3Ryb2tlLWxpbmVjYXA6c3F1YXJlO3N0cm9rZS1saW5lam9pbjpyb3VuZDtzdHJva2UtbWl0ZXJsaW1pdDoxO3N0cm9rZS1kYXNoYXJyYXk6bm9uZTtzdHJva2Utb3BhY2l0eToxO3BhaW50LW9yZGVyOm1hcmtlcnMgc3Ryb2tlIGZpbGwiCiAgICAgICBpZD0icGF0aDMiCiAgICAgICBjeD0iOTcuMjUiCiAgICAgICBjeT0iMTI5LjUiCiAgICAgICByeD0iMi41IgogICAgICAgcnk9IjQiIC8+CiAgPC9nPgo8L3N2Zz4K";
   function addPetalSlotLocking() {
     const lockManager = new LockManager();
     const oldDrawInventory = inventory.draw;
@@ -4940,11 +4964,11 @@ Please enter a Rarity.`
   }
   class LockManager {
     /**
-     * Whether or not each slot is currently locked.
+     * The lock state of each petal slot.
      */
-    slotLocked;
+    lockStates;
     /**
-     * The *target* opacity of each lock icon (from 0 to 1) based the slot's
+     * The *target* opacity of each lock icon (from 0 to 1) based on the slot's
      * status, such as whether the user has locked it, whether it is currently
      * occupied, etc..
      */
@@ -4954,6 +4978,16 @@ Please enter a Rarity.`
      * {@linkcode alpha} smoothly.
      */
     renderAlpha;
+    /**
+     * The *target* red saturation of each lock icon (from 0 to 1). The lock icon
+     * turns red when the user Hard Locks the petal slot.
+     */
+    redSaturation;
+    /**
+     * The current red saturation of each lock icon, which approaches
+     * {@linkcode redSaturation} smoothly.
+     */
+    renderRedSaturation;
     /**
      * Whether or not the user is holding the [Lock Petal Slot] key.
      */
@@ -4970,83 +5004,130 @@ Please enter a Rarity.`
     constructor() {
       const storedLocks = localStorage.getItem("cinderLocks");
       if (!isNil(storedLocks)) {
-        this.slotLocked = JSON.parse(storedLocks);
+        const parsedLocks = JSON.parse(storedLocks);
+        for (let i = 0; i < parsedLocks.length; i++) {
+          if (parsedLocks[i] === false) {
+            parsedLocks[i] = "Unlocked";
+          } else if (parsedLocks[i] === true) {
+            parsedLocks[i] = "Hard Locked";
+          }
+        }
+        localStorage.setItem("cinderLocks", JSON.stringify(parsedLocks));
+        this.lockStates = parsedLocks;
       } else {
-        this.slotLocked = Array(10).fill(false);
+        this.lockStates = Array(10).fill("Unlocked");
       }
       this.alpha = Array(10).fill(0);
       this.renderAlpha = Array(10).fill(0);
+      this.redSaturation = Array(10).fill(0);
+      this.renderRedSaturation = Array(10).fill(0);
       this.shakeTimer = Array(10).fill(0);
       this.lockKeybindHeld = false;
       this.swappingAllPetals = false;
     }
     /**
-     * A helper function to determine whether a slot is lockable, according to
-     * the settings and the total number of petals that the loadout has.
+     * A helper function to determine the maximum lock state allowed for the
+     * given petal slot, using the following rules:
+     * - If the slot number is greater than the loadout's length, the slot cannot
+     *   be locked at all.
+     * - If the slot number is < 5 and the "Allow Hard Locking Slots 1 to 5"
+     *   setting is turned off, the slot cannot be hard locked.
      */
-    isAllowedToLock(loadout, slot) {
-      return (slot >= 5 || settings.get("allowLockSlotsOneToFive")) && slot < loadout.topPetalSlots.length;
+    maximumAllowedLock(loadout, slot) {
+      if (slot >= loadout.topPetalSlots.length) {
+        return "Unlocked";
+      } else if (slot < 5 && !settings.get("allowLockSlotsOneToFive")) {
+        return "Soft Locked";
+      } else {
+        return "Hard Locked";
+      }
     }
     /**
      * Draws the lock icons onto the petal slots of the given loadout.
      */
     draw(loadout) {
       for (let i = 0; i < 10; i++) {
-        if (!this.isAllowedToLock(loadout, i)) {
-          this.slotLocked[i] = false;
+        if (this.maximumAllowedLock(loadout, i) === "Unlocked") {
+          this.lockStates[i] = "Unlocked";
+        } else if (this.maximumAllowedLock(loadout, i) === "Soft Locked" && this.lockStates[i] === "Hard Locked") {
+          this.lockStates[i] = "Unlocked";
         }
       }
       for (let i = 0; i < loadout.topPetalSlots.length; i++) {
-        this.updateAlpha(loadout, i);
+        this.updateColour(loadout, i);
         this.drawIcon(loadout, i);
       }
       ctx.globalAlpha = 1;
     }
     /**
-     * A helper function to update {@linkcode alpha} and {@linkcode renderAlpha}
-     * for a single slot.
+     * A helper function to update {@linkcode alpha}, {@linkcode renderAlpha},
+     * {@linkcode redSaturation}, and {@linkcode renderRedSaturation} for a
+     * single slot.
      */
-    updateAlpha(loadout, slot) {
+    updateColour(loadout, slot) {
       const petal = loadout.topPetalContainers[slot];
       const slotObject = loadout.topPetalSlots[slot];
-      if (!this.isAllowedToLock(loadout, slot)) {
-        this.alpha[slot] = 0;
-      } else if (this.slotLocked[slot]) {
+      if (this.lockStates[slot] === "Unlocked") {
+        if (this.maximumAllowedLock(loadout, slot) !== "Unlocked" && this.lockKeybindHeld) {
+          this.alpha[slot] = 0.5;
+        } else {
+          this.alpha[slot] = 0;
+        }
+      } else {
         if (isNil(petal) || Math.abs(petal.render.x - slotObject.x) > 5 || Math.abs(petal.render.y - slotObject.y) > 5) {
           this.alpha[slot] = 0.5;
         } else {
           this.alpha[slot] = 1;
         }
-      } else {
-        if (this.lockKeybindHeld) {
-          this.alpha[slot] = 0.5;
-        } else {
-          this.alpha[slot] = 0;
-        }
       }
-      this.renderAlpha[slot] = interpolate(this.renderAlpha[slot], this.alpha[slot], dt / 200);
+      if (this.lockStates[slot] === "Hard Locked") {
+        this.redSaturation[slot] = 1;
+      } else {
+        this.redSaturation[slot] = 0;
+      }
+      this.renderAlpha[slot] = interpolate(
+        this.renderAlpha[slot],
+        this.alpha[slot],
+        dt / 200
+      );
+      this.renderRedSaturation[slot] = interpolate(
+        this.renderRedSaturation[slot],
+        this.redSaturation[slot],
+        dt / 200
+      );
     }
     /**
      * A helper function to draw the lock icon for a single petal slot.
      */
     drawIcon(loadout, slot) {
-      const sizeMult = this.alpha[slot] === 1 ? Math.pow(1 + PETAL_BORDER_RATIO / 2, 2) : 1 + PETAL_BORDER_RATIO / 2 + 0.02;
-      const iconRatio = petalLockIcon.height / petalLockIcon.width;
       const slotObject = loadout.topPetalSlots[slot];
+      ctx.save();
+      ctx.translate(slotObject.x, slotObject.y + loadout.translateY);
       this.shakeTimer[slot] = Math.max(0, this.shakeTimer[slot] - dt);
       const intensity = settings.get("petalLockShakeIntensity");
-      const iconX = slotObject.x - sizeMult * slotObject.size / 2 + intensity * Math.sin(this.shakeTimer[slot] * 2 * Math.PI / 75);
-      ctx.globalAlpha = this.renderAlpha[slot];
-      ctx.drawImage(
-        petalLockIcon,
-        iconX,
-        slotObject.y - sizeMult * slotObject.size / 2 + loadout.translateY,
-        sizeMult * slotObject.size,
-        sizeMult * slotObject.size * iconRatio
-      );
+      const dx = intensity * Math.sin(this.shakeTimer[slot] * 2 * Math.PI / 75);
+      ctx.translate(dx, 0);
+      ctx.scale(slotObject.size / 50, slotObject.size / 50);
+      if (this.alpha[slot] === 1) {
+        ctx.scale(1 + PETAL_BORDER_RATIO / 2, 1 + PETAL_BORDER_RATIO / 2);
+      } else {
+        ctx.scale(1.02, 1.02);
+      }
+      const colour = `hsla(0, ${this.renderRedSaturation[slot] * 100}%, ${100 - this.renderRedSaturation[slot] * 50}%, ${this.renderAlpha[slot]})`;
+      ctx.fillStyle = colour;
+      ctx.strokeStyle = colour;
+      ctx.lineWidth = 4.5;
+      ctx.strokeRect(-25, -25, 50, 50);
+      ctx.fillRect(-4, 32.25, 8, 5);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(0, 32.25, 2.5, 4, 0, 0, Math.PI, true);
+      ctx.stroke();
+      ctx.closePath();
+      ctx.restore();
     }
     /**
-     * Toggles the given slot's lock status if the slot is lockable.
+     * Cycles the given slot's lock status if the slot is lockable.
      * 
      * Locking petals requires the following 3 criteria:
      * 1. The user is holding the [Lock Petal Slot] key.
@@ -5056,10 +5137,21 @@ Please enter a Rarity.`
      * @returns `true` iff the slot was successfully toggled.
      */
     toggleLock(loadout, slot) {
-      if (this.lockKeybindHeld && this.isAllowedToLock(loadout, slot) && !this.swappingAllPetals) {
-        this.slotLocked[slot] = !this.slotLocked[slot];
-        localStorage.setItem("cinderLocks", JSON.stringify(this.slotLocked));
-        if (this.slotLocked[slot]) {
+      if (this.maximumAllowedLock(loadout, slot) === "Unlocked") {
+        return false;
+      }
+      if (this.lockKeybindHeld && !this.swappingAllPetals) {
+        if (this.lockStates[slot] === this.maximumAllowedLock(loadout, slot)) {
+          this.lockStates[slot] = "Unlocked";
+        } else if (this.lockStates[slot] === "Unlocked") {
+          this.lockStates[slot] = "Soft Locked";
+        } else if (this.lockStates[slot] === "Soft Locked") {
+          this.lockStates[slot] = "Hard Locked";
+        } else if (this.lockStates[slot] === "Hard Locked") {
+          this.lockStates[slot] = "Unlocked";
+        }
+        localStorage.setItem("cinderLocks", JSON.stringify(this.lockStates));
+        if (this.lockStates[slot] !== "Unlocked") {
           this.shakeTimer[slot] = 225;
         }
         return true;
@@ -5067,10 +5159,17 @@ Please enter a Rarity.`
       return false;
     }
     /**
-     * @returns `true` iff the slot is currently locked.
+     * @returns `true` iff a lock prevents the given slot from being swapped.
      */
     applyLock(loadout, slot) {
-      if (this.slotLocked[slot] && !isNil(loadout.topPetalContainers[slot])) {
+      if (isNil(loadout.topPetalContainers[slot])) {
+        return false;
+      }
+      if (this.lockStates[slot] === "Soft Locked" && this.swappingAllPetals) {
+        this.shakeTimer[slot] = 225;
+        return true;
+      }
+      if (this.lockStates[slot] === "Hard Locked") {
         this.shakeTimer[slot] = 225;
         return true;
       }
@@ -5196,6 +5295,13 @@ Please enter a Rarity.`
       statsBoxCtx?.clearRect(0, 0, statsBoxCanvas.width, statsBoxCanvas.height);
       originalDraw();
     };
+  }
+  function displayWelcomeMessage() {
+    if (!settings.get("disableWelcomeMessage")) {
+      chatAnnounce(
+        "Welcome to Cinderscript! If this is your first time using this script, please take some time to familiarize yourself with its settings, keybinds, and features.\n\nYou can disable this message at (Settings > Disable Welcome Message), located at the bottom of the settings menu."
+      );
+    }
   }
   function widerMobStatsBoxes() {
     const originalGenerateDesc = StatsBox.prototype.generateDesc;
@@ -5649,6 +5755,7 @@ Please enter a Rarity.`
     addQuickStatsBoxHotkey();
     handleBackgroundColourSettings();
     addMinimap();
+    displayWelcomeMessage();
     addScreenshotMode();
     addScriptVersionToDebugInfo();
     displayMobGalleryOutsideMenu();
