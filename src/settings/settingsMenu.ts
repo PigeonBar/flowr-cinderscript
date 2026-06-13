@@ -223,6 +223,21 @@ export class CinderSettingsMenu extends SettingsMenu {
       specialDropsQuantity: new NumberOption(
         "Special Drops Threshold Amount", "specialDropsQuantity", 0.1, 999, 1,
       ),
+      flowrscriptLoadWaitTime: new NumberOption(
+        "Flowrscript Load Wait Time (seconds)",
+        "flowrscriptLoadWaitTime",
+        0,
+        10,
+        2,
+        "At the beginning of each page reload, this script will wait until " +
+        "either Flowrscript (or related scripts) has finished loading, or " +
+        "this time has elapsed. $n $n " +
+        "This setting exists because this script breaks if it does not " +
+        "properly wait for Flowrscript to finish loading. $n $n " +
+        "If you are using some variant of Flowrscript, it is recommended " +
+        "to set this setting to a large number. Otherwise, it is " +
+        "recommended to set this setting to 0.",
+      ),
       disableAllOptimizations: new BooleanOption(
         "Disable All Optimizations",
         "disableAllOptimizations",
@@ -289,6 +304,18 @@ export class CinderSettingsMenu extends SettingsMenu {
         "You can change this behaviour at (Settings > General Gameplay > " +
         "Allow Hard Locking Petal Slots 1 to 5).",
       ),
+      // Currently unused, will hopefully be added to the next update
+      useChatHotkeys: new BooleanOption(
+        "Use Chat Hotkeys",
+        "useChatHotkeys",
+        "This setting enables the chat hotkeys set using the menu opened by " +
+        "the next setting. These hotkeys let you instantly send set chat " +
+        "messages by pressing certain keys. $n $n " +
+        "To get you started, the chat hotkeys editing menu will let you " +
+        "import Flowrscript's default set of hotkeys. $n $n " +
+        "CAUTION: If this is turned on, it will override ALL chat hotkeys " +
+        "used by other scripts!"
+      ),
       disableWelcomeMessage: new BooleanOption(
         "Disable Welcome Message", "disableWelcomeMessage",
       ),
@@ -344,6 +371,7 @@ export class CinderSettingsMenu extends SettingsMenu {
       settingsMap.specialDropsRarity,
       settingsMap.specialDropsQuantity,
       new SettingsSectionHeading("Performance"),
+      settingsMap.flowrscriptLoadWaitTime,
       settingsMap.disableAllOptimizations,
       settingsMap.petalStarCaching,
       settingsMap.disablePetalAnimations,

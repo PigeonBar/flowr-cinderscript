@@ -9,16 +9,26 @@ export const wsDataEditing: ((data: any) => void)[] = [];
 /**
  * This function injects some code into `ws.send` so that we can edit any data
  * that the websocket is sending to the server.
+ * 
+ * If the data is deleted by setting it to `undefined`, then this server
+ * communication will be aborted, and nothing will be sent to the server.
  */
 export function allowWsDataEditing(): void {
   function injectWsSend() {
     const originalSend = ws.send;
     ws.send = function(data) {
       // Unpack the data, edit it, repack it, then send it
-      const rawData = msgpackr.unpack(data);
+      let rawData = msgpackr.unpack(data) as unknown;
       for (let fn of wsDataEditing) {
-        fn(rawData);
+        rawData = fn(rawData);
       }
+
+      // If the data got deleted, return immediately
+      if (isNil(rawData)) {
+        return;
+      }
+      
+      // Finally, send the edited data to the server
       originalSend.apply(ws, [msgpackr.pack(rawData)]);
     }
   }
@@ -40,8 +50,8 @@ export function allowWsDataEditing(): void {
 
 /**
  * Adds another function to edit data that the client is sending to the server.
- * @param fn A function that modifies `data` and returns nothing.
+ * @param fn A function that returns `data`, with or without modifications.
  */
-export function addWsDataEditing(fn: (data: any) => void) {
+export function addWsDataEditing(fn: (data: any) => any) {
   wsDataEditing.push(fn);
 }

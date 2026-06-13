@@ -5,6 +5,7 @@ import { displayMobGalleryOutsideMenu } from "./dev/mobGalleryOutsideMenu";
 import { addMinimap } from "./features/addMinimap";
 import { autoReducePetalQuality } from "./features/autoReducePetalQuality";
 import { handleBackgroundColourSettings } from "./features/backgroundColour";
+import { fadeCraftingMenuFadingPetals } from "./features/craftingMenuFadingPetals";
 import { addCraftingSearchBar } from "./features/craftingSearchBar";
 import { displayMissilesAboveEnemies } from "./features/displayMissilesAboveEnemies";
 import { prioritizeRenderingDragPetal } from "./features/draggingPetalRenderingPriority";
@@ -39,13 +40,37 @@ import { preventMenuOverlap } from "./inits/preventMenuOverlap";
 import { blockFovChangeFromSettingsScroll } from "./inits/settingsScrollBlockFovChange";
 import { refreezeObjects, unfreezeObjects } from "./inits/unfreezeObjects";
 import { allowWsDataEditing } from "./inits/wsDataEditing";
+import { settings } from "./settings/settingsManager";
+import { isNil } from "./utils";
 
 const mainScriptPromise = new Promise<void>(async (resolve) => {
+  // If some main game features are missing, we assume that the page is doing
+  // Cloudflare stuff instead, and we abort running the script.
+  if (isNil(settingsMenu) && isNil(craftingMenu)) {
+    return;
+  }
+
   // In case the player is also using Flowrscript, we need to wait for
   // Flowrscript's async loading to finish first, or else it will overwrite
-  // some of Cinderscript's code. Based on some testing, 1000ms should be
-  // enough, but this could very well be subject to change.
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  // some of Cinderscript's code.
+  await new Promise<void>(resolve => {
+    // Condition 1: Stop waiting once Flowrscript has finished loading,
+    // signalled by its petal gallery being populated.
+    const interval = setInterval(() => {
+      const petals = unsafeWindow?.flowrMod?.petalGallery?.petalContainers;
+      if (!isNil(petals) && Object.keys(petals).length > 0) {
+        clearInterval(interval);
+        resolve();
+      }
+    }, 50);
+
+    // Condition 2: Stop waiting once the script has waited long enough, as
+    // configured in the settings.
+    setTimeout(() => {
+      clearInterval(interval);
+      resolve();
+    }, 1000 * settings.get("flowrscriptLoadWaitTime"));
+  });
   initFlowrscriptPointer();
 
   // #region Inits
@@ -87,6 +112,7 @@ const mainScriptPromise = new Promise<void>(async (resolve) => {
   addQuickStatsBoxHotkey();
   handleBackgroundColourSettings();
   addMinimap();
+  fadeCraftingMenuFadingPetals();
   displayWelcomeMessage();
 
   // #region Dev tools

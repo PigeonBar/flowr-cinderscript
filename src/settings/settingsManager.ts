@@ -21,7 +21,8 @@ export type BooleanSettingsKey =
   "minimapAlwaysShowBosses" |
   "minimapAlwaysShowRareMobs" |
   "minimapRareMobAura" |
-  "disableWelcomeMessage";
+  "disableWelcomeMessage" |
+  "useChatHotkeys";
 
 /**
  * Settings keys for settings that take a numerical value.
@@ -34,7 +35,8 @@ export type NumberSettingsKey =
   "petalRenderQualityThreshold" |
   "craftAnimationLength" |
   "petalLockShakeIntensity" |
-  "minimapNumberOfMobs";
+  "minimapNumberOfMobs" |
+  "flowrscriptLoadWaitTime";
 
 /**
  * Settings keys for settings that take a colour hex code value.
@@ -93,6 +95,7 @@ const defaultSettings: CinderSettings = Object.freeze({
   minimapAlwaysShowRareMobs: true,
   minimapRareMobAura: true,
   disableWelcomeMessage: false,
+  useChatHotkeys: false,
   baseReciprocalOfFOV: 3,
   playerHpBarScale: 2.5,
   specialDropsScale: 2.5,
@@ -101,6 +104,7 @@ const defaultSettings: CinderSettings = Object.freeze({
   craftAnimationLength: 0,
   petalLockShakeIntensity: 2,
   minimapNumberOfMobs: 5,
+  flowrscriptLoadWaitTime: 1,
   gardenBackground: Colors.biomes.garden.background,
   desertBackground: Colors.biomes.desert.background,
   oceanBackground: Colors.biomes.ocean.background,
@@ -165,6 +169,7 @@ export class SettingsManager {
       minimapAlwaysShowRareMobs: [],
       minimapRareMobAura: [],
       disableWelcomeMessage: [],
+      useChatHotkeys: [],
       baseReciprocalOfFOV: [],
       playerHpBarScale: [],
       specialDropsScale: [],
@@ -173,6 +178,7 @@ export class SettingsManager {
       craftAnimationLength: [],
       petalLockShakeIntensity: [],
       minimapNumberOfMobs: [],
+      flowrscriptLoadWaitTime: [],
       gardenBackground: [],
       desertBackground: [],
       oceanBackground: [],
@@ -231,12 +237,6 @@ export class SettingsManager {
   }
 }
 
-export let settings: SettingsManager;
-
-/**
- * A helper function to initialize {@linkcode settings}, to prevent certain
- * side effects from its constructor running during importing.
- */
-export function initSettingsManager(): void {
-  settings = new SettingsManager();
-}
+// Note: We must init the settings manager immediately so that the settings can
+// be applied properly while waiting for Flowrscript to load.
+export const settings = new SettingsManager();

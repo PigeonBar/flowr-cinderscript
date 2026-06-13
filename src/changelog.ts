@@ -1,6 +1,10 @@
 import { unsafeWindow } from "$";
 
 const cinderChangelogList: ChangelogEntry[] = [
+  {text: `- [*] New setting: Settings > Performance > Flowrscript Load Wait Time (PR #39)
+- Craft menu now properly clears petals that are done fading (PR #39)
+- Fixed petals not being draggable everywhere in the window (PR #39)`,
+  date: "Version 1.8.2"},
   {text: `- Overhauled the petal lock system, please see the tooltip in the settings menu for more details (PR #38)
 - Attempted fix for inverted attack/defend breaking if you die and then revive (PR #38)
 - Added more tooltips to clarify minimap settings (PR #38)

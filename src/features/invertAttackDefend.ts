@@ -69,6 +69,7 @@ export function enableInvertAttackAndDefend() {
       rawDefending = data[1];
       data[1] = updateClientDefend();
     }
+    return data;
   });
 
   // Add keybind instructions for invert attack/defend inputs in-game
@@ -109,6 +110,9 @@ export function enableInvertAttackAndDefend() {
   enterGame = function() {
     originalEnterGame();
 
+    // Due to the WS data edits added above, this will properly set the
+    // flower's attacking and defending states based on the [Invert Attack]
+    // and [Invent Defend] settings.
     send({attack: false});
     send({defend: false});
   }
@@ -121,6 +125,9 @@ export function enableInvertAttackAndDefend() {
     // For some reason, if we try to reset inputs immediately, it doesn't work
     // because the player is still considered to be dead.
     setTimeout(() => {
+      // Due to the WS data edits added above, this will properly set the
+      // flower's attacking and defending states based on the [Invert Attack]
+      // and [Invent Defend] settings.
       send({attack: false});
       send({defend: false});
     }, 0);
