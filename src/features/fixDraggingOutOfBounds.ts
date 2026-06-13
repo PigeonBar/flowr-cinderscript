@@ -17,8 +17,8 @@ export function fixDraggingPetalsOutOfBounds() {
     }
 
     // Enforce bounds on coordinates
-    x = Math.max(0, Math.min(canvas.width, x));
-    y = Math.max(0, Math.min(canvas.height, y));
+    x = Math.max(0, Math.min(canvas.w, x));
+    y = Math.max(0, Math.min(canvas.h, y));
     originalSimulateDragging(x, y);
   }
 }

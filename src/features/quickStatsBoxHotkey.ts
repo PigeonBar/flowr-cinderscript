@@ -72,7 +72,7 @@ export function addQuickStatsBoxHotkey() {
             1
           );
         }
-        if (!Stats.enemies[highestBox.type]) {
+        if (isNil(Stats.enemies[highestBox.type])) {
           calculateStats();
         } else {
           highestBox.ec.isHovered = true;

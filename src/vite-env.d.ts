@@ -203,6 +203,11 @@ declare global {
     craftAnimationCountdown: number;
 
     /**
+     * A list of petals that are currently playing their fading animations.
+     */
+    fadingPetalContainers: PetalContainer[];
+
+    /**
      * A list of owned petals displayed below the crafting area, after applying
      * filtering from the search bar.
      */
@@ -759,6 +764,17 @@ declare global {
     lastAmountChangedTime: number;
 
     /**
+     * Whether or not this petal should be removed from its parent list.
+     */
+    toRemove?: boolean;
+
+    /**
+     * The time remaining until this petal should be removed from its parent
+     * list, in milliseconds.
+     */
+    removeTimer?: number;
+
+    /**
      * Whether or not to draw the cached Air petal in order to draw this
      * petal's background gradients.
      */
@@ -980,9 +996,33 @@ declare global {
 
   const canvas: HTMLCanvasElement & {
     // New fields added by flowr devs
+
+    /**
+     * The height of the canvas, scaled to fit the full window screen.
+     */
     h: number;
+
+    /**
+     * The width of the canvas, scaled to fit the full window screen.
+     */
     w: number;
+
+    /**
+     * The zoom applied to the canvas to make it fit the full window screen.
+     */
     zoom: number;
+
+    /**
+     * @deprecated Due to how Flowr handles canvas scaling, you should ALWAYS
+     * use `canvas.h` instead of `canvas.height` when setting item positions.
+     */
+    height: number;
+
+    /**
+     * @deprecated Due to how Flowr handles canvas scaling, you should ALWAYS
+     * use `canvas.w` instead of `canvas.width` when setting item positions.
+     */
+    width: number;
   };
 
   let time: number; // How many milliseconds have passed since loading the game

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Flowr - Cinderscript
 // @namespace    npm/vite-plugin-monkey
-// @version      1.8.1
+// @version      1.8.2
 // @author       Applepie (Ideas + bugfixes), PigeonBar (some technical stuff)
 // @description  A free, publicly available collection of QoL features for flowr.fun players.
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=flowr.fun
@@ -297,6 +297,7 @@
     minimapAlwaysShowRareMobs: true,
     minimapRareMobAura: true,
     disableWelcomeMessage: false,
+    useChatHotkeys: false,
     baseReciprocalOfFOV: 3,
     playerHpBarScale: 2.5,
     specialDropsScale: 2.5,
@@ -305,6 +306,7 @@
     craftAnimationLength: 0,
     petalLockShakeIntensity: 2,
     minimapNumberOfMobs: 5,
+    flowrscriptLoadWaitTime: 1,
     gardenBackground: Colors.biomes.garden.background,
     desertBackground: Colors.biomes.desert.background,
     oceanBackground: Colors.biomes.ocean.background,
@@ -356,6 +358,7 @@
         minimapAlwaysShowRareMobs: [],
         minimapRareMobAura: [],
         disableWelcomeMessage: [],
+        useChatHotkeys: [],
         baseReciprocalOfFOV: [],
         playerHpBarScale: [],
         specialDropsScale: [],
@@ -364,6 +367,7 @@
         craftAnimationLength: [],
         petalLockShakeIntensity: [],
         minimapNumberOfMobs: [],
+        flowrscriptLoadWaitTime: [],
         gardenBackground: [],
         desertBackground: [],
         oceanBackground: [],
@@ -413,10 +417,7 @@
       this.listeners[key].push(listener);
     }
   }
-  let settings;
-  function initSettingsManager() {
-    settings = new SettingsManager();
-  }
+  const settings = new SettingsManager();
   const keybinds = [];
   function initKeybindHandling() {
     const originalHandleKey = inputHandler.handleKey;
@@ -484,6 +485,12 @@
     }
   }
   const cinderChangelogList = [
+    {
+      text: `- [*] New setting: Settings > Performance > Flowrscript Load Wait Time (PR #39)
+- Craft menu now properly clears petals that are done fading (PR #39)
+- Fixed petals not being draggable everywhere in the window (PR #39)`,
+      date: "Version 1.8.2"
+    },
     {
       text: `- Overhauled the petal lock system, please see the tooltip in the settings menu for more details (PR #38)
 - Attempted fix for inverted attack/defend breaking if you die and then revive (PR #38)
@@ -715,21 +722,6 @@
   let cinderChangelog;
   function initChangelog() {
     cinderChangelog = new CinderChangelog();
-  }
-  let flowrMod;
-  function initFlowrscriptPointer() {
-    if (!isNil(_unsafeWindow.flowrMod)) {
-      flowrMod = _unsafeWindow.flowrMod;
-    } else {
-      const interval = setInterval(() => {
-        if (!isNil(_unsafeWindow.flowrMod)) {
-          chatAnnounce(
-            "Warning - An issue was detected while trying to load Cinderscript after Flowrscript. Please report this if this is regularly happening to you."
-          );
-          clearInterval(interval);
-        }
-      }, 1e3);
-    }
   }
   class RGBColour {
     /**
@@ -2206,6 +2198,14 @@ Please enter a Rarity.`
           999,
           1
         ),
+        flowrscriptLoadWaitTime: new NumberOption(
+          "Flowrscript Load Wait Time (seconds)",
+          "flowrscriptLoadWaitTime",
+          0,
+          10,
+          2,
+          "At the beginning of each page reload, this script will wait until either Flowrscript (or related scripts) has finished loading, or this time has elapsed. $n $n This setting exists because this script breaks if it does not properly wait for Flowrscript to finish loading. $n $n If you are using some variant of Flowrscript, it is recommended to set this setting to a large number. Otherwise, it is recommended to set this setting to 0."
+        ),
         disableAllOptimizations: new BooleanOption(
           "Disable All Optimizations",
           "disableAllOptimizations",
@@ -2254,6 +2254,12 @@ Please enter a Rarity.`
           "Lock Petal Slot",
           "keybindLockSlot",
           "While holding down this key, you can press a petal slot's number key to cycle its lock state in the following order: $n Unlocked > Soft Lock > $c#ff0000 Hard Lock $c#ffffff > Unlocked. $n $n When a slot is soft locked, it does not get swapped by the [R] hotkey, but you can still swap the petal using all other methods. (i.e., Flowrscript's system) $n $n When a slot is $c#ff0000 hard locked $c#ffffff , you cannot swap it with its bottom petal at all. $n $n By default, you cannot $c#ff0000 hard lock $c#ffffff slots 1 to 5. You can change this behaviour at (Settings > General Gameplay > Allow Hard Locking Petal Slots 1 to 5)."
+        ),
+        // Currently unused, will hopefully be added to the next update
+        useChatHotkeys: new BooleanOption(
+          "Use Chat Hotkeys",
+          "useChatHotkeys",
+          "This setting enables the chat hotkeys set using the menu opened by the next setting. These hotkeys let you instantly send set chat messages by pressing certain keys. $n $n To get you started, the chat hotkeys editing menu will let you import Flowrscript's default set of hotkeys. $n $n CAUTION: If this is turned on, it will override ALL chat hotkeys used by other scripts!"
         ),
         disableWelcomeMessage: new BooleanOption(
           "Disable Welcome Message",
@@ -2304,6 +2310,7 @@ Please enter a Rarity.`
         settingsMap.specialDropsRarity,
         settingsMap.specialDropsQuantity,
         new SettingsSectionHeading("Performance"),
+        settingsMap.flowrscriptLoadWaitTime,
         settingsMap.disableAllOptimizations,
         settingsMap.petalStarCaching,
         settingsMap.disablePetalAnimations,
@@ -2679,6 +2686,52 @@ Please enter a Rarity.`
   function initSettingsMenu() {
     cinderSettingsMenu = new CinderSettingsMenu();
   }
+  let flowrMod;
+  function initFlowrscriptPointer() {
+    if (!isNil(_unsafeWindow.flowrMod)) {
+      flowrMod = _unsafeWindow.flowrMod;
+    } else {
+      if (settings.get("flowrscriptLoadWaitTime") >= 3) {
+        chatAnnounce(
+          "Tip - If you are not using any variant of Flowrscript, please feel free to decrease this script's waiting time at (Settings > Performance > Flowrscript Load Wait Time)."
+        );
+      }
+      const interval = setInterval(() => {
+        if (!isNil(_unsafeWindow.flowrMod)) {
+          clearInterval(interval);
+          chatAnnounce(
+            "Warning - An issue was detected while trying to load Cinderscript after Flowrscript. Please increase this script's waiting time at (Settings > Performance > Flowrscript Load Wait Time), then reload the page and see if that fixes the issue. If not, then please feel free to report this issue. Sorry for the inconvenience."
+          );
+          if (!cinderSettingsMenu.active) {
+            cinderSettingsMenu.toggle();
+          }
+          cinderSettingsMenu.scroll = cinderSettingsMenu.options.findIndex(
+            (option) => option.isSectionHeading() && option.text === "Performance"
+          ) * SETTINGS_OPTION_HEIGHT;
+          const originalRenderMenu = renderMenu;
+          renderMenu = (dt2) => {
+            originalRenderMenu(dt2);
+            cinderSettingsMenu.x = 110;
+            cinderSettingsMenu.draw();
+          };
+          const originalOnMouseDown = _unsafeWindow.onmousedown;
+          _unsafeWindow.onmousedown = (e) => {
+            originalOnMouseDown?.apply(_unsafeWindow, [e]);
+            if (_unsafeWindow.connected === true) {
+              cinderSettingsMenu.mouseDown({ x: mouse.canvasX, y: mouse.canvasY });
+            }
+          };
+          const originalOnMouseUp = _unsafeWindow.onmouseup;
+          _unsafeWindow.onmouseup = (e) => {
+            originalOnMouseUp?.apply(_unsafeWindow, [e]);
+            if (_unsafeWindow.connected === true) {
+              cinderSettingsMenu.mouseUp();
+            }
+          };
+        }
+      }, 1e3);
+    }
+  }
   let MENU_LIST;
   function initMenuList() {
     const rawList = [
@@ -2858,7 +2911,7 @@ Please enter a Rarity.`
       fn: toggleScreenshotMode
     });
   }
-  const version = "1.8.1";
+  const version = "1.8.2";
   function addScriptVersionToDebugInfo() {
     const originalRenderDebug = renderDebug;
     renderDebug = () => {
@@ -3340,6 +3393,24 @@ Please enter a Rarity.`
     settings.addListener("deepZooBackground", (option) => {
       Colors.biomes.deepzoo.background = option;
     });
+  }
+  function fadeCraftingMenuFadingPetals() {
+    const originalDraw = craftingMenu.drawInventory;
+    craftingMenu.drawInventory = function(alpha) {
+      originalDraw.apply(this, [alpha]);
+      for (let petal of this.fadingPetalContainers) {
+        if (isNil(petal.removeTimer)) {
+          petal.removeTimer = 3e3;
+        }
+        petal.removeTimer -= dt;
+        if (petal.removeTimer <= 0) {
+          petal.toRemove = true;
+        }
+      }
+      this.fadingPetalContainers = this.fadingPetalContainers.filter(
+        (petal) => !petal.toRemove
+      );
+    };
   }
   function addCraftingSearchBar() {
     craftingMenu.rawPetalContainers = { ...craftingMenu.petalContainers };
@@ -3855,8 +3926,8 @@ Please enter a Rarity.`
       if (x < -1e10 && y < -1e10) {
         return;
       }
-      x = Math.max(0, Math.min(canvas.width, x));
-      y = Math.max(0, Math.min(canvas.height, y));
+      x = Math.max(0, Math.min(canvas.w, x));
+      y = Math.max(0, Math.min(canvas.h, y));
       originalSimulateDragging(x, y);
     };
   }
@@ -4249,9 +4320,12 @@ Please enter a Rarity.`
     function injectWsSend() {
       const originalSend = ws.send;
       ws.send = function(data) {
-        const rawData = msgpackr.unpack(data);
+        let rawData = msgpackr.unpack(data);
         for (let fn of wsDataEditing) {
-          fn(rawData);
+          rawData = fn(rawData);
+        }
+        if (isNil(rawData)) {
+          return;
         }
         originalSend.apply(ws, [msgpackr.pack(rawData)]);
       };
@@ -4305,6 +4379,7 @@ Please enter a Rarity.`
         rawDefending = data[1];
         data[1] = updateClientDefend();
       }
+      return data;
     });
     addKeybindInstruction(
       { type: "settings", settingsKey: "keybindInvertAttack", fn: () => {
@@ -5219,7 +5294,7 @@ Please enter a Rarity.`
               1
             );
           }
-          if (!Stats.enemies[highestBox.type]) {
+          if (isNil(Stats.enemies[highestBox.type])) {
             calculateStats();
           } else {
             highestBox.ec.isHovered = true;
@@ -5359,7 +5434,6 @@ Please enter a Rarity.`
     }
   }
   function initExportedObjects() {
-    initSettingsManager();
     initSettingsMenu();
     initChangelog();
     initMobCounters();
@@ -5720,7 +5794,22 @@ Please enter a Rarity.`
     Object.freeze(processGameMessageMap);
   }
   const mainScriptPromise = new Promise(async (resolve) => {
-    await new Promise((resolve2) => setTimeout(resolve2, 1e3));
+    if (isNil(settingsMenu) && isNil(craftingMenu)) {
+      return;
+    }
+    await new Promise((resolve2) => {
+      const interval = setInterval(() => {
+        const petals = _unsafeWindow?.flowrMod?.petalGallery?.petalContainers;
+        if (!isNil(petals) && Object.keys(petals).length > 0) {
+          clearInterval(interval);
+          resolve2();
+        }
+      }, 50);
+      setTimeout(() => {
+        clearInterval(interval);
+        resolve2();
+      }, 1e3 * settings.get("flowrscriptLoadWaitTime"));
+    });
     initFlowrscriptPointer();
     initExportedObjects();
     unfreezeObjects();
@@ -5755,6 +5844,7 @@ Please enter a Rarity.`
     addQuickStatsBoxHotkey();
     handleBackgroundColourSettings();
     addMinimap();
+    fadeCraftingMenuFadingPetals();
     displayWelcomeMessage();
     addScreenshotMode();
     addScriptVersionToDebugInfo();
