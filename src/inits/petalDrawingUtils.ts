@@ -52,7 +52,8 @@ export function initPetalDrawingUtils(): void {
   }
 
   PetalContainer.prototype.shouldAnimate = function() {
-    return !NON_ANIM_PETALS.includes(this.type)
+    return this.petals[0].constructor === Petal
+      && !NON_ANIM_PETALS.includes(this.type)
       && !settings.get("disablePetalAnimations");
   }
 

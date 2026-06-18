@@ -1,6 +1,10 @@
 import { unsafeWindow } from "$";
 
 const cinderChangelogList: ChangelogEntry[] = [
+  {text: `- Made this script compatible with new rarities (PR #40)
+- Fixed optimizations not applying to Mob Gallery entries (PR #40)
+- Removed the "Petal Star Caching" setting, since it is incompatible with the new rarities' fancy stars (PR #40)`,
+  date: "Version 1.8.3"},
   {text: `- [*] New setting: Settings > Performance > Flowrscript Load Wait Time (PR #39)
 - Craft menu now properly clears petals that are done fading (PR #39)
 - Fixed petals not being draggable everywhere in the window (PR #39)`,
