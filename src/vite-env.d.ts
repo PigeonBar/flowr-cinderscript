@@ -137,6 +137,16 @@ declare global {
    */
   const staticGradients: Partial<Record<Rarity, CanvasGradient | string>>;
 
+  /**
+   * Retrieves data used to draw stars for the given rarity.
+   */
+  function hellaCoolStars(rarity: Rarity): any[];
+
+  /**
+   * Converts the given colour's hex code to its RGB values.
+   */
+  function hexToRGBA(hexCode: string): { r: number, g: number, b: number };
+
   class Shop {
     toggle(): void;
     menu: {
@@ -716,7 +726,7 @@ declare global {
       w: number;
     };
     nameless: boolean;
-    stars?: {x: number, y: number}[];
+    stars?: { x: number, y: number, type: number }[];
     toOscillate: boolean;
     toSkipCulling: boolean;
     draggingTimer?: number;
@@ -812,6 +822,8 @@ declare global {
      * Determines whether or not this petal should be animated, based on
      * whether it has an animation, and based on whether animations are
      * disabled in the settings.
+     * 
+     * Also note that animations only exist for petals (and not mobs).
      */
     shouldAnimate(): boolean;
 

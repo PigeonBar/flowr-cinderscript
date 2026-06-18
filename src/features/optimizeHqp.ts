@@ -14,8 +14,6 @@ import { isNil } from "../utils";
  *   This is implemented by caching one nameless Air petal for every required
  *   rarity on every frame, then using them as backgrounds for all actual
  *   petals.
- * - The stars in the petal backgrounds are now also cached every frame
- *   (configurable in the settings).
  * - There is also a setting to disable the petal background stars entirely.
  * 
  * The code for caching the Air petals is adapted from Flowr's caching code.
@@ -28,31 +26,12 @@ export function optimizeHighQualityRenders() {
   const airPetals: PetalContainer[] = [];
   initializeCachedAir();
 
-  // Initialize the canvas for caching the background stars
-  const starCanvas = new OffscreenCanvas(30, 30);
-  const starCtx = starCanvas.getContext("2d");
-  let simStarX = 0;
-  let simStarY = 0;
-
   const originalDraw = draw;
   draw = function() {
     // If optimizations are disabled, just render the game as usual
     if (settings.get("disableAllOptimizations")) {
       originalDraw();
       return;
-    }
-
-    // Draw and cache the star image so it can be drawn on petal backgrounds
-    starCtx?.reset();
-    if (settings.get("petalStarCaching") && !isNil(starCtx)) {
-      const originalCtx = ctx;
-      ctx = starCtx;
-      simStarX += 0.1;
-      simStarY += 0.1;
-      ctx.translate(15, 15);
-      drawStar(0, 0);
-      ctx.translate(-15, -15);
-      ctx = originalCtx;
     }
 
     // Reset the cached air images from the previous frame
@@ -66,9 +45,7 @@ export function optimizeHighQualityRenders() {
 
   const originalDrawPetal = PetalContainer.prototype.draw;
   PetalContainer.prototype.draw = function(inGame?: boolean, number?: number) {
-    // Hide stars if the "Delete Stars" setting is turned ON. The code will
-    // automatically teleport the stars towards the petal when the setting gets
-    // turned OFF.
+    // Hide stars if the "Disable Stars" setting is turned ON
     if (settings.get("disablePetalStars") 
       && !settings.get("disableAllOptimizations")
       && !isNil(this.stars)
@@ -76,6 +53,17 @@ export function optimizeHighQualityRenders() {
       for (let star of this.stars) {
         star.x = Infinity;
         star.y = Infinity;
+      }
+    } else if (!isNil(this.stars)) {
+      // Unhide stars by setting their coordinates to finite numbers. Then,
+      // Flowr's base code will handle teleporting all stars back in bounds.
+      for (let star of this.stars) {
+        if (!Number.isFinite(star.x)) {
+          star.x = 1e99;
+        }
+        if (!Number.isFinite(star.y)) {
+          star.y = 1e99;
+        }
       }
     }
 
@@ -229,79 +217,95 @@ export function optimizeHighQualityRenders() {
     }
   }
 
-  /**
-   * A helper function to draw one shiny star.
-   * 
-   * This code is copied from Flowr's base code.
-   */
-  function drawStar(x: number, y: number) {
-    ctx.beginPath();
-
-    // Create gradient of twinkling light around the star
-    let twinkleTime = Date.now() / 600;
-    if (ctx === starCtx) {
-      twinkleTime += simStarX / 30 + simStarY / 30;
-    } else {
-      twinkleTime += x / 30 + y / 30;
-    }
-    const grad = ctx.createRadialGradient(x, y, 15, x, y, 0);
-    grad.addColorStop(0, "transparent");
-    grad.addColorStop(0.8, `rgba(255,255,255,${
-      (Math.cos(twinkleTime) + 1) * 0.8
-    })`);
-    grad.addColorStop(1, "white");
-
-    ctx.fillStyle = grad;
-    ctx.globalAlpha = 0.3;
-
-    ctx.fillRect(-25, -25, 50, 50);
-    ctx.globalAlpha = 1;
-
-    ctx.fillStyle = "#fff";
-
-    // Draw the star itself as a single point
-    ctx.arc(x, y, 1, 0, 2 * Math.PI);
-    ctx.fill();
-    ctx.closePath();
-  }
-
   PetalContainer.prototype.drawStars = function() {
     const totalStars = Colors.rarities[this.rarity].fancy?.stars;
     if (!isNil(totalStars) && (unsafeWindow.hqp && !flowrMod?.noFancy)) {
+      let sdesigns = hellaCoolStars(this.rarity);
+
+      if (isNil(sdesigns) || sdesigns.length < 11) {
+        return;
+      }
+
+      const colors = sdesigns.slice(0, 4);
+      const rgbs = colors.map(c => hexToRGBA(c));
+
+      const sradiusArr = sdesigns[4];     // outer radius per type
+      const sinnerradArr = sdesigns[5];   // inner radius per type
+
+      let sspeed = sdesigns[6];
+      let schaos = sdesigns[7];
+      let schaosf = sdesigns[8];
+      let ssizec = sdesigns[9];
+      let ssizecs = sdesigns[10];
+
       if (isNil(this.stars)) {
         // Initialize shiny stars
         this.stars = [];
-        for (let starnum = 0; starnum < totalStars; starnum++) {
-          this.stars.push(
-            { x: Math.random() * 50 - 25, y: Math.random() * 50 - 25 }
-          );
+        for (let i = 0; i < totalStars; i++) {
+          const star = {
+            type: Math.floor(Math.random() * 4),
+            x: 0,
+            y: 0,
+          };
+          star.x = Math.random() * 50 - 25 - sinnerradArr[0];
+          star.y = Math.random() * 50 - 25 - sinnerradArr[0];
+          this.stars.push(star);
         }
       }
-      
+
       // Make sure stars do not get drawn over the petal's border
+      ctx.save();
       ctx.beginPath();
       ctx.roundRect(-22.75, -22.75, 45.5, 45.5, 0.25);
       ctx.clip();
       ctx.closePath();
 
       for (let star of this.stars) {
-        // Stars move down and right, and they wrap around to a random point at
-        // the top edge of the petal upon reaching the bottom or right edge.
-        star.x += 0.1;
-        star.y += 0.1;
-        if (star.x > 25 || star.y > 25) {
-          star.x = Math.random() * 800 - 20 - 30;
-          star.y = -30;
+        star.x += sspeed + Math.sin(time / 1000 * schaos + star.y / schaosf) * Math.sign(schaos);
+        star.y += sspeed + Math.sin(time / 1000 * schaos + star.x / schaosf) * Math.sign(schaos);
+
+        // When stars move out of bounds, teleport them back in bounds
+        if (star.x > 25 - sinnerradArr[star.type] || star.x < -25 + sinnerradArr[star.type] || star.y > 25 - sinnerradArr[star.type] || star.y < -25 + sinnerradArr[star.type]) {
+          star.type = Math.floor(Math.random() * 4);
+          star.x = Math.random() * 50 - 25 - sinnerradArr[star.type];
+          star.y = Math.random() * 50 - 25 - sinnerradArr[star.type];
         }
 
-        if (star.x < 25 && star.x > -25 && star.y < 25 && star.y > -25) {
-          if (settings.get("petalStarCaching")) {
-            ctx.drawImage(starCanvas, star.x - 15, star.y - 15, 30, 30);
-          } else {
-            drawStar(star.x, star.y);
-          }
+        if (star.x < 25 - sinnerradArr[star.type] && star.x > -25 + sinnerradArr[star.type] && star.y < 25 - sinnerradArr[star.type] && star.y > -25 + sinnerradArr[star.type]) {
+          const outerRadius = sradiusArr[star.type];
+          const innerRadius = sinnerradArr[star.type] + ssizec * Math.abs(Math.sin(time / (1000 * ssizecs)));
+          const rgb = rgbs[star.type];
+          const color = colors[star.type];
+          const alpha = (Math.cos(Date.now() / 600 + star.x / 30 + star.y / 30) + 1) * 0.8;
+
+          // Draw a glow around the star up to outerRadius
+          const grad = ctx.createRadialGradient(
+            star.x, star.y, 0,
+            star.x, star.y, outerRadius,
+          );
+          grad.addColorStop(0, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`);
+          grad.addColorStop(1, "transparent");
+          ctx.fillStyle = grad;
+          ctx.globalAlpha = 0.3;
+
+          ctx.fillRect(
+            star.x - outerRadius,
+            star.y - outerRadius,
+            outerRadius * 2,
+            outerRadius * 2,
+          );
+
+          // Draw a solid circle for the star itself up to innerRadius
+          ctx.globalAlpha = 1;
+          ctx.beginPath();
+          ctx.fillStyle = color;
+          ctx.arc(star.x, star.y, innerRadius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.closePath();
         }
       }
+
+      ctx.restore();
     }
   }
 

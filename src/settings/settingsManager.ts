@@ -13,7 +13,6 @@ export type BooleanSettingsKey =
   "craftingSearchBar" |
   "inventoryExpandButton" |
   "disableAllOptimizations" |
-  "petalStarCaching" |
   "disablePetalStars" |
   "disablePetalAnimations" |
   "allowLockSlotsOneToFive" |
@@ -160,7 +159,6 @@ export class SettingsManager {
       craftingSearchBar: [],
       inventoryExpandButton: [],
       disableAllOptimizations: [],
-      petalStarCaching: [],
       disablePetalStars: [],
       disablePetalAnimations: [],
       allowLockSlotsOneToFive: [],

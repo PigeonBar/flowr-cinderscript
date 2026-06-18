@@ -246,13 +246,6 @@ export class CinderSettingsMenu extends SettingsMenu {
         "recommended to leave this setting OFF, unless it causes unexpected " +
         "rendering issues.",
       ),
-      petalStarCaching: new BooleanOption(
-        "Petal Star Caching",
-        "petalStarCaching",
-        "This setting affects the stars that travel across fancy petal " +
-        "backgrounds. Turning this setting OFF will allow stars to twinkle " +
-        "independently of each other, but at a performance cost. ",
-      ),
       disablePetalStars: new BooleanOption(
         "Disable Petal Stars", "disablePetalStars",
       ),
@@ -373,7 +366,6 @@ export class CinderSettingsMenu extends SettingsMenu {
       new SettingsSectionHeading("Performance"),
       settingsMap.flowrscriptLoadWaitTime,
       settingsMap.disableAllOptimizations,
-      settingsMap.petalStarCaching,
       settingsMap.disablePetalAnimations,
       settingsMap.disablePetalStars,
       settingsMap.petalRenderQualityThreshold,

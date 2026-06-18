@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Flowr - Cinderscript
 // @namespace    npm/vite-plugin-monkey
-// @version      1.8.2
+// @version      1.8.3
 // @author       Applepie (Ideas + bugfixes), PigeonBar (some technical stuff)
 // @description  A free, publicly available collection of QoL features for flowr.fun players.
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=flowr.fun
@@ -55,7 +55,7 @@
     Rarity2[Rarity2["LUMINOUS"] = 36] = "LUMINOUS";
     Rarity2[Rarity2["FRACTURED"] = 37] = "FRACTURED";
     Rarity2[Rarity2["ELOQUENT"] = 38] = "ELOQUENT";
-    Rarity2[Rarity2["TESSELATED"] = 39] = "TESSELATED";
+    Rarity2[Rarity2["TESSELLATED"] = 39] = "TESSELLATED";
     Rarity2[Rarity2["VANQUISHED"] = 40] = "VANQUISHED";
     Rarity2[Rarity2["COALESCENT"] = 41] = "COALESCENT";
     Rarity2[Rarity2["SPECTRAL"] = 42] = "SPECTRAL";
@@ -66,6 +66,24 @@
     Rarity2[Rarity2["TIMELIT"] = 47] = "TIMELIT";
     Rarity2[Rarity2["AEONIC"] = 48] = "AEONIC";
     Rarity2[Rarity2["UNREAL"] = 49] = "UNREAL";
+    Rarity2[Rarity2["ABYSSAL"] = 50] = "ABYSSAL";
+    Rarity2[Rarity2["COSMIC"] = 51] = "COSMIC";
+    Rarity2[Rarity2["IRIDESCENT"] = 52] = "IRIDESCENT";
+    Rarity2[Rarity2["ENTHROPIC"] = 53] = "ENTHROPIC";
+    Rarity2[Rarity2["ORACULAR"] = 54] = "ORACULAR";
+    Rarity2[Rarity2["DIGITAL"] = 55] = "DIGITAL";
+    Rarity2[Rarity2["APOCALYPTIC"] = 56] = "APOCALYPTIC";
+    Rarity2[Rarity2["VICIOUS"] = 57] = "VICIOUS";
+    Rarity2[Rarity2["CYBERNETIC"] = 58] = "CYBERNETIC";
+    Rarity2[Rarity2["EPHEMERAL"] = 59] = "EPHEMERAL";
+    Rarity2[Rarity2["SHATTERED"] = 60] = "SHATTERED";
+    Rarity2[Rarity2["INTERLIMINAL"] = 61] = "INTERLIMINAL";
+    Rarity2[Rarity2["BLIGHTED"] = 62] = "BLIGHTED";
+    Rarity2[Rarity2["OBLIVION"] = 63] = "OBLIVION";
+    Rarity2[Rarity2["RIOTOUS"] = 64] = "RIOTOUS";
+    Rarity2[Rarity2["CORRUPT"] = 65] = "CORRUPT";
+    Rarity2[Rarity2["SYNTHESIZED"] = 66] = "SYNTHESIZED";
+    Rarity2[Rarity2["SIGMA"] = 67] = "SIGMA";
     return Rarity2;
   })(Rarity || {});
   const LIGHT_CINDER_COLOUR = "#ffaf60";
@@ -98,7 +116,7 @@
   const PETAL_BORDER_RATIO = 0.18;
   const KEYBIND_DELETED = "<None>";
   const MAX_PETAL_RARITY = Rarity.CHAOS;
-  const MAX_RARITY = Rarity.UNREAL;
+  const MAX_RARITY = Colors.rarities.length;
   const NON_ANIM_PETALS = Object.freeze([
     "Basic",
     "Rubber",
@@ -349,7 +367,6 @@
         craftingSearchBar: [],
         inventoryExpandButton: [],
         disableAllOptimizations: [],
-        petalStarCaching: [],
         disablePetalStars: [],
         disablePetalAnimations: [],
         allowLockSlotsOneToFive: [],
@@ -485,6 +502,12 @@
     }
   }
   const cinderChangelogList = [
+    {
+      text: `- Made this script compatible with new rarities (PR #40)
+- Fixed optimizations not applying to Mob Gallery entries (PR #40)
+- Removed the "Petal Star Caching" setting, since it is incompatible with the new rarities' fancy stars (PR #40)`,
+      date: "Version 1.8.3"
+    },
     {
       text: `- [*] New setting: Settings > Performance > Flowrscript Load Wait Time (PR #39)
 - Craft menu now properly clears petals that are done fading (PR #39)
@@ -2211,11 +2234,6 @@ Please enter a Rarity.`
           "disableAllOptimizations",
           "Turning this setting ON will disable ALL of this script's optimizations, including the ones configured below. It is strongly recommended to leave this setting OFF, unless it causes unexpected rendering issues."
         ),
-        petalStarCaching: new BooleanOption(
-          "Petal Star Caching",
-          "petalStarCaching",
-          "This setting affects the stars that travel across fancy petal backgrounds. Turning this setting OFF will allow stars to twinkle independently of each other, but at a performance cost. "
-        ),
         disablePetalStars: new BooleanOption(
           "Disable Petal Stars",
           "disablePetalStars"
@@ -2312,7 +2330,6 @@ Please enter a Rarity.`
         new SettingsSectionHeading("Performance"),
         settingsMap.flowrscriptLoadWaitTime,
         settingsMap.disableAllOptimizations,
-        settingsMap.petalStarCaching,
         settingsMap.disablePetalAnimations,
         settingsMap.disablePetalStars,
         settingsMap.petalRenderQualityThreshold,
@@ -2911,7 +2928,7 @@ Please enter a Rarity.`
       fn: toggleScreenshotMode
     });
   }
-  const version = "1.8.2";
+  const version = "1.8.3";
   function addScriptVersionToDebugInfo() {
     const originalRenderDebug = renderDebug;
     renderDebug = () => {
@@ -4677,26 +4694,11 @@ Please enter a Rarity.`
     const airCtx = [];
     const airPetals = [];
     initializeCachedAir();
-    const starCanvas = new OffscreenCanvas(30, 30);
-    const starCtx = starCanvas.getContext("2d");
-    let simStarX = 0;
-    let simStarY = 0;
     const originalDraw = draw;
     draw = function() {
       if (settings.get("disableAllOptimizations")) {
         originalDraw();
         return;
-      }
-      starCtx?.reset();
-      if (settings.get("petalStarCaching") && !isNil(starCtx)) {
-        const originalCtx = ctx;
-        ctx = starCtx;
-        simStarX += 0.1;
-        simStarY += 0.1;
-        ctx.translate(15, 15);
-        drawStar(0, 0);
-        ctx.translate(-15, -15);
-        ctx = originalCtx;
       }
       for (let rarity = 0; rarity <= MAX_RARITY; rarity++) {
         airCachedThisFrame[rarity] = false;
@@ -4710,6 +4712,15 @@ Please enter a Rarity.`
         for (let star of this.stars) {
           star.x = Infinity;
           star.y = Infinity;
+        }
+      } else if (!isNil(this.stars)) {
+        for (let star of this.stars) {
+          if (!Number.isFinite(star.x)) {
+            star.x = 1e99;
+          }
+          if (!Number.isFinite(star.y)) {
+            star.y = 1e99;
+          }
         }
       }
       if (settings.get("disableAllOptimizations") || this === airPetals[this.rarity] || (!_unsafeWindow.hqp || flowrMod?.noFancy) || this.shouldAnimate() || inGame && !isNil(number) && !isNil(petalReloadData[number])) {
@@ -4804,57 +4815,81 @@ Please enter a Rarity.`
         ctx.restore();
       }
     };
-    function drawStar(x, y) {
-      ctx.beginPath();
-      let twinkleTime = Date.now() / 600;
-      if (ctx === starCtx) {
-        twinkleTime += simStarX / 30 + simStarY / 30;
-      } else {
-        twinkleTime += x / 30 + y / 30;
-      }
-      const grad = ctx.createRadialGradient(x, y, 15, x, y, 0);
-      grad.addColorStop(0, "transparent");
-      grad.addColorStop(0.8, `rgba(255,255,255,${(Math.cos(twinkleTime) + 1) * 0.8})`);
-      grad.addColorStop(1, "white");
-      ctx.fillStyle = grad;
-      ctx.globalAlpha = 0.3;
-      ctx.fillRect(-25, -25, 50, 50);
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = "#fff";
-      ctx.arc(x, y, 1, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.closePath();
-    }
     PetalContainer.prototype.drawStars = function() {
       const totalStars = Colors.rarities[this.rarity].fancy?.stars;
       if (!isNil(totalStars) && (_unsafeWindow.hqp && !flowrMod?.noFancy)) {
+        let sdesigns = hellaCoolStars(this.rarity);
+        if (isNil(sdesigns) || sdesigns.length < 11) {
+          return;
+        }
+        const colors = sdesigns.slice(0, 4);
+        const rgbs = colors.map((c) => hexToRGBA(c));
+        const sradiusArr = sdesigns[4];
+        const sinnerradArr = sdesigns[5];
+        let sspeed = sdesigns[6];
+        let schaos = sdesigns[7];
+        let schaosf = sdesigns[8];
+        let ssizec = sdesigns[9];
+        let ssizecs = sdesigns[10];
         if (isNil(this.stars)) {
           this.stars = [];
-          for (let starnum = 0; starnum < totalStars; starnum++) {
-            this.stars.push(
-              { x: Math.random() * 50 - 25, y: Math.random() * 50 - 25 }
-            );
+          for (let i = 0; i < totalStars; i++) {
+            const star = {
+              type: Math.floor(Math.random() * 4),
+              x: 0,
+              y: 0
+            };
+            star.x = Math.random() * 50 - 25 - sinnerradArr[0];
+            star.y = Math.random() * 50 - 25 - sinnerradArr[0];
+            this.stars.push(star);
           }
         }
+        ctx.save();
         ctx.beginPath();
         ctx.roundRect(-22.75, -22.75, 45.5, 45.5, 0.25);
         ctx.clip();
         ctx.closePath();
         for (let star of this.stars) {
-          star.x += 0.1;
-          star.y += 0.1;
-          if (star.x > 25 || star.y > 25) {
-            star.x = Math.random() * 800 - 20 - 30;
-            star.y = -30;
+          star.x += sspeed + Math.sin(time / 1e3 * schaos + star.y / schaosf) * Math.sign(schaos);
+          star.y += sspeed + Math.sin(time / 1e3 * schaos + star.x / schaosf) * Math.sign(schaos);
+          if (star.x > 25 - sinnerradArr[star.type] || star.x < -25 + sinnerradArr[star.type] || star.y > 25 - sinnerradArr[star.type] || star.y < -25 + sinnerradArr[star.type]) {
+            star.type = Math.floor(Math.random() * 4);
+            star.x = Math.random() * 50 - 25 - sinnerradArr[star.type];
+            star.y = Math.random() * 50 - 25 - sinnerradArr[star.type];
           }
-          if (star.x < 25 && star.x > -25 && star.y < 25 && star.y > -25) {
-            if (settings.get("petalStarCaching")) {
-              ctx.drawImage(starCanvas, star.x - 15, star.y - 15, 30, 30);
-            } else {
-              drawStar(star.x, star.y);
-            }
+          if (star.x < 25 - sinnerradArr[star.type] && star.x > -25 + sinnerradArr[star.type] && star.y < 25 - sinnerradArr[star.type] && star.y > -25 + sinnerradArr[star.type]) {
+            const outerRadius = sradiusArr[star.type];
+            const innerRadius = sinnerradArr[star.type] + ssizec * Math.abs(Math.sin(time / (1e3 * ssizecs)));
+            const rgb = rgbs[star.type];
+            const color = colors[star.type];
+            const alpha = (Math.cos(Date.now() / 600 + star.x / 30 + star.y / 30) + 1) * 0.8;
+            const grad = ctx.createRadialGradient(
+              star.x,
+              star.y,
+              0,
+              star.x,
+              star.y,
+              outerRadius
+            );
+            grad.addColorStop(0, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`);
+            grad.addColorStop(1, "transparent");
+            ctx.fillStyle = grad;
+            ctx.globalAlpha = 0.3;
+            ctx.fillRect(
+              star.x - outerRadius,
+              star.y - outerRadius,
+              outerRadius * 2,
+              outerRadius * 2
+            );
+            ctx.globalAlpha = 1;
+            ctx.beginPath();
+            ctx.fillStyle = color;
+            ctx.arc(star.x, star.y, innerRadius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.closePath();
           }
         }
+        ctx.restore();
       }
     };
     function initializeCachedAir() {
@@ -5567,7 +5602,7 @@ Please enter a Rarity.`
       return rotation;
     };
     PetalContainer.prototype.shouldAnimate = function() {
-      return !NON_ANIM_PETALS.includes(this.type) && !settings.get("disablePetalAnimations");
+      return this.petals[0].constructor === Petal && !NON_ANIM_PETALS.includes(this.type) && !settings.get("disablePetalAnimations");
     };
     PetalContainer.prototype.drawAmount = function(textColour = "white") {
       ctx.save();

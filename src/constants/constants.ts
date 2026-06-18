@@ -160,7 +160,7 @@ export const MAX_PETAL_RARITY = Rarity.CHAOS;
 /**
  * The maximum rarity overall that has been configured by the Flowr devs.
  */
-export const MAX_RARITY = Rarity.UNREAL;
+export const MAX_RARITY = Colors.rarities.length;
 
 /**
  * A list of petals that are not animated when displayed in a petal container.
