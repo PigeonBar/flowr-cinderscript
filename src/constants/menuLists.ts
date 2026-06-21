@@ -9,10 +9,15 @@ import { isNil } from "../utils";
 export let MENU_LIST: readonly Menu[];
 
 /**
+ * A list of some submenus accessible via their parent menus.
+ */
+export let SUB_MENU_LIST: readonly Menu[];
+
+/**
  * A helper function to initialize {@linkcode MENU_LIST}, to prevent certain
  * side effects from constructors running during importing.
  */
-export function initMenuList(): void {
+export function initMenuLists(): void {
   const rawList: Menu[] = [
     settingsMenu,
     changelog,
@@ -35,4 +40,5 @@ export function initMenuList(): void {
 
   // Finally, freeze the object here
   MENU_LIST = Object.freeze(rawList);
+  SUB_MENU_LIST = Object.freeze([cinderSettingsMenu.hotkeysEditor]);
 }

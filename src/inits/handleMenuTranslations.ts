@@ -1,4 +1,4 @@
-import { MENU_LIST } from "../constants/menuLists";
+import { MENU_LIST, SUB_MENU_LIST } from "../constants/menuLists";
 import { isTopMenu } from "../utils";
 
 /**
@@ -8,7 +8,7 @@ import { isTopMenu } from "../utils";
  * the crafting menu is opened or closed.
  */
 export function handleMenuTranslations() {
-  for (let menu of MENU_LIST) {
+  for (let menu of [...MENU_LIST, ...SUB_MENU_LIST]) {
     if (isTopMenu(menu)) {
       Object.defineProperty(menu, "renderY", {
         get: function(this: TopMenu): number {

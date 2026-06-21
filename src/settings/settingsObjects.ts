@@ -1,14 +1,15 @@
 // This file stores certain objects to avoid issues with circular imports.
 
-import type { BooleanSettingsKey, ColourSettingsKey, KeybindSettingsKey, NumberSettingsKey, RaritySettingsKey } from "./settingsManager";
-import type { BooleanOption, ColourOption, KeybindOption, NumberOption, RarityOption } from "./settingsOptions";
+import type { BooleanSettingsKey, ColourSettingsKey, HotkeysEditorSettingsKey, KeybindSettingsKey, NumberSettingsKey, RaritySettingsKey } from "./settingsManager";
+import type { BooleanOption, ColourOption, CustomOption, KeybindOption, NumberOption, RarityOption } from "./settingsOptions";
 
 type SettingsMap =
   Record<BooleanSettingsKey, BooleanOption> &
   Record<NumberSettingsKey, NumberOption> &
   Record<ColourSettingsKey, ColourOption> &
   Record<RaritySettingsKey, RarityOption> &
-  Record<KeybindSettingsKey, KeybindOption>;
+  Record<KeybindSettingsKey, KeybindOption> &
+  Record<HotkeysEditorSettingsKey, CustomOption>;
 
 /**
  * The full list of settings options. It is placed here so that other modules

@@ -38,6 +38,16 @@ export const SETTINGS_GRAY_BORDER = "#8a8a8a";
 export const SETTINGS_GREEN = "#3fff3f";
 
 /**
+ * The colour of a grayed out settings value.
+ */
+export const SETTINGS_VALUE_GRAY = "#afafaf";
+
+/**
+ * The colour of a settings value that has some sort of error.
+ */
+export const SETTINGS_RED = "#ff0000";
+
+/**
  * The colour used for tooltips and tooltip icons.
  */
 export const TOOLTIP_BLUE = "#7f7fff";
@@ -73,6 +83,22 @@ export const MINIMAP_YELLOW = "#ffe763";
 export const MINIMAP_RED = "#bb0000";
 
 /**
+ * The standard colour used for a "Close" button's fill.
+ */
+export const X_BUTTON_FILL = "#c1565e";
+
+/**
+ * The standard colour used for a "Close" button's fill when the user's mouse
+ * is hovering over the button.
+ */
+export const X_BUTTON_FILL_HOVERED = "#c16666";
+
+/**
+ * The standard colour used for a "Close" button's stroke.
+ */
+export const X_BUTTON_STROKE = "#90464b";
+
+/**
  * The total height of an option in the settings menu, from Flowr's base code.
  */
 export const SETTINGS_OPTION_HEIGHT = 50;
@@ -88,9 +114,14 @@ export const SETTINGS_BUTTON_SIZE = 28;
 export const SETTINGS_BUTTON_PADDING = 13;
 
 /**
- * The size of the edit icon in the settings menu.
+ * The size of the 'Edit' icon in the settings menu.
  */
 export const EDIT_ICON_SIZE = 20;
+
+/**
+ * The width of the 'Delete' icon in the hotkeys editor.
+ */
+export const DELETE_ICON_WIDTH = EDIT_ICON_SIZE * 2 / 3;
 
 /**
  * The diameter of the ? tooltip icon in the settings menu.
@@ -356,4 +387,116 @@ export const RARE_MOBS = Object.freeze([
   "Dark Electric Eel",
   "Shiny Electric Eel",
   "Shiny Lilypad",
+]);
+
+/**
+ * A list of letter keys that are reserved afor important actions in Flowr's
+ * base code. This includes:
+ * - W, A, S, D: Movement keys
+ * - Q, E: Adjust petal rotation speed
+ * - R: Swap all petals
+ * - Digits 0-9: Swap a single petal
+ * - '-', '=', and '[': Control zoom level
+ * - ';': Toggles debug info and hitboxes
+ */
+export const BASE_GAME_HOTKEYS = Object.freeze([
+  "KeyW",
+  "KeyA",
+  "KeyS",
+  "KeyD",
+  "KeyQ",
+  "KeyE",
+  "KeyR",
+  "Digit0",
+  "Digit1",
+  "Digit2",
+  "Digit3",
+  "Digit4",
+  "Digit5",
+  "Digit6",
+  "Digit7",
+  "Digit8",
+  "Digit9",
+  "Minus",
+  "Equal",
+  "BracketLeft",
+  "Semicolon",
+]);
+
+/**
+ * The full list of Flowrscript's chat hotkeys.
+ */
+export const FLOWRSCRIPT_HOTKEYS = Object.freeze([
+  {
+    chatMsg: "I hope your whole family has a nice Christmas.",
+    keybind: "KeyL",
+  },
+  {
+    chatMsg: "/deaths",
+    keybind: "KeyU",
+  },
+  {
+    chatMsg: "/damage",
+    keybind: "KeyK",
+  },
+  {
+    chatMsg: "Loading Time!",
+    keybind: "KeyT",
+  },
+  {
+    chatMsg: "I'm Out of Time",
+    keybind: "KeyO",
+  },
+  {
+    chatMsg: "/roomid",
+    keybind: "KeyI",
+  },
+  {
+    chatMsg: "AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN",
+    keybind: "KeyY",
+  },
+  {
+    chatMsg: "Time Halfway Loaded!",
+    keybind: "KeyG",
+  },
+  {
+    chatMsg: "Dupe!",
+    keybind: "KeyH",
+  },
+  {
+    chatMsg: "Check Compass!",
+    keybind: "KeyJ",
+  },
+  {
+    chatMsg: "THE BRITISH ARE COMING!!!",
+    keybind: "KeyB",
+  },
+  {
+    chatMsg: "SOMEONE ELSE GRACE",
+    keybind: "KeyF",
+  },
+  {
+    chatMsg: "I Am Gracing!",
+    keybind: "KeyN",
+  },
+  {
+    chatMsg: "I Am Saphing!",
+    keybind: "KeyX",
+  },
+  {
+    chatMsg: "I am Duping!",
+    keybind: "KeyZ",
+  },
+  {
+    chatMsg: "SOMEONE ELSE TIME!",
+    keybind: "KeyC",
+  },
+  {
+    chatMsg: "SOMEONE ELSE SAPH!",
+    keybind: "KeyV",
+  },
+  {
+    chatMsg: "SOMEONE ELSE DUPE!",
+    keybind: "KeyM",
+  },
 ]);

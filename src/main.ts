@@ -40,7 +40,7 @@ import { preventMenuOverlap } from "./inits/preventMenuOverlap";
 import { blockFovChangeFromSettingsScroll } from "./inits/settingsScrollBlockFovChange";
 import { refreezeObjects, unfreezeObjects } from "./inits/unfreezeObjects";
 import { allowWsDataEditing } from "./inits/wsDataEditing";
-import { settings } from "./settings/settingsManager";
+import { initSettingsManager, settings } from "./settings/settingsManager";
 import { isNil } from "./utils";
 
 const mainScriptPromise = new Promise<void>(async (resolve) => {
@@ -49,6 +49,10 @@ const mainScriptPromise = new Promise<void>(async (resolve) => {
   if (isNil(settingsMenu) && isNil(craftingMenu)) {
     return;
   }
+
+  // We must init the settings individually here, since the next step (waiting
+  // for Flowrscript) relies on one of the settings.
+  initSettingsManager();
 
   // In case the player is also using Flowrscript, we need to wait for
   // Flowrscript's async loading to finish first, or else it will overwrite

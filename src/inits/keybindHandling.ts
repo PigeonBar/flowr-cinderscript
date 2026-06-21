@@ -1,9 +1,11 @@
 import { unsafeWindow } from "$";
 import { KEYBIND_DELETED } from "../constants/constants";
 import { settings, type KeybindSettingsKey } from "../settings/settingsManager";
+import { addWsDataEditing, deleteQueuedChatMsgs, isNotChatMessage } from "./wsDataEditing";
 
 type KeybindInstruction = 
   (
+    {type: "always"} |
     {type: "settings", settingsKey: KeybindSettingsKey} |
     {type: "rawValue", value: string} |
     {type: "localStorage", storageKey: string} |
@@ -24,8 +26,27 @@ const keybinds: FullKeybindInstruction[] = [];
 /**
  * This initializer injects some code into {@linkcode inputHandler.handleKey}
  * to handle keybinds, including keybinds chosen in the settings.
+ * 
+ * This function also handles overriding chat hotkeys by other scripts if the
+ * [Use Chat Hotkeys] setting is turned on.
  */
 export function initKeybindHandling(): void {
+  /**
+   * Whether or not the chat should be disabled right now.
+   */
+  let chatDisabled = false;
+
+  /**
+   * Do not send chat messages when chat should be disabled
+   */
+  addWsDataEditing(data => {
+    if (chatDisabled && !isNotChatMessage(data)) {
+      return undefined;
+    } else {
+      return data;
+    }
+  });
+
   const originalHandleKey = inputHandler.handleKey;
   inputHandler.handleKey = function(e: KeyboardEvent) {
     // First, handle all `beforeOriginal` keybind instructions
@@ -38,8 +59,23 @@ export function initKeybindHandling(): void {
       }
     }
 
+    // Disable chat hotkeys if the [Use Chat Hotkeys] setting is turned on, and
+    // the user is not pressing "Enter" to send a normal chat message.
+    if (settings.get("useChatHotkeys") && e.code !== "Enter") {
+      chatDisabled = true;
+    }
+
     // Next, run all the usual code for handling inputs
     originalHandleKey.apply(inputHandler, [e]);
+
+    // Also delete queued chat messages, since this chat disabling system fails
+    // to detect that it should disable queued chat messages.
+    if (chatDisabled) {
+      deleteQueuedChatMsgs();
+    }
+
+    // Re-enable the chat
+    chatDisabled = false;
 
     // Then, process all non-`beforeOriginal` keybind instructions
     for (let keybind of keybinds) {
@@ -134,7 +170,9 @@ export function checkInstruction(
   }
   
   // Check that the input's key matches the keybind
-  if (keybind.type === "settings") {
+  if (keybind.type === "always") {
+    return true;
+  } else if (keybind.type === "settings") {
     return e.code === settings.get(keybind.settingsKey);
   } else if (keybind.type === "rawValue") {
     return e.code === keybind.value;

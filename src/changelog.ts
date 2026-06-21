@@ -1,6 +1,13 @@
 import { unsafeWindow } from "$";
 
 const cinderChangelogList: ChangelogEntry[] = [
+  {text: `- Added a chat hotkeys editor (PR #41):
+  - Editor is accessible at (Settings > Keybinds > Chat Hotkeys Editor)
+  - Conflicting keybinds are now displayed as red instead of green
+  - [*] You can choose to replace Flowrscript's hotkeys, which opens up keys to use on other features!
+- Major internal code reformatting for the settings menu (PR #41)
+  - Please let me know if these code changes broke anything!`,
+  date: "Version 1.9.0 (Hotkeys Editor Update)"},
   {text: `- Made this script compatible with new rarities (PR #40)
 - Fixed optimizations not applying to Mob Gallery entries (PR #40)
 - Removed the "Petal Star Caching" setting, since it is incompatible with the new rarities' fancy stars (PR #40)`,

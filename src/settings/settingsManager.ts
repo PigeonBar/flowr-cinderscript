@@ -1,4 +1,6 @@
+import { KEYBIND_DELETED } from "../constants/constants";
 import { Rarity } from "../enums";
+import type { ChatHotkeys } from "./hotkeysUtils";
 
 /**
  * Settings keys for settings that take a boolean value.
@@ -66,59 +68,22 @@ export type KeybindSettingsKey =
   "keybindLockSlot" |
   "keybindMinimap";
 
+/**
+ * The settings key for the setting that opens the chat hotkeys editor.
+ */
+export type HotkeysEditorSettingsKey = "chatHotkeys";
+
 type CinderSettings =
   Record<BooleanSettingsKey, boolean> &
   Record<NumberSettingsKey, number> &
   Record<ColourSettingsKey, string> &
   Record<RaritySettingsKey, Rarity> &
-  Record<KeybindSettingsKey, string>;
+  Record<KeybindSettingsKey, string> &
+  Record<HotkeysEditorSettingsKey, ChatHotkeys>;
 
 export type SettingsKey = keyof CinderSettings;
 
-const defaultSettings: CinderSettings = Object.freeze({
-  petalCraftPreview: true,
-  autoCopyCodes: true,
-  missileDrawPriority: true,
-  invertAttack: false,
-  invertDefend: false,
-  settingsTooltips: true,
-  craftingSearchBar: true,
-  inventoryExpandButton: true,
-  disableAllOptimizations: false,
-  petalStarCaching: true,
-  disablePetalStars: false,
-  disablePetalAnimations: false,
-  allowLockSlotsOneToFive: false,
-  hideSettingsDuringRuns: false,
-  minimapAlwaysShowBosses: true,
-  minimapAlwaysShowRareMobs: true,
-  minimapRareMobAura: true,
-  disableWelcomeMessage: false,
-  useChatHotkeys: false,
-  baseReciprocalOfFOV: 3,
-  playerHpBarScale: 2.5,
-  specialDropsScale: 2.5,
-  specialDropsQuantity: 1,
-  petalRenderQualityThreshold: 400,
-  craftAnimationLength: 0,
-  petalLockShakeIntensity: 2,
-  minimapNumberOfMobs: 5,
-  flowrscriptLoadWaitTime: 1,
-  gardenBackground: Colors.biomes.garden.background,
-  desertBackground: Colors.biomes.desert.background,
-  oceanBackground: Colors.biomes.ocean.background,
-  savannaBackground: Colors.biomes.savanna.background,
-  swampBackground: Colors.biomes.swamp.background,
-  zooBackground: Colors.biomes.zoo.background,
-  deepZooBackground: Colors.biomes.deepzoo.background,
-  specialDropsRarity: Rarity.GALACTIC,
-  minimapAlwaysShowRarity: Rarity.COMMON,
-  keybindStatsBox: "KeyG",
-  keybindInvertAttack: "Comma",
-  keybindInvertDefend: "Period",
-  keybindLockSlot: "KeyL",
-  keybindMinimap: "KeyM",
-});
+let defaultSettings: CinderSettings;
 
 /**
  * A function to be run when the user edits a specific setting.
@@ -191,6 +156,7 @@ export class SettingsManager {
       keybindInvertDefend: [],
       keybindLockSlot: [],
       keybindMinimap: [],
+      chatHotkeys: [],
     };
   }
 
@@ -235,6 +201,60 @@ export class SettingsManager {
   }
 }
 
-// Note: We must init the settings manager immediately so that the settings can
-// be applied properly while waiting for Flowrscript to load.
-export const settings = new SettingsManager();
+export let settings: SettingsManager;
+
+/**
+ * A helper function to initialize {@linkcode settings}, to prevent certain
+ * side effects from its constructor running during importing.
+ */
+export function initSettingsManager(): void {
+  defaultSettings = Object.freeze({
+    petalCraftPreview: true,
+    autoCopyCodes: true,
+    missileDrawPriority: true,
+    invertAttack: false,
+    invertDefend: false,
+    settingsTooltips: true,
+    craftingSearchBar: true,
+    inventoryExpandButton: true,
+    disableAllOptimizations: false,
+    petalStarCaching: true,
+    disablePetalStars: false,
+    disablePetalAnimations: false,
+    allowLockSlotsOneToFive: false,
+    hideSettingsDuringRuns: false,
+    minimapAlwaysShowBosses: true,
+    minimapAlwaysShowRareMobs: true,
+    minimapRareMobAura: true,
+    disableWelcomeMessage: false,
+    useChatHotkeys: false,
+    baseReciprocalOfFOV: 3,
+    playerHpBarScale: 2.5,
+    specialDropsScale: 2.5,
+    specialDropsQuantity: 1,
+    petalRenderQualityThreshold: 400,
+    craftAnimationLength: 0,
+    petalLockShakeIntensity: 2,
+    minimapNumberOfMobs: 5,
+    flowrscriptLoadWaitTime: 1,
+    gardenBackground: Colors.biomes.garden.background,
+    desertBackground: Colors.biomes.desert.background,
+    oceanBackground: Colors.biomes.ocean.background,
+    savannaBackground: Colors.biomes.savanna.background,
+    swampBackground: Colors.biomes.swamp.background,
+    zooBackground: Colors.biomes.zoo.background,
+    deepZooBackground: Colors.biomes.deepzoo.background,
+    specialDropsRarity: Rarity.GALACTIC,
+    minimapAlwaysShowRarity: Rarity.COMMON,
+    keybindStatsBox: "KeyG",
+    keybindInvertAttack: "Comma",
+    keybindInvertDefend: "Period",
+    keybindLockSlot: "KeyL",
+    keybindMinimap: "KeyM",
+    chatHotkeys: [{
+      chatMsg: "Remember to enable the setting \"Use Chat Hotkeys\"!",
+      keybind: KEYBIND_DELETED,
+    }],
+  });
+  settings = new SettingsManager();
+}

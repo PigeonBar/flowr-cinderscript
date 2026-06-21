@@ -1,22 +1,23 @@
 import { unsafeWindow } from "$";
-import { SETTINGS_GREEN, SETTINGS_OPTION_HEIGHT, SCROLLBAR_LENGTH, SETTINGS_SCROLLBAR_MIN_POS, CINDER_BORDER_COLOUR, CINDER_COLOUR, LIGHT_CINDER_COLOUR, SETTINGS_GRAY, SETTINGS_GRAY_BORDER } from "../constants/constants";
+import { SETTINGS_GREEN, CINDER_BORDER_COLOUR, CINDER_COLOUR, LIGHT_CINDER_COLOUR, SETTINGS_OPTION_HEIGHT, SETTINGS_RED, BASE_GAME_HOTKEYS } from "../constants/constants";
+import { HotkeysEditor } from "./chatHotkeysEditor";
 import { flowrMod } from "../inits/initFlowrscriptPointer";
 import { ColourSelectorUi } from "../ui/colourSelectorUi";
 import { isNil } from "../utils";
+import { AbstractSettingsMenu } from "./abstractSettingsMenu";
 import { settings } from "./settingsManager";
 import { initOptions, settingsMap } from "./settingsObjects";
-import { BooleanOption, ColourOption, KeybindOption, NumberOption, RarityOption, SettingsOption, SettingsSectionHeading } from "./settingsOptions";
+import { BooleanOption, ColourOption, CustomOption, editIcon, KeybindOption, NumberOption, RarityOption, SettingsSectionHeading, type AbstractKeybindOption } from "./settingsOptions";
 
 /**
- * A menu for displaying this script's settings.
- * 
- * The scrollbar is somewhat adapted from Flowr's base code for its changelog.
+ * The main menu for displaying this script's settings.
  */
-export class CinderSettingsMenu extends SettingsMenu {
+export class CinderSettingsMenu extends AbstractSettingsMenu {
   /**
-   * The {@linkcode KeybindOption} currently being edited, if applicable.
+   * The {@linkcode AbstractKeybindOption} currently being edited, if
+   * applicable.
    */
-  currentKeybindOption?: KeybindOption;
+  currentKeybindOption?: AbstractKeybindOption;
 
   /**
    * The {@linkcode ColourOption} currently being edited, if applicable.
@@ -30,25 +31,9 @@ export class CinderSettingsMenu extends SettingsMenu {
   colourSelectorUi: ColourSelectorUi;
 
   /**
-   * The timestamp for the most recent time that the player used a mouse wheel
-   * input to scroll this menu.
+   * The {@linkcode HotkeysEditor} that can be accessed via this settings menu.
    */
-  lastMouseWheelTime: number;
-
-  private _scroll: number;
-
-  /**
-   * The vertical offset of the mouse from the scrollbar's centre if the user
-   * is currently dragging the scrollbar, or `undefined` if the user is not
-   * dragging the scrollbar.
-   */
-  draggingScrollbarOffset?: number;
-
-  /**
-   * The total height of this menu's contents, equal to
-   * {@linkcode SETTINGS_OPTION_HEIGHT} times `this.options.length`.
-   */
-  totalHeight: number;
+  hotkeysEditor: HotkeysEditor;
 
   /**
    * The position of the in-game settings button outside the main menu.
@@ -63,12 +48,19 @@ export class CinderSettingsMenu extends SettingsMenu {
    */
   settingsImage: CanvasImageSource;
 
+  /**
+   * A record that tracks how many times each key is being used as a keybind.
+   * This is mainly used for detecting any keybind conflicts.
+   */
+  keybindsCounter: Partial<Record<string, number>>;
+
   constructor() {
     super();
 
-    this.lastMouseWheelTime = time - 10000;
-    this._scroll = 0;
-    this.draggingScrollbarOffset = undefined;
+    // The height is intentionally not a multiple of SETTINGS_OPTION_HEIGHT, to
+    // make it clearer to the user that the menu should be scrollable.
+    this.h = 11.7 * SETTINGS_OPTION_HEIGHT;
+    this.w = 480;
 
     initOptions({
       invertAttack: new BooleanOption("Invert Attack", "invertAttack"),
@@ -267,23 +259,25 @@ export class CinderSettingsMenu extends SettingsMenu {
         "at all times."
       ),
       keybindInvertAttack: new KeybindOption(
-        "Invert Attack", "keybindInvertAttack",
+        "Invert Attack", "keybindInvertAttack", this,
       ),
       keybindInvertDefend: new KeybindOption(
-        "Invert Defend", "keybindInvertDefend",
+        "Invert Defend", "keybindInvertDefend", this,
       ),
       keybindMinimap: new KeybindOption(
-        "Toggle Minimap", "keybindMinimap",
+        "Toggle Minimap", "keybindMinimap", this,
       ),
       keybindStatsBox: new KeybindOption(
         "Quick Stats Box",
         "keybindStatsBox",
+        this,
         "This hotkey toggles the stats box of the highest-rarity mob " +
         "currently alive in your room.",
       ),
       keybindLockSlot: new KeybindOption(
         "Lock Petal Slot",
         "keybindLockSlot",
+        this,
         "While holding down this key, you can press a petal slot's number " +
         "key to cycle its lock state in the following order: $n " +
         "Unlocked > Soft Lock > $c#ff0000 Hard Lock $c#ffffff > Unlocked. " +
@@ -297,27 +291,30 @@ export class CinderSettingsMenu extends SettingsMenu {
         "You can change this behaviour at (Settings > General Gameplay > " +
         "Allow Hard Locking Petal Slots 1 to 5).",
       ),
-      // Currently unused, will hopefully be added to the next update
       useChatHotkeys: new BooleanOption(
         "Use Chat Hotkeys",
         "useChatHotkeys",
-        "This setting enables the chat hotkeys set using the menu opened by " +
-        "the next setting. These hotkeys let you instantly send set chat " +
-        "messages by pressing certain keys. $n $n " +
+        "This setting enables the chat hotkeys configured using the menu " +
+        "opened by the next setting. These hotkeys let you configure " +
+        "certain keys on your keyboard to instantly send certain chat " +
+        "messages. $n $n " +
         "To get you started, the chat hotkeys editing menu will let you " +
         "import Flowrscript's default set of hotkeys. $n $n " +
         "CAUTION: If this is turned on, it will override ALL chat hotkeys " +
-        "used by other scripts!"
+        "used by other scripts! Due to technical limitations, it may also " +
+        "disable sending chat messages for the first few seconds of each run.",
+      ),
+      chatHotkeys: new CustomOption(
+        "Chat Hotkeys Editor: ",
+        editIcon,
+        () => this.hotkeysEditor.toggle(),
+        () => [SETTINGS_GREEN],
+        () => [this.hotkeysEditor.active ? "Open" : "Closed"],
       ),
       disableWelcomeMessage: new BooleanOption(
         "Disable Welcome Message", "disableWelcomeMessage",
       ),
     });
-
-    // The height is intentionally not a multiple of SETTINGS_OPTION_HEIGHT, to
-    // make it clearer to the user that the menu should be scrollable.
-    this.h = 11.7 * SETTINGS_OPTION_HEIGHT;
-    this.w = 480;
 
     // If Flowrscript is active, we move our own button further to the right to
     // accomodate for Flowrscript's settings button.
@@ -328,7 +325,7 @@ export class CinderSettingsMenu extends SettingsMenu {
       h: 45,
     };
 
-    this.options = Object.freeze([
+    this.options = [
       new SettingsSectionHeading("General Gameplay"),
       settingsMap.invertAttack,
       settingsMap.invertDefend,
@@ -371,226 +368,58 @@ export class CinderSettingsMenu extends SettingsMenu {
       settingsMap.petalRenderQualityThreshold,
       new SettingsSectionHeading(
         "Keybinds",
-        "To edit a keybind, click its 'Edit' button and then enter a new " +
-        "key to bind it to. You can also delete a keybind by pressing the " +
+        "To edit a keybind, click its 'Edit' button and then press the new " +
+        "key you wish to use. You can also delete a keybind by pressing the " +
         "'Delete' key on your keyboard. $n $n " +
-        "Caution: If you set multiple keybinds to the same key, all of " +
-        "your keybinds will still remain active!",
+        `A displayed keybind will turn $c${SETTINGS_RED} RED $cwhite if it ` +
+        "conflicts with another keybind, or if you set it to one of the " +
+        "following keys: W, A, S, D, Q, E, R, 0-9, '-', '=', '[', or ';'.",
       ),
       settingsMap.keybindInvertAttack,
       settingsMap.keybindInvertDefend,
       settingsMap.keybindMinimap,
       settingsMap.keybindStatsBox,
       settingsMap.keybindLockSlot,
+      settingsMap.useChatHotkeys,
+      settingsMap.chatHotkeys,
       new SettingsSectionHeading("Welcome"),
       settingsMap.disableWelcomeMessage,
-    ]);
-    this.totalHeight = SETTINGS_OPTION_HEIGHT * this.options.length;
+    ];
+    Object.freeze(this.options);
 
-    // Allow this menu to process mouse inputs
-    const originalOnMouseDown = unsafeWindow.onmousedown;
-    unsafeWindow.onmousedown = (e: MouseEvent) => {
-      originalOnMouseDown?.apply(unsafeWindow, [e]);
-
-      if (unsafeWindow.connected === true) {
-        this.mouseDown({x: mouse.canvasX, y: mouse.canvasY});
-      }
-    }
-    const originalOnMouseUp = unsafeWindow.onmouseup;
-    unsafeWindow.onmouseup = (e: MouseEvent) => {
-      originalOnMouseUp?.apply(unsafeWindow, [e]);
-
-      if (unsafeWindow.connected === true) {
-        this.mouseUp();
-      }
-    }
-    
-    // Allow this menu to be drawn
     this.settingsImage = new Image(35, 35);
     this.settingsImage.src = `gfx/gear.png?v=${ver}`;
     this.settingsImage.draggable = false;
-
-    const originalRenderMenu = renderMenu;
-    renderMenu = (dt: number) => {
-      originalRenderMenu(dt);
-      this.x = 110;
-      this.draw();
-    }
-    const originalRenderGame = renderGame;
-    renderGame = (dt: number) => {
-      originalRenderGame(dt);
-
-      // Check that the game isn't in the "reconnecting" state
-      if (unsafeWindow.state === "game"
-        && !settings.get("hideSettingsDuringRuns")
-      ) {
-        this.drawInRunButton();
-        this.draw();
-      }
-    }
-
-    // Allow this menu to respond to scrolling inputs
-    document.addEventListener("wheel", (e: WheelEvent) => {
-      this.mouseScroll(e);
-    });
     
-    // Give this menu a colour selector ui
+    // Give this menu a colour selector ui and hotkeys editor
     this.colourSelectorUi = new ColourSelectorUi(this);
+    this.hotkeysEditor = new HotkeysEditor(this);
+
+    // Initialize the keybinds counter
+    this.keybindsCounter = {};
+    this.recountKeybinds();
   }
 
-  /**
-   * The y-position at the midpoint of the option currently being rendered.
-   */
-  get midHeight(): number {
-    return this.currentHeight + SETTINGS_OPTION_HEIGHT / 2;
-  }
-
-  /**
-   * How much the menu's contents are currently shifted due to scrolling.
-   */
-  get scroll(): number {
-    return this._scroll;
-  }
-
-  set scroll(val: number) {
-    // Enforce bounds here
-    this._scroll = Math.min(Math.max(val, 0), this.totalHeight + 10 - this.h);
-  }
-
-  /**
-   * The ratio of scrollbar movement to actual content movement.
-   */
-  get scrollbarRatio(): number {
-    return (this.h - 2 * SETTINGS_SCROLLBAR_MIN_POS)
-      / (this.totalHeight + 10 - this.h);
-  }
-  
-  /**
-   * The vertical position of the centre of this menu's scrollbar.
-   */
-  get scrollbarPos(): number {
-    return this.scroll * this.scrollbarRatio + SETTINGS_SCROLLBAR_MIN_POS;
-  };
-
-  set scrollbarPos(pos: number) {
-    if (!isNil(this.draggingScrollbarOffset)) {
-      this.scroll = (pos - SETTINGS_SCROLLBAR_MIN_POS - this.y - this.offset)
-        / this.scrollbarRatio;
-    }
-  }
-
-  // TODO: Make the scroll translation code less spaghetti
   /**
    * The main function to draw this menu.
    */
   draw(): void {
-    this.offset = interpolate(this.offset, this.targetOffset, 0.3);
-
-    if (!isNil(this.draggingScrollbarOffset)) {
-      this.scrollbarPos = mouse.canvasY - this.draggingScrollbarOffset;
-    }
-    
-    // Make sure that options do not get drawn outside the menu
-    ctx.save();
-    ctx.translate(this.x, this.renderY);
-    ctx.beginPath();
-    ctx.roundRect(0, 0, this.w, this.h, 3);
-    ctx.clip();
-    ctx.closePath();
-
-    // Draw the menu's background before we apply scroll translation
-    ctx.fillStyle = SETTINGS_GRAY;
-    ctx.beginPath();
-    ctx.roundRect(0, 0, this.w, this.h, 3);
-    ctx.fill();
-    ctx.closePath();
-
-    // Draw the scrollbar
-    ctx.strokeStyle = "#7f7f7f";
-    ctx.lineWidth = 8;
-    ctx.lineCap = "round";
-    ctx.beginPath();
-    ctx.moveTo(this.w - 16, this.scrollbarPos - SCROLLBAR_LENGTH / 2);
-    ctx.lineTo(this.w - 16, this.scrollbarPos + SCROLLBAR_LENGTH / 2);
-    ctx.stroke();
-    ctx.closePath();
-    // Set the cursor to "pointer" if it is hovering over the scrollbar
-    if (this.active &&
-        (this.mouseOnScrollbar() || !isNil(this.draggingScrollbarOffset))) {
-      setCursor("pointer");
+    // Move this menu to its default position at 110 units, in case it was
+    // previously moved to the right of the in-run settings button.
+    if (unsafeWindow.state === "menu") {
+      this.x = 110;
     }
 
-    // Make sure that options do not get drawn outside the menu
-    ctx.beginPath();
-    ctx.roundRect(0, 0, this.w, this.h, 3);
-    ctx.clip();
-    ctx.closePath();
-
-    // Simulate scrolling by translating the renderer and mouse data
-    ctx.translate(0, -this.scroll);
-    const e = {x: mouse.canvasX, y: mouse.canvasY + this.scroll};
-    if (!this.active || !this.mouseInMenu()) {
-      e.x = e.y = -Infinity; // Disable off-screen mouse interactions with the menu
+    if (unsafeWindow.state === "game"
+      && !settings.get("hideSettingsDuringRuns")
+    ) {
+      this.drawInRunButton();
     }
 
-    // Render all options
-    // TODO: Optimization - Do not render or process any off-screen options
-    this.currentHeight = 5;
-    for (let option of this.options) {
-      this.renderOption(option);
-    }
-    
-    // Draw the tooltip icons
-    ctx.translate(-this.x, -this.y);
-    for (let option of this.options) {
-      option.drawTooltipIcon();
-    }
-
-    // Set the cursor to "pointer" if it is hovering over an option
-    if (this.active && this.mouseInMenu()) {
-      for (let option of this.options) {
-        if (!option.isSectionHeading()) {
-          if (option.mouseInButton(e)) {
-            setCursor("pointer");
-          }
-        }
-      }
-    }
-
-    // Draw the menu's border here so it does not get covered by the options
-    ctx.restore(); // Reenable drawing outside the menu's border
-    ctx.strokeStyle = SETTINGS_GRAY_BORDER;
-    ctx.lineWidth = 8;
-    ctx.beginPath();
-    ctx.roundRect(this.x, this.renderY, this.w, this.h, 3);
-    ctx.stroke();
-    ctx.closePath();
-
-    // Finally, draw tooltip boxes, which can be drawn outside the menu.
-    // Note that `drawTooltipBox` must still be called if the menu is inactive,
-    // so that the tooltip's opacity gets updated to zero.
-    ctx.translate(0, -this.scroll);
-    for (let option of this.options) {
-      option.drawTooltipBox(e);
-    }
-    ctx.translate(0, this.scroll);
+    super.draw();
 
     // Draw the colour selector UI after drawing this entire menu
     this.colourSelectorUi.draw();
-  }
-
-  /**
-   * Renders the given {@linkcode SettingsOption}. Each type of option is
-   * rendered differently.
-   */
-  renderOption(option: SettingsOption | SettingsSectionHeading) {
-    if (option.isSectionHeading()) {
-      option.draw(this);
-    } else if (option.isBooleanOption()) {
-      this.renderToggle(option);
-    } else if (option.isDisplayValueOption()) {
-      option.draw(this);
-    }
   }
 
   /**
@@ -634,29 +463,22 @@ export class CinderSettingsMenu extends SettingsMenu {
     this.x = this.inRunSettingsButton.x + 65;
   }
 
-  /**
-   * Processes the user clicking on the settings menu. Each type of option is
-   * processed differently. This code is adapted from Flowr's client code.
-   */
   mouseDown(e: CanvasMouseData): void {
     // Process clicking the in-run settings menu button
     if (this.mouseOnInRunButton()) {
       this.toggle();
     }
 
-    // Prevent clicking on off-screen options
-    if (!this.mouseInMenu()) {
-      // Close this menu when clicking outside the menu during a run
-      if (this.active
-        && unsafeWindow.state !== "menu"
-        && !this.mouseOnInRunButton()
-      ) {
-        this.toggle();
-      }
-      return;
+    // Close this menu when clicking outside the menu during a run
+    if (!this.mouseInMenu()
+      && this.active
+      && unsafeWindow.state !== "menu"
+      && !this.mouseOnInRunButton()
+    ) {
+      this.toggle();
     }
 
-    // Stop processing clicks if this menu is inactive
+    // We must redo these checks before processing the colour selector UI
     if (!this.active) {
       return;
     }
@@ -669,63 +491,24 @@ export class CinderSettingsMenu extends SettingsMenu {
     // Process clicking the colour selector UI
     this.colourSelectorUi.mouseDown();
 
-    // Process clicking the scrollbar
-    if (this.mouseOnScrollbar()) {
-      this.draggingScrollbarOffset =
-        mouse.canvasY - (this.renderY + this.scrollbarPos);
-    }
-
-    e.y += this.scroll; // Apply scroll translation
-    for (let option of this.options) {
-      if (!option.isSectionHeading()) {
-        if (option.mouseInButton(e)) {
-          if (option.isBooleanOption()) {
-            this.processToggle(option, e);
-          } else if (option.isDisplayValueOption()) {
-            option.onClick(this);
-          }
-        }
-      }
-    }
+    super.mouseDown(e);
   }
 
-  /**
-   * Precesses the user releasing a mouse click.
-   */
   mouseUp(): void {
-    this.draggingScrollbarOffset = undefined;
+    super.mouseUp();
     this.colourSelectorUi.mouseUp();
-  }
-
-  /**
-   * Scrolls this menu up/down in response to a mouse wheel input.
-   * 
-   * This does not handle the player dragging the scrollbar.
-   */
-  mouseScroll(e: WheelEvent): void {
-    if (this.active && this.mouseInPrimaryMenu()) {
-      this.scroll += e.deltaY / 2;
-      this.lastMouseWheelTime = time;
-    }
-  }
-
-  /**
-   * Returns `true` iff this menu received a mouse wheel scroll input within
-   * the past 250ms.
-   */
-  hasRecentMouseScroll(): boolean {
-    return performance.now() - this.lastMouseWheelTime < 250;
   }
 
   toggle(): void {
     super.toggle();
 
-    // When toggling this menu off, also cancel editing current active options
-    // and cancel dragging the scrollbar.
+    // When toggling this menu off, also cancel editing current active options.
     if (!this.active) {
       this.cancelKeybind();
       this.cancelColourOption();
-      this.mouseUp();
+      if (this.hotkeysEditor.active) {
+        this.hotkeysEditor.toggle();
+      }
     }
   }
 
@@ -755,6 +538,11 @@ export class CinderSettingsMenu extends SettingsMenu {
       this.colourSelectorUi.setDefaultColour(
         settings.getDefault(this.currentColourOption.settingsKey)
       );
+
+      // Also close the hotkeys editor when opening the colour selector
+      if (this.hotkeysEditor.active) {
+        this.hotkeysEditor.toggle();
+      }
     } else {
       this.colourSelectorUi.active = false;
     }
@@ -775,10 +563,10 @@ export class CinderSettingsMenu extends SettingsMenu {
   }
 
   /**
-   * Sets a {@linkcode KeybindOption} to be edited, and cancel the previous
-   * keybind option if applicable.
+   * Sets a {@linkcode AbstractKeybindOption} to be edited, and cancel the
+   * previous keybind option if applicable.
    */
-  setCurrentKeybindOption(option?: KeybindOption): void {
+  setCurrentKeybindOption(option?: AbstractKeybindOption): void {
     if (!isNil(this.currentKeybindOption)) {
       this.currentKeybindOption.finishEdit();
     }
@@ -794,37 +582,42 @@ export class CinderSettingsMenu extends SettingsMenu {
   }
 
   /**
-   * Checks whether the mouse is inside this menu, excluding its colour
-   * selector UI.
+   * Performs a full recount to update {@linkcode keybindsCounter}.
    */
-  mouseInPrimaryMenu(): boolean {
-    return mouseInBox(
-      {x: mouse.canvasX, y: mouse.canvasY},
-      {x: this.x + 4, y: this.renderY + 4, w: this.w - 8, h: this.h - 8},
-    );
+  recountKeybinds(): void {
+    // Reset the counter
+    this.keybindsCounter = {};
+
+    // Count keybinds already reserved by the base game
+    for (let keybind of BASE_GAME_HOTKEYS) {
+      this.keybindsCounter[keybind] = 1;
+    }
+
+    // Count this menu's keybinds
+    for (let option of this.options) {
+      if (!option.isSectionHeading() && option.isKeybindOption()) {
+        const key = option.state;
+        this.keybindsCounter[key] = (this.keybindsCounter[key] ?? 0) + 1;
+      }
+    }
+
+    // Count the hotkey editor's keybinds
+    for (let option of this.hotkeysEditor.options) {
+      if (!option.isSectionHeading() && option.isHotkeysOption()) {
+        const key = option.state.keybind;
+        this.keybindsCounter[key] = (this.keybindsCounter[key] ?? 0) + 1;
+      }
+    }
   }
 
   /**
    * Checks whether the mouse is inside this menu (including its colour
-   * selector UI), excluding its borders.
+   * selector UI or its hotkeys editor), excluding its borders.
    */
   mouseInMenu(): boolean {
-    return this.mouseInPrimaryMenu() || this.colourSelectorUi.mouseInMenu();
-  }
-
-  /**
-   * Checks whether the mouse is hovering over this menu's scrollbar.
-   */
-  mouseOnScrollbar(): boolean {
-    return mouseInBox(
-      {x: mouse.canvasX, y: mouse.canvasY},
-      {
-        x: this.x + this.w - 24,
-        y: this.renderY + this.scrollbarPos - SCROLLBAR_LENGTH / 2,
-        w: 16,
-        h: SCROLLBAR_LENGTH,
-      },
-    );
+    return super.mouseInMenu()
+      || this.colourSelectorUi.mouseInMenu()
+      || this.hotkeysEditor.mouseInMenu();
   }
 
   /**
@@ -837,6 +630,11 @@ export class CinderSettingsMenu extends SettingsMenu {
     return unsafeWindow.state === "game" && mouseInBox(
       {x: mouse.canvasX, y: mouse.canvasY}, this.inRunSettingsButton,
     );
+  }
+
+  hasRecentMouseScroll(): boolean {
+    return super.hasRecentMouseScroll()
+      || this.hotkeysEditor.hasRecentMouseScroll();
   }
 }
 
