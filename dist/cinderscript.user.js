@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Flowr - Cinderscript
 // @namespace    npm/vite-plugin-monkey
-// @version      1.8.3
+// @version      1.9.0
 // @author       Applepie (Ideas + bugfixes), PigeonBar (some technical stuff)
 // @description  A free, publicly available collection of QoL features for flowr.fun players.
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=flowr.fun
@@ -93,6 +93,8 @@
   const SETTINGS_GRAY = "#aaaaaa";
   const SETTINGS_GRAY_BORDER = "#8a8a8a";
   const SETTINGS_GREEN = "#3fff3f";
+  const SETTINGS_VALUE_GRAY = "#afafaf";
+  const SETTINGS_RED = "#ff0000";
   const TOOLTIP_BLUE = "#7f7fff";
   const TOOLTIP_BORDER_BLUE = "#3f3fff";
   const TEXT_LIGHT_RED = "#ffbfbf";
@@ -100,10 +102,14 @@
   const MINIMAP_GREEN = "#00ff00";
   const MINIMAP_YELLOW = "#ffe763";
   const MINIMAP_RED = "#bb0000";
+  const X_BUTTON_FILL = "#c1565e";
+  const X_BUTTON_FILL_HOVERED = "#c16666";
+  const X_BUTTON_STROKE = "#90464b";
   const SETTINGS_OPTION_HEIGHT = 50;
   const SETTINGS_BUTTON_SIZE = 28;
   const SETTINGS_BUTTON_PADDING = 13;
   const EDIT_ICON_SIZE = 20;
+  const DELETE_ICON_WIDTH = EDIT_ICON_SIZE * 2 / 3;
   const TOOLTIP_ICON_SIZE = 20;
   const TOOLTIP_WIDTH_CAP = 400;
   const SCROLLBAR_LENGTH = 200;
@@ -296,50 +302,104 @@
     "Shiny Electric Eel",
     "Shiny Lilypad"
   ]);
-  const defaultSettings = Object.freeze({
-    petalCraftPreview: true,
-    autoCopyCodes: true,
-    missileDrawPriority: true,
-    invertAttack: false,
-    invertDefend: false,
-    settingsTooltips: true,
-    craftingSearchBar: true,
-    inventoryExpandButton: true,
-    disableAllOptimizations: false,
-    petalStarCaching: true,
-    disablePetalStars: false,
-    disablePetalAnimations: false,
-    allowLockSlotsOneToFive: false,
-    hideSettingsDuringRuns: false,
-    minimapAlwaysShowBosses: true,
-    minimapAlwaysShowRareMobs: true,
-    minimapRareMobAura: true,
-    disableWelcomeMessage: false,
-    useChatHotkeys: false,
-    baseReciprocalOfFOV: 3,
-    playerHpBarScale: 2.5,
-    specialDropsScale: 2.5,
-    specialDropsQuantity: 1,
-    petalRenderQualityThreshold: 400,
-    craftAnimationLength: 0,
-    petalLockShakeIntensity: 2,
-    minimapNumberOfMobs: 5,
-    flowrscriptLoadWaitTime: 1,
-    gardenBackground: Colors.biomes.garden.background,
-    desertBackground: Colors.biomes.desert.background,
-    oceanBackground: Colors.biomes.ocean.background,
-    savannaBackground: Colors.biomes.savanna.background,
-    swampBackground: Colors.biomes.swamp.background,
-    zooBackground: Colors.biomes.zoo.background,
-    deepZooBackground: Colors.biomes.deepzoo.background,
-    specialDropsRarity: Rarity.GALACTIC,
-    minimapAlwaysShowRarity: Rarity.COMMON,
-    keybindStatsBox: "KeyG",
-    keybindInvertAttack: "Comma",
-    keybindInvertDefend: "Period",
-    keybindLockSlot: "KeyL",
-    keybindMinimap: "KeyM"
-  });
+  const BASE_GAME_HOTKEYS = Object.freeze([
+    "KeyW",
+    "KeyA",
+    "KeyS",
+    "KeyD",
+    "KeyQ",
+    "KeyE",
+    "KeyR",
+    "Digit0",
+    "Digit1",
+    "Digit2",
+    "Digit3",
+    "Digit4",
+    "Digit5",
+    "Digit6",
+    "Digit7",
+    "Digit8",
+    "Digit9",
+    "Minus",
+    "Equal",
+    "BracketLeft",
+    "Semicolon"
+  ]);
+  const FLOWRSCRIPT_HOTKEYS = Object.freeze([
+    {
+      chatMsg: "I hope your whole family has a nice Christmas.",
+      keybind: "KeyL"
+    },
+    {
+      chatMsg: "/deaths",
+      keybind: "KeyU"
+    },
+    {
+      chatMsg: "/damage",
+      keybind: "KeyK"
+    },
+    {
+      chatMsg: "Loading Time!",
+      keybind: "KeyT"
+    },
+    {
+      chatMsg: "I'm Out of Time",
+      keybind: "KeyO"
+    },
+    {
+      chatMsg: "/roomid",
+      keybind: "KeyI"
+    },
+    {
+      chatMsg: "AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN AMBATUHORN",
+      keybind: "KeyY"
+    },
+    {
+      chatMsg: "Time Halfway Loaded!",
+      keybind: "KeyG"
+    },
+    {
+      chatMsg: "Dupe!",
+      keybind: "KeyH"
+    },
+    {
+      chatMsg: "Check Compass!",
+      keybind: "KeyJ"
+    },
+    {
+      chatMsg: "THE BRITISH ARE COMING!!!",
+      keybind: "KeyB"
+    },
+    {
+      chatMsg: "SOMEONE ELSE GRACE",
+      keybind: "KeyF"
+    },
+    {
+      chatMsg: "I Am Gracing!",
+      keybind: "KeyN"
+    },
+    {
+      chatMsg: "I Am Saphing!",
+      keybind: "KeyX"
+    },
+    {
+      chatMsg: "I am Duping!",
+      keybind: "KeyZ"
+    },
+    {
+      chatMsg: "SOMEONE ELSE TIME!",
+      keybind: "KeyC"
+    },
+    {
+      chatMsg: "SOMEONE ELSE SAPH!",
+      keybind: "KeyV"
+    },
+    {
+      chatMsg: "SOMEONE ELSE DUPE!",
+      keybind: "KeyM"
+    }
+  ]);
+  let defaultSettings;
   class SettingsManager {
     /**
      * A list of saved settings. This is also saved to local storage every time
@@ -398,7 +458,8 @@
         keybindInvertAttack: [],
         keybindInvertDefend: [],
         keybindLockSlot: [],
-        keybindMinimap: []
+        keybindMinimap: [],
+        chatHotkeys: []
       };
     }
     /**
@@ -434,74 +495,68 @@
       this.listeners[key].push(listener);
     }
   }
-  const settings = new SettingsManager();
-  const keybinds = [];
-  function initKeybindHandling() {
-    const originalHandleKey = inputHandler.handleKey;
-    inputHandler.handleKey = function(e) {
-      for (let keybind of keybinds) {
-        if (checkInstruction(keybind, e, true)) {
-          if (keybind.fn(e)) {
-            return;
-          }
-        }
-      }
-      originalHandleKey.apply(inputHandler, [e]);
-      for (let keybind of keybinds) {
-        if (checkInstruction(keybind, e, false)) {
-          if (keybind.fn(e)) {
-            return;
-          }
-        }
-      }
-    };
-  }
-  function addKeybindInstruction(keybind) {
-    keybinds.push({
-      ...keybind,
-      keyType: keybind.keyType ?? "keydown",
-      inGame: keybind.inGame ?? true,
-      inMenu: keybind.inMenu ?? false,
-      beforeOriginal: keybind.beforeOriginal ?? false
+  let settings;
+  function initSettingsManager() {
+    defaultSettings = Object.freeze({
+      petalCraftPreview: true,
+      autoCopyCodes: true,
+      missileDrawPriority: true,
+      invertAttack: false,
+      invertDefend: false,
+      settingsTooltips: true,
+      craftingSearchBar: true,
+      inventoryExpandButton: true,
+      disableAllOptimizations: false,
+      petalStarCaching: true,
+      disablePetalStars: false,
+      disablePetalAnimations: false,
+      allowLockSlotsOneToFive: false,
+      hideSettingsDuringRuns: false,
+      minimapAlwaysShowBosses: true,
+      minimapAlwaysShowRareMobs: true,
+      minimapRareMobAura: true,
+      disableWelcomeMessage: false,
+      useChatHotkeys: false,
+      baseReciprocalOfFOV: 3,
+      playerHpBarScale: 2.5,
+      specialDropsScale: 2.5,
+      specialDropsQuantity: 1,
+      petalRenderQualityThreshold: 400,
+      craftAnimationLength: 0,
+      petalLockShakeIntensity: 2,
+      minimapNumberOfMobs: 5,
+      flowrscriptLoadWaitTime: 1,
+      gardenBackground: Colors.biomes.garden.background,
+      desertBackground: Colors.biomes.desert.background,
+      oceanBackground: Colors.biomes.ocean.background,
+      savannaBackground: Colors.biomes.savanna.background,
+      swampBackground: Colors.biomes.swamp.background,
+      zooBackground: Colors.biomes.zoo.background,
+      deepZooBackground: Colors.biomes.deepzoo.background,
+      specialDropsRarity: Rarity.GALACTIC,
+      minimapAlwaysShowRarity: Rarity.COMMON,
+      keybindStatsBox: "KeyG",
+      keybindInvertAttack: "Comma",
+      keybindInvertDefend: "Period",
+      keybindLockSlot: "KeyL",
+      keybindMinimap: "KeyM",
+      chatHotkeys: [{
+        chatMsg: 'Remember to enable the setting "Use Chat Hotkeys"!',
+        keybind: KEYBIND_DELETED
+      }]
     });
-  }
-  function isInGameInput() {
-    return _unsafeWindow.state === "game" && !inputHandler.chatOpen;
-  }
-  function isInMenuInput() {
-    return _unsafeWindow.state === "menu" && document.activeElement?.tagName !== "INPUT";
-  }
-  function checkInstruction(keybind, e, beforeOriginal) {
-    if (e.repeat) {
-      return false;
-    }
-    if (e.code === KEYBIND_DELETED) {
-      console.warn(`Keypress code somehow equal to ${KEYBIND_DELETED}!`);
-      console.warn(e);
-      return false;
-    }
-    if (!(keybind.inGame && isInGameInput()) && !(keybind.inMenu && isInMenuInput())) {
-      return false;
-    }
-    if (keybind.beforeOriginal !== beforeOriginal) {
-      return false;
-    }
-    if (keybind.keyType !== e.type) {
-      return false;
-    }
-    if (keybind.type === "settings") {
-      return e.code === settings.get(keybind.settingsKey);
-    } else if (keybind.type === "rawValue") {
-      return e.code === keybind.value;
-    } else if (keybind.type === "localStorage") {
-      return e.code === localStorage.getItem(keybind.storageKey) && e.code.length > 0;
-    } else if (keybind.type === "digit") {
-      return e.code.startsWith("Digit");
-    } else {
-      return false;
-    }
+    settings = new SettingsManager();
   }
   const cinderChangelogList = [
+    {
+      text: `- Added a chat hotkeys editor (PR #41):
+  - Editor is accessible at (Settings > Keybinds > Chat Hotkeys Editor)
+  - Conflicting keybinds are now displayed as red instead of green
+  - [*] You can choose to replace Flowrscript's hotkeys, which opens up keys to use on other features!
+- Major internal code reformatting for the settings menu (PR #41)
+  - Please let me know if these code changes broke anything!`,
+      date: "Version 1.9.0 (Hotkeys Editor Update)"
+    },
     {
       text: `- Made this script compatible with new rarities (PR #40)
 - Fixed optimizations not applying to Mob Gallery entries (PR #40)
@@ -745,6 +800,1576 @@
   let cinderChangelog;
   function initChangelog() {
     cinderChangelog = new CinderChangelog();
+  }
+  class AbstractSettingsMenu extends SettingsMenu {
+    /**
+     * The timestamp for the most recent time that the player used a mouse wheel
+     * input to scroll this menu.
+     */
+    lastMouseWheelTime;
+    /**
+     * How much the menu's contents are currently shifted due to scrolling.
+     */
+    scroll;
+    /**
+     * The vertical offset of the mouse from the scrollbar's centre if the user
+     * is currently dragging the scrollbar, or `undefined` if the user is not
+     * dragging the scrollbar.
+     */
+    draggingScrollbarOffset;
+    constructor() {
+      super();
+      this.lastMouseWheelTime = time - 1e4;
+      this.scroll = 0;
+      this.draggingScrollbarOffset = void 0;
+      const originalOnMouseDown = _unsafeWindow.onmousedown;
+      _unsafeWindow.onmousedown = (e) => {
+        originalOnMouseDown?.apply(_unsafeWindow, [e]);
+        if (_unsafeWindow.connected === true) {
+          this.mouseDown({ x: mouse.canvasX, y: mouse.canvasY });
+        }
+      };
+      const originalOnMouseUp = _unsafeWindow.onmouseup;
+      _unsafeWindow.onmouseup = (e) => {
+        originalOnMouseUp?.apply(_unsafeWindow, [e]);
+        if (_unsafeWindow.connected === true) {
+          this.mouseUp();
+        }
+      };
+      const originalRenderMenu = renderMenu;
+      renderMenu = (dt2) => {
+        originalRenderMenu(dt2);
+        this.draw();
+      };
+      const originalRenderGame = renderGame;
+      renderGame = (dt2) => {
+        originalRenderGame(dt2);
+        if (_unsafeWindow.state === "game" && !settings.get("hideSettingsDuringRuns")) {
+          this.draw();
+        }
+      };
+      document.addEventListener("wheel", (e) => {
+        this.mouseScroll(e);
+      });
+    }
+    /**
+     * The total height of this menu's contents, equal to
+     * {@linkcode SETTINGS_OPTION_HEIGHT} times `this.options.length`.
+     */
+    get totalHeight() {
+      return SETTINGS_OPTION_HEIGHT * this.options.length;
+    }
+    /**
+     * The y-position at the midpoint of the option currently being rendered.
+     */
+    get midHeight() {
+      return this.currentHeight + SETTINGS_OPTION_HEIGHT / 2;
+    }
+    /**
+     * The ratio of scrollbar movement to actual content movement.
+     */
+    get scrollbarRatio() {
+      if (this.totalHeight + 10 - this.h === 0) {
+        return 1e99;
+      }
+      return (this.h - 2 * SETTINGS_SCROLLBAR_MIN_POS) / (this.totalHeight + 10 - this.h);
+    }
+    /**
+     * The vertical position of the centre of this menu's scrollbar.
+     */
+    get scrollbarPos() {
+      return this.scroll * this.scrollbarRatio + SETTINGS_SCROLLBAR_MIN_POS;
+    }
+    set scrollbarPos(pos) {
+      if (!isNil(this.draggingScrollbarOffset)) {
+        this.scroll = (pos - SETTINGS_SCROLLBAR_MIN_POS - this.y - this.offset) / this.scrollbarRatio;
+      }
+    }
+    /**
+     * The main function to draw this settings menu.
+     */
+    draw() {
+      this.offset = interpolate(this.offset, this.targetOffset, 0.3);
+      if (!isNil(this.draggingScrollbarOffset)) {
+        this.scrollbarPos = mouse.canvasY - this.draggingScrollbarOffset;
+      }
+      this.scroll = Math.max(Math.min(this.scroll, this.totalHeight + 10 - this.h), 0);
+      ctx.save();
+      ctx.translate(this.x, this.renderY);
+      ctx.beginPath();
+      ctx.roundRect(0, 0, this.w, this.h, 3);
+      ctx.clip();
+      ctx.closePath();
+      ctx.fillStyle = SETTINGS_GRAY;
+      ctx.beginPath();
+      ctx.roundRect(0, 0, this.w, this.h, 3);
+      ctx.fill();
+      ctx.closePath();
+      if (this.scrollbarRatio > 0) {
+        ctx.strokeStyle = "#7f7f7f";
+        ctx.lineWidth = 8;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(this.w - 16, this.scrollbarPos - SCROLLBAR_LENGTH / 2);
+        ctx.lineTo(this.w - 16, this.scrollbarPos + SCROLLBAR_LENGTH / 2);
+        ctx.stroke();
+        ctx.closePath();
+        if (this.active && (this.mouseOnScrollbar() || !isNil(this.draggingScrollbarOffset))) {
+          setCursor("pointer");
+        }
+      }
+      ctx.beginPath();
+      ctx.roundRect(0, 0, this.w, this.h, 3);
+      ctx.clip();
+      ctx.closePath();
+      ctx.translate(0, -this.scroll);
+      const e = { x: mouse.canvasX, y: mouse.canvasY + this.scroll };
+      if (!this.active || !this.mouseInMenu()) {
+        e.x = e.y = -Infinity;
+      }
+      ctx.letterSpacing = "0px";
+      this.currentHeight = 5;
+      for (let option of this.options) {
+        this.renderOption(option);
+      }
+      ctx.translate(-this.x, -this.y);
+      for (let option of this.options) {
+        option.drawTooltipIcon();
+      }
+      if (this.active && this.mouseInMenu()) {
+        for (let option of this.options) {
+          if (!option.isSectionHeading()) {
+            if (option.mouseInButton(e)) {
+              setCursor("pointer");
+            }
+          }
+        }
+      }
+      ctx.restore();
+      ctx.strokeStyle = SETTINGS_GRAY_BORDER;
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.roundRect(this.x, this.renderY, this.w, this.h, 3);
+      ctx.stroke();
+      ctx.closePath();
+      ctx.translate(0, -this.scroll);
+      for (let option of this.options) {
+        option.drawTooltipBox(e);
+      }
+      ctx.translate(0, this.scroll);
+    }
+    /**
+     * Renders the given {@linkcode SettingsOption}. Each type of option is
+     * rendered differently.
+     */
+    renderOption(option) {
+      if (option.isSectionHeading()) {
+        option.draw(this);
+      } else if (option.isBooleanOption()) {
+        this.renderToggle(option);
+      } else if (option.isDisplayValueOption()) {
+        option.draw(this);
+      }
+    }
+    /**
+     * Processes the user clicking on the settings menu. Each type of option is
+     * processed differently. This code is adapted from Flowr's client code.
+     */
+    mouseDown(e) {
+      if (!this.mouseInMenu()) {
+        return;
+      }
+      if (!this.active) {
+        return;
+      }
+      if (_unsafeWindow.state !== "menu" && settings.get("hideSettingsDuringRuns")) {
+        return;
+      }
+      if (this.mouseOnScrollbar()) {
+        this.draggingScrollbarOffset = mouse.canvasY - (this.renderY + this.scrollbarPos);
+      }
+      e.y += this.scroll;
+      for (let option of [...this.options]) {
+        if (!option.isSectionHeading()) {
+          if (option.mouseInButton(e)) {
+            if (option.isBooleanOption()) {
+              this.processToggle(option, e);
+            } else if (option.isDisplayValueOption()) {
+              option.onClick(this, e);
+            }
+          }
+        }
+      }
+    }
+    /**
+     * Processes the user releasing a mouse click.
+     */
+    mouseUp() {
+      this.draggingScrollbarOffset = void 0;
+    }
+    /**
+     * Scrolls this menu up/down in response to a mouse wheel input.
+     * 
+     * This does not handle the player dragging the scrollbar.
+     */
+    mouseScroll(e) {
+      if (this.active && this.mouseInPrimaryMenu()) {
+        this.scroll += e.deltaY / 2;
+        this.lastMouseWheelTime = time;
+      }
+    }
+    /**
+     * Returns `true` iff this menu received a mouse wheel scroll input within
+     * the past 250ms.
+     */
+    hasRecentMouseScroll() {
+      return performance.now() - this.lastMouseWheelTime < 250;
+    }
+    toggle() {
+      super.toggle();
+      if (!this.active) {
+        this.mouseUp();
+      }
+    }
+    /**
+     * Checks whether the mouse is inside this menu, excluding its colour
+     * selector UI.
+     */
+    mouseInPrimaryMenu() {
+      return mouseInBox(
+        { x: mouse.canvasX, y: mouse.canvasY },
+        { x: this.x + 4, y: this.renderY + 4, w: this.w - 8, h: this.h - 8 }
+      );
+    }
+    /**
+     * Checks whether the mouse is inside this menu, excluding its borders.
+     */
+    mouseInMenu() {
+      return this.mouseInPrimaryMenu();
+    }
+    /**
+     * Checks whether the mouse is hovering over this menu's scrollbar.
+     * 
+     * Note that we deactivate the scrollbar and return `false` if the total
+     * height of the options is less than the menu's allocated height.
+     */
+    mouseOnScrollbar() {
+      if (this.scrollbarRatio <= 0) {
+        return false;
+      }
+      return mouseInBox(
+        { x: mouse.canvasX, y: mouse.canvasY },
+        {
+          x: this.x + this.w - 24,
+          y: this.renderY + this.scrollbarPos - SCROLLBAR_LENGTH / 2,
+          w: 16,
+          h: SCROLLBAR_LENGTH
+        }
+      );
+    }
+  }
+  function isChatHotkey(obj) {
+    return !isNil(obj) && typeof obj === "object" && typeof obj.chatMsg === "string" && typeof obj.keybind === "string";
+  }
+  function isChatHotkeysArray(obj) {
+    if (!Array.isArray(obj)) {
+      return false;
+    }
+    for (let item of obj) {
+      if (!isChatHotkey(item)) {
+        return false;
+      }
+    }
+    return true;
+  }
+  class TooltipBox {
+    w;
+    h;
+    text;
+    /**
+     * The alpha-value (i.e., opacity) of the drawn tooltip box.
+     */
+    alpha;
+    /**
+     * The full text for this tooltip is split into an array of lines, and each
+     * line is split further into an array of words/tokens.
+     */
+    lines;
+    constructor(text) {
+      this.w = 20;
+      this.h = 20 - (TOOLTIP_TEXT_HEIGHT - 15);
+      this.alpha = 0;
+      this.lines = [];
+      this.text = text;
+      this.generateDesc();
+      if (typeof text === "object") {
+        for (let key of text.dependentKeys) {
+          settings.addListener(key, () => this.generateDesc());
+        }
+      }
+    }
+    /**
+     * Draws this tooltip at the given location.
+     * @param x The horizontal position for the *middle* of this tooltip box.
+     * @param y The vertical position for the *top* of this tooltip box.
+     * @param isHovered Whether or not the mouse is hovering over this setting's
+     * tooltip icon.
+     */
+    draw(x, y, isHovered) {
+      if (!isHovered && this.alpha < 0.1) {
+        return;
+      }
+      if (isHovered) {
+        this.alpha += dt / 150;
+        if (this.alpha > 1) {
+          this.alpha = 1;
+        }
+      } else {
+        this.alpha -= dt / 150;
+        if (this.alpha < 0) {
+          this.alpha = 0;
+        }
+      }
+      ctx.save();
+      ctx.globalAlpha = this.alpha;
+      ctx.fillStyle = TOOLTIP_BLUE;
+      ctx.lineWidth = 10;
+      ctx.beginPath();
+      ctx.rect(x - this.w / 2, y, this.w, this.h);
+      ctx.fill();
+      ctx.closePath();
+      ctx.font = "900 15px Ubuntu";
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "black";
+      ctx.fillStyle = "white";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      let currentHeight = y + 10;
+      for (let line of this.lines) {
+        let currentX = x - this.w / 2 + 10;
+        for (let token of line) {
+          if (token[0] === "$") {
+            if (token[1] === "c") {
+              ctx.fillStyle = token.substring(2).trim();
+            }
+          } else {
+            ctx.strokeText(token, currentX, currentHeight);
+            ctx.fillText(token, currentX, currentHeight);
+            currentX += ctx.measureText(token).width;
+          }
+        }
+        currentHeight += TOOLTIP_TEXT_HEIGHT;
+      }
+      ctx.restore();
+    }
+    /**
+     * Regenerates this tooltip's entire description. Also updates this box's
+     * dimensions based on the dimensions of the text.
+     */
+    generateDesc() {
+      this.w = 20;
+      this.h = 20 - (TOOLTIP_TEXT_HEIGHT - 15);
+      this.alpha = 0;
+      ctx.font = "900 15px Ubuntu";
+      const text = typeof this.text === "string" ? this.text : this.text.fn();
+      const splitText = text.split(" ").map((token) => token + " ");
+      this.lines = [];
+      let currentLine = [];
+      let currentWidth = 0;
+      const addLine = () => {
+        this.lines.push(currentLine);
+        this.w = Math.max(this.w, currentWidth + 20);
+        this.h += TOOLTIP_TEXT_HEIGHT;
+        currentLine = [];
+        currentWidth = 0;
+      };
+      for (let i = 0; i < splitText.length; i++) {
+        const newText = splitText[i];
+        if (newText.trim() === "$n") {
+          addLine();
+          continue;
+        }
+        const newWidth = newText[0] === "$" ? 0 : ctx.measureText(newText).width;
+        if (currentWidth + newWidth > TOOLTIP_WIDTH_CAP) {
+          addLine();
+        }
+        currentLine.push(newText);
+        currentWidth += newWidth;
+      }
+      addLine();
+    }
+  }
+  class TooltipIcon {
+    /**
+     * The {@linkcode TooltipBox} that gets displayed when the user hovers over
+     * this tooltip icon.
+     */
+    tooltipBox;
+    constructor(text) {
+      this.tooltipBox = new TooltipBox(text);
+    }
+    /**
+     * Draws the (?) icon centred at the given coordinates.
+     */
+    drawIcon(pos) {
+      const { x, y } = pos;
+      ctx.strokeStyle = TOOLTIP_BORDER_BLUE;
+      ctx.fillStyle = TOOLTIP_BLUE;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(x, y, TOOLTIP_ICON_SIZE / 2, 0, 2 * Math.PI);
+      ctx.stroke();
+      ctx.fill();
+      ctx.closePath();
+      ctx.font = "900 17px Ubuntu";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "white";
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 2;
+      ctx.strokeText("?", x, y + 1);
+      ctx.fillText("?", x, y + 1);
+    }
+    /**
+     * Draws the text box for this tooltip. Also handles fading it in/out
+     * depending on whether the user is currently hovering over the (?) icon.
+     * @param pos The position of the *tooltip icon* (not the tooltip box itself).
+     * @param e The position of the mouse.
+     */
+    drawText(pos, e) {
+      const { x, y } = pos;
+      const isHovered = mouseInBox(
+        e,
+        // We intentionally make the tooltip icon's "hitbox" larger
+        {
+          x: x - SETTINGS_BUTTON_SIZE / 2,
+          y: y - SETTINGS_BUTTON_SIZE / 2,
+          w: SETTINGS_BUTTON_SIZE,
+          h: SETTINGS_BUTTON_SIZE
+        }
+      );
+      this.tooltipBox.draw(x, y + TOOLTIP_ICON_SIZE / 2 + 10, isHovered);
+    }
+  }
+  const editIcon = new Image();
+  editIcon.src = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgoKPHN2ZwogICB3aWR0aD0iMTAwLjAwMDA1bW0iCiAgIGhlaWdodD0iMTAwLjAwMDA2bW0iCiAgIHZpZXdCb3g9IjAgMCAxMDAuMDAwMDUgMTAwLjAwMDA2IgogICB2ZXJzaW9uPSIxLjEiCiAgIGlkPSJzdmcxIgogICB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciCiAgIHhtbG5zOnN2Zz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxkZWZzCiAgICAgaWQ9ImRlZnMxIiAvPgogIDxnCiAgICAgaWQ9ImxheWVyMSIKICAgICB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtODkuNTI0OTc3LC0zNS42MzI2MDUpIj4KICAgIDxyZWN0CiAgICAgICBzdHlsZT0iZmlsbDojZmZmZmZmO2ZpbGwtb3BhY2l0eToxO3N0cm9rZTojZmZmZmZmO3N0cm9rZS13aWR0aDowLjI4MjEzNztzdHJva2UtZGFzaGFycmF5Om5vbmU7c3Ryb2tlLW9wYWNpdHk6MSIKICAgICAgIGlkPSJyZWN0MS04IgogICAgICAgd2lkdGg9IjMxLjEyMTQyOSIKICAgICAgIGhlaWdodD0iMTguNTYwMDA3IgogICAgICAgeD0iLTE3NC43NzIyMyIKICAgICAgIHk9Ijc0LjQxNzAyMyIKICAgICAgIHRyYW5zZm9ybT0ibWF0cml4KC0wLjcwNzEwMDA4LC0wLjcwNzExMzQ5LDAuNzA3MTAwMDgsLTAuNzA3MTEzNDksMCwwKSIgLz4KICAgIDxyZWN0CiAgICAgICBzdHlsZT0iZmlsbDojZmZmZmZmO2ZpbGwtb3BhY2l0eToxO3N0cm9rZTojZmZmZmZmO3N0cm9rZS13aWR0aDowLjUxNDk0NTtzdHJva2UtZGFzaGFycmF5Om5vbmU7c3Ryb2tlLW9wYWNpdHk6MSIKICAgICAgIGlkPSJyZWN0MS04LTEiCiAgICAgICB3aWR0aD0iMzAuODg4NjI4IgogICAgICAgaGVpZ2h0PSI2Mi4yOTIxOTQiCiAgICAgICB4PSItMTc0LjY1NTg3IgogICAgICAgeT0iNS40NDUxNTA0IgogICAgICAgdHJhbnNmb3JtPSJtYXRyaXgoLTAuNzA3MTAwMDgsLTAuNzA3MTEzNDksMC43MDcxMDAwOCwtMC43MDcxMTM0OSwwLDApIiAvPgogICAgPHBhdGgKICAgICAgIHN0eWxlPSJmaWxsOiNmZmZmZmY7ZmlsbC1vcGFjaXR5OjE7c3Ryb2tlOiNmZmZmZmY7c3Ryb2tlLXdpZHRoOjAuMDE7c3Ryb2tlLWxpbmVjYXA6c3F1YXJlO3N0cm9rZS1taXRlcmxpbWl0OjA7c3Ryb2tlLWRhc2hhcnJheTpub25lO3N0cm9rZS1vcGFjaXR5OjE7cGFpbnQtb3JkZXI6bWFya2VycyBzdHJva2UgZmlsbCIKICAgICAgIGlkPSJwYXRoNCIKICAgICAgIGQ9Im0gNzQuMzU4OTk5LDEzMy44ODE1OSAtMS4yNzY3NzUsMCAwLjYzODM4OCwtMS4xMDU3MiB6IgogICAgICAgdHJhbnNmb3JtPSJtYXRyaXgoLTE3LjI0NDI0MiwtMTcuMjQ0NTcsMTkuODY3Mjg2LC0xOS44Njc2NjMsLTEyNzYuOTkwOCw0MDQ0LjczNDgpIiAvPgogIDwvZz4KPC9zdmc+Cg==";
+  class SettingsOption {
+    name;
+    state;
+    changeTime;
+    screenPosition;
+    _tooltipIcon;
+    /**
+     * A legacy field that is used for the settings menu to handle
+     * {@linkcode BooleanOption BooleanOptions}.
+     */
+    toggleFn;
+    constructor(name, tooltip) {
+      this.name = name;
+      if (!isNil(tooltip)) {
+        this._tooltipIcon = new TooltipIcon(tooltip);
+      }
+      this.changeTime = 0;
+      this.screenPosition = { x: 0, y: 0, w: 0, h: 0 };
+      this.state = void 0;
+      this.toggleFn = () => {
+      };
+    }
+    get tooltipIcon() {
+      return settings.get("settingsTooltips") ? this._tooltipIcon : void 0;
+    }
+    /**
+     * The position of the centre of the ? tooltip icon for this option.
+     */
+    get tooltipPos() {
+      ctx.font = "900 17px Ubuntu";
+      return {
+        x: this.screenPosition.x + SETTINGS_BUTTON_SIZE + SETTINGS_BUTTON_PADDING * 2 + ctx.measureText(this.name).width + TOOLTIP_ICON_SIZE / 2,
+        y: this.screenPosition.y + SETTINGS_BUTTON_SIZE / 2
+      };
+    }
+    /**
+     * @returns `true` iff this is a {@linkcode SettingsSectionHeading}.
+     */
+    isSectionHeading() {
+      return false;
+    }
+    /**
+     * @returns `true` iff this is a {@linkcode BooleanOption}.
+     */
+    isBooleanOption() {
+      return false;
+    }
+    /**
+     * @returns `true` iff this is a {@linkcode DisplayValueOption}.
+     */
+    isDisplayValueOption() {
+      return false;
+    }
+    /**
+     * @returns `true` iff this is a {@linkcode KeybindOption}.
+     * 
+     * (Note that other {@linkcode AbstractKeybindOption} items do not count.)
+     */
+    isKeybindOption() {
+      return false;
+    }
+    /**
+     * @returns `true` iff this is a {@linkcode HotkeysOption}.
+     */
+    isHotkeysOption() {
+      return false;
+    }
+    /**
+     * @returns `true` iff this is a {@linkcode CustomOption}.
+     */
+    isCustomOption() {
+      return false;
+    }
+    /**
+     * Determines whether or not the given mouse coordinates are inside this
+     * option's button.
+     */
+    mouseInButton(e) {
+      return mouseInBox(e, this.screenPosition);
+    }
+    /**
+     * Draws this option's tooltip icon.
+     */
+    drawTooltipIcon() {
+      this.tooltipIcon?.drawIcon(this.tooltipPos);
+    }
+    /**
+     * Draws this option's tooltip box.
+     */
+    drawTooltipBox(e) {
+      this.tooltipIcon?.drawText(this.tooltipPos, e);
+    }
+    /**
+     * Updates the text for this setting's tooltip.
+     */
+    updateTooltip() {
+      this._tooltipIcon?.tooltipBox?.generateDesc();
+    }
+  }
+  class BooleanOption extends SettingsOption {
+    state;
+    constructor(name, settingsKey, tooltip) {
+      super(name, tooltip);
+      this.state = settings.get(settingsKey);
+      this.toggleFn = (state) => {
+        settings.set(settingsKey, state);
+      };
+    }
+    isBooleanOption() {
+      return true;
+    }
+  }
+  class DisplayValueOption extends SettingsOption {
+    constructor(name, tooltip) {
+      super(name + ": ", tooltip);
+    }
+    get tooltipPos() {
+      let { x, y } = super.tooltipPos;
+      for (let text of this.getDisplayedValues()) {
+        x += ctx.measureText(text).width;
+      }
+      return { x, y };
+    }
+    /**
+     * Returns this setting's name without any ": " formatting.
+     */
+    get simpleName() {
+      return this.name.replaceAll(": ", "");
+    }
+    isDisplayValueOption() {
+      return true;
+    }
+    /**
+     * @returns `true` iff this is a {@linkcode ColourOption}.
+     */
+    isColourOption() {
+      return false;
+    }
+    /**
+     * Processes `originalColour` to make it flash white if the user has edited
+     * this setting within the past 1.5s.
+     */
+    getFlashColour(originalColour) {
+      if (this.changeTime > 0 && time - this.changeTime < 1500) {
+        const ratio = (time - this.changeTime) / 1500;
+        return blendColor("#ffffff", originalColour, ratio);
+      } else {
+        return originalColour;
+      }
+    }
+    /**
+     * Determines the colours that the values should be displayed in.
+     */
+    getValueFillStyles() {
+      return [this.getFlashColour(SETTINGS_GREEN)];
+    }
+    /**
+     * Determines the displayed values, with formatting if necessary.
+     */
+    getDisplayedValues() {
+      return ["" + this.state];
+    }
+    /**
+     * Draws this option inside the given settings menu.
+     * 
+     * This code is largely adapted from Flowr's base code.
+     */
+    draw(menu) {
+      this.screenPosition = {
+        x: 15 + menu.x,
+        y: menu.midHeight - SETTINGS_BUTTON_SIZE / 2 + menu.y,
+        w: SETTINGS_BUTTON_SIZE,
+        h: SETTINGS_BUTTON_SIZE
+      };
+      ctx.fillStyle = "#9f9f9f";
+      ctx.strokeStyle = "#5f5f5f";
+      ctx.lineWidth = 4.5;
+      ctx.beginPath();
+      ctx.rect(
+        this.screenPosition.x - menu.x,
+        this.screenPosition.y - menu.y,
+        this.screenPosition.w,
+        this.screenPosition.h
+      );
+      ctx.fill();
+      ctx.stroke();
+      ctx.closePath();
+      ctx.drawImage(
+        editIcon,
+        15 + SETTINGS_BUTTON_SIZE / 2 - EDIT_ICON_SIZE / 2,
+        menu.midHeight - EDIT_ICON_SIZE / 2,
+        EDIT_ICON_SIZE,
+        EDIT_ICON_SIZE
+      );
+      ctx.font = "900 17px Ubuntu";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "white";
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 2;
+      ctx.strokeText(
+        this.name,
+        15 + SETTINGS_BUTTON_SIZE + SETTINGS_BUTTON_PADDING,
+        menu.midHeight
+      );
+      ctx.fillText(
+        this.name,
+        15 + SETTINGS_BUTTON_SIZE + SETTINGS_BUTTON_PADDING,
+        menu.midHeight
+      );
+      const prevTextWidth = ctx.measureText(this.name).width;
+      let currentX = 15 + SETTINGS_BUTTON_SIZE + SETTINGS_BUTTON_PADDING + prevTextWidth;
+      for (let i = 0; i < this.getDisplayedValues().length; i++) {
+        const text = this.getDisplayedValues()[i];
+        ctx.fillStyle = this.getValueFillStyles()[i];
+        ctx.strokeText(text, currentX, menu.midHeight);
+        ctx.fillText(text, currentX, menu.midHeight);
+        currentX += ctx.measureText(text).width;
+      }
+      if (this.isColourOption() && !this.editingState) {
+        ctx.strokeStyle = "black";
+        ctx.fillStyle = this.state;
+        ctx.lineWidth = 2;
+        currentX += 10;
+        ctx.fillRect(currentX, menu.midHeight - 10, 20, 20);
+        ctx.strokeRect(currentX, menu.midHeight - 10, 20, 20);
+      }
+      menu.currentHeight += SETTINGS_OPTION_HEIGHT;
+    }
+  }
+  class ColourOption extends DisplayValueOption {
+    state;
+    settingsKey;
+    /**
+     * Whether or not the player is currently editing this setting.
+     */
+    editingState;
+    constructor(name, settingsKey, tooltip) {
+      super(name, tooltip);
+      this.state = settings.get(settingsKey);
+      this.settingsKey = settingsKey;
+      this.editingState = false;
+    }
+    isColourOption() {
+      return true;
+    }
+    getDisplayedValues() {
+      if (this.editingState) {
+        return [this.state, " (Editing...)"];
+      } else {
+        return [this.state];
+      }
+    }
+    getValueFillStyles() {
+      const colour1 = this.getFlashColour(SETTINGS_GREEN);
+      if (this.editingState) {
+        return [colour1, CINDER_COLOUR];
+      } else {
+        return [colour1];
+      }
+    }
+    onClick(menu) {
+      if (!this.editingState) {
+        menu.setCurrentColourOption(this);
+        this.editingState = true;
+      } else {
+        menu.cancelColourOption();
+      }
+    }
+    /**
+     * Saves the given colour to the settings.
+     */
+    saveColour(newColour) {
+      if (!isHexCode(newColour)) {
+        console.warn(newColour + " is not a valid hex code!");
+        return;
+      }
+      this.changeTime = performance.now();
+      this.state = newColour;
+      settings.set(this.settingsKey, newColour);
+    }
+    /**
+     * Ends this option's editing state.
+     */
+    finishEdit() {
+      this.editingState = false;
+    }
+  }
+  class NumberOption extends DisplayValueOption {
+    state;
+    settingsKey;
+    minValue;
+    maxValue;
+    /**
+     * The number of decimal digits that this setting's value is rounded to.
+     */
+    decimalDigits;
+    constructor(name, settingsKey, minValue, maxValue, decimalDigits, tooltip) {
+      super(name, tooltip);
+      this.minValue = minValue;
+      this.maxValue = maxValue;
+      this.decimalDigits = decimalDigits;
+      this.state = settings.get(settingsKey);
+      this.settingsKey = settingsKey;
+    }
+    onClick() {
+      send({ attack: false });
+      const rawValue = parseFloat(prompt(
+        `You are editing the setting "${this.simpleName}".
+
+Please enter a number between ${this.minValue} and ${this.maxValue}.`
+      ) ?? "");
+      if (rawValue >= this.minValue && rawValue <= this.maxValue) {
+        const value = parseFloat(rawValue.toFixed(this.decimalDigits));
+        this.changeTime = performance.now();
+        this.state = value;
+        settings.set(this.settingsKey, value);
+      } else {
+        alert(
+          `Error: ${rawValue} is not a number between ${this.minValue} and ${this.maxValue}!`
+        );
+      }
+    }
+  }
+  class RarityOption extends DisplayValueOption {
+    state;
+    settingsKey;
+    constructor(name, settingsKey, tooltip) {
+      super(name, tooltip);
+      this.state = settings.get(settingsKey);
+      this.settingsKey = settingsKey;
+    }
+    getValueFillStyles() {
+      return [
+        this.getFlashColour(Colors.rarities[this.state].color),
+        this.getFlashColour(SETTINGS_GREEN)
+      ];
+    }
+    getDisplayedValues() {
+      return [Colors.rarities[this.state].name, ` (${this.state})`];
+    }
+    onClick() {
+      send({ attack: false });
+      const response = prompt(
+        `You are editing the setting "${this.simpleName}".
+
+Please enter a Rarity.`
+      ) ?? "";
+      const rarity = rarityToIndex(response);
+      if (!isNil(rarity)) {
+        this.changeTime = performance.now();
+        this.state = rarity;
+        settings.set(this.settingsKey, rarity);
+      } else {
+        alert(
+          `Error: "${response}" is not a valid Rarity!`
+        );
+      }
+    }
+  }
+  class AbstractKeybindOption extends DisplayValueOption {
+    /**
+     * Whether or not the player is currently editing this setting's keybind.
+     */
+    editingKeybind;
+    /**
+     * A timeout for cancelling an edit for this setting.
+     */
+    editingKeybindTimeout;
+    constructor(name, tooltip) {
+      super(name, tooltip);
+      this.editingKeybind = false;
+    }
+    /**
+     * A helper function to determine the right colour to draw the keybind's
+     * text, according to the following rules:
+     * 1. If the keybind is set to "<None>" (i.e., deleted by user), it is gray.
+     * 2. If the keybind conflicts with another keybind, it is red.
+     * 3. If none of the above apply, it is green.
+     */
+    getKeybindColour(keybind, parentMenu) {
+      if (keybind === KEYBIND_DELETED) {
+        return this.getFlashColour(SETTINGS_VALUE_GRAY);
+      } else if ((parentMenu.keybindsCounter[keybind] ?? 0) >= 2) {
+        return this.getFlashColour(SETTINGS_RED);
+      } else {
+        return this.getFlashColour(SETTINGS_GREEN);
+      }
+    }
+    onClick(menu, _e) {
+      if (!this.editingKeybind) {
+        menu.setCurrentKeybindOption(this);
+        this.editingKeybind = true;
+        this.editingKeybindTimeout = setTimeout(() => {
+          menu.cancelKeybind();
+        }, 3e3);
+      } else {
+        menu.cancelKeybind();
+      }
+    }
+    /**
+     * Ends this option's editing state, and sets the setting to the new keybind
+     * if given.
+     */
+    finishEdit(_newKeybind) {
+      clearTimeout(this.editingKeybindTimeout);
+      this.editingKeybind = false;
+      this.editingKeybindTimeout = void 0;
+    }
+  }
+  class KeybindOption extends AbstractKeybindOption {
+    state;
+    settingsKey;
+    /**
+     * The settings menu that this option belongs to.
+     */
+    parentMenu;
+    constructor(name, settingsKey, parentMenu, tooltip) {
+      super(name, tooltip);
+      this.state = settings.get(settingsKey);
+      this.settingsKey = settingsKey;
+      this.parentMenu = parentMenu;
+    }
+    isKeybindOption() {
+      return true;
+    }
+    getDisplayedValues() {
+      if (this.editingKeybind) {
+        return [this.state, " (Editing...)"];
+      } else {
+        return [this.state];
+      }
+    }
+    getValueFillStyles() {
+      const colour1 = this.getKeybindColour(this.state, this.parentMenu);
+      if (this.editingKeybind) {
+        return [colour1, CINDER_COLOUR];
+      } else {
+        return [colour1];
+      }
+    }
+    finishEdit(newKeybind) {
+      super.finishEdit(newKeybind);
+      if (!isNil(newKeybind)) {
+        this.changeTime = performance.now();
+        this.state = newKeybind;
+        settings.set(this.settingsKey, newKeybind);
+        this.parentMenu.recountKeybinds();
+      }
+    }
+  }
+  class CustomOption extends DisplayValueOption {
+    /**
+     * This option's custom icon to be displayed on its button.
+     */
+    icon;
+    /**
+     * This option's custom action that it performs when the user clicks its
+     * button.
+     */
+    _onClick;
+    /**
+     * A function to determine the colours of this option's custom displyed
+     * values, if applicable.
+     */
+    _getValueFillStyles;
+    /**
+     * A function to determine this option's custom displayed values, if
+     * applicable.
+     */
+    _getDisplayedValues;
+    constructor(text, icon, onClick, getValueFillStyles, getDisplayedValues, tooltip) {
+      super(text, tooltip);
+      this.icon = icon;
+      this._onClick = onClick;
+      this._getValueFillStyles = getValueFillStyles;
+      this._getDisplayedValues = getDisplayedValues;
+      this.name = text;
+    }
+    isCustomOption() {
+      return true;
+    }
+    getValueFillStyles() {
+      if (isNil(this._getValueFillStyles)) {
+        return [];
+      } else {
+        return this._getValueFillStyles();
+      }
+    }
+    getDisplayedValues() {
+      if (isNil(this._getDisplayedValues)) {
+        return [];
+      } else {
+        return this._getDisplayedValues();
+      }
+    }
+    onClick(menu, e) {
+      this._onClick(menu, e);
+    }
+    // This code is largely copied from `DisplayValueOption.draw()`, but we have
+    // to copy here in order to change the button's icon.
+    draw(menu) {
+      super.draw(menu);
+      menu.currentHeight -= SETTINGS_OPTION_HEIGHT;
+      ctx.fillStyle = "#9f9f9f";
+      ctx.strokeStyle = "#5f5f5f";
+      ctx.lineWidth = 4.5;
+      ctx.beginPath();
+      ctx.rect(
+        this.screenPosition.x - menu.x,
+        this.screenPosition.y - menu.y,
+        this.screenPosition.w,
+        this.screenPosition.h
+      );
+      ctx.fill();
+      ctx.stroke();
+      ctx.closePath();
+      ctx.drawImage(
+        this.icon,
+        15 + SETTINGS_BUTTON_SIZE / 2 - EDIT_ICON_SIZE / 2,
+        menu.midHeight - EDIT_ICON_SIZE / 2,
+        EDIT_ICON_SIZE,
+        EDIT_ICON_SIZE
+      );
+      menu.currentHeight += SETTINGS_OPTION_HEIGHT;
+    }
+  }
+  class SettingsSectionHeading {
+    text;
+    tooltipPos;
+    _tooltipIcon;
+    constructor(text, tooltip) {
+      this.text = text;
+      if (!isNil(tooltip)) {
+        this._tooltipIcon = new TooltipIcon(tooltip);
+      }
+      this.tooltipPos = { x: 0, y: 0 };
+    }
+    get tooltipIcon() {
+      return settings.get("settingsTooltips") ? this._tooltipIcon : void 0;
+    }
+    /**
+     * @returns `true` iff this is a {@linkcode SettingsSectionHeading}.
+     */
+    isSectionHeading() {
+      return true;
+    }
+    /**
+     * Draws this header inside the given settings menu.
+     * 
+     * This code is adapted from the Flowr changelog's horizontal dividers.
+     */
+    draw(menu) {
+      ctx.font = "900 17px Ubuntu";
+      const textWidth = ctx.measureText(this.text).width;
+      let textLeftPos = menu.w / 2 - textWidth / 2;
+      let textRightPos = menu.w / 2 + textWidth / 2;
+      if (!isNil(this.tooltipIcon)) {
+        const extraSpace = TOOLTIP_ICON_SIZE + SETTINGS_BUTTON_PADDING;
+        textLeftPos -= extraSpace / 2;
+        textRightPos += extraSpace / 2;
+        this.tooltipPos = {
+          x: menu.x + textRightPos - TOOLTIP_ICON_SIZE / 2,
+          y: menu.y + menu.midHeight
+        };
+      }
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "white";
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 2;
+      ctx.strokeText(this.text, textLeftPos, menu.midHeight);
+      ctx.fillText(this.text, textLeftPos, menu.midHeight);
+      ctx.strokeStyle = "#7f7f7f";
+      ctx.lineWidth = 8;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(SETTINGS_BUTTON_PADDING, menu.midHeight);
+      ctx.lineTo(textLeftPos - SETTINGS_BUTTON_PADDING, menu.midHeight);
+      ctx.stroke();
+      ctx.closePath();
+      ctx.beginPath();
+      ctx.moveTo(textRightPos + SETTINGS_BUTTON_PADDING, menu.midHeight);
+      ctx.lineTo(menu.w - SETTINGS_BUTTON_PADDING - 16, menu.midHeight);
+      ctx.stroke();
+      ctx.closePath();
+      menu.currentHeight += SETTINGS_OPTION_HEIGHT;
+    }
+    /**
+     * Draws this section's tooltip icon.
+     */
+    drawTooltipIcon() {
+      this.tooltipIcon?.drawIcon(this.tooltipPos);
+    }
+    /**
+     * Draws this section's tooltip box.
+     */
+    drawTooltipBox(e) {
+      this.tooltipIcon?.drawText(this.tooltipPos, e);
+    }
+  }
+  class TableHeading extends SettingsSectionHeading {
+    /**
+     * The text labels for the table's columns.
+     */
+    labels;
+    /**
+     * The x-coordinates of the table's vertical separators.
+     */
+    separators;
+    constructor(labels, separators) {
+      super("");
+      this.labels = labels;
+      this.separators = separators;
+    }
+    draw(menu) {
+      const numLabels = Math.min(this.labels.length, this.separators.length + 1);
+      const textBorders = [
+        SETTINGS_BUTTON_PADDING,
+        ...this.separators,
+        menu.w - SETTINGS_BUTTON_PADDING
+      ];
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "white";
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 2;
+      for (let i = 0; i < numLabels; i++) {
+        const midX = (textBorders[i] + textBorders[i + 1]) / 2;
+        ctxDrawText(this.labels[i], midX, menu.midHeight);
+      }
+      ctx.strokeStyle = "#7f7f7f";
+      ctx.lineWidth = 5;
+      ctx.lineCap = "round";
+      for (let i = 0; i < numLabels - 1; i++) {
+        ctx.beginPath();
+        ctx.moveTo(
+          this.separators[i],
+          menu.currentHeight + SETTINGS_BUTTON_PADDING
+        );
+        ctx.lineTo(
+          this.separators[i],
+          menu.currentHeight + SETTINGS_OPTION_HEIGHT
+        );
+        ctx.stroke();
+        ctx.closePath();
+      }
+      menu.currentHeight += SETTINGS_OPTION_HEIGHT;
+      ctx.beginPath();
+      ctx.moveTo(SETTINGS_BUTTON_PADDING, menu.currentHeight);
+      ctx.lineTo(menu.w - SETTINGS_BUTTON_PADDING - 16, menu.currentHeight);
+      ctx.stroke();
+      ctx.closePath();
+    }
+  }
+  const deleteIcon = new Image();
+  deleteIcon.src = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgoKPHN2ZwogICB3aWR0aD0iMzAuMDAwMDAybW0iCiAgIGhlaWdodD0iNDVtbSIKICAgdmlld0JveD0iMCAwIDMwLjAwMDAwMiA0NSIKICAgdmVyc2lvbj0iMS4xIgogICBpZD0ic3ZnMSIKICAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogICB4bWxuczpzdmc9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8ZGVmcwogICAgIGlkPSJkZWZzMSI+CiAgICA8Y2xpcFBhdGgKICAgICAgIGNsaXBQYXRoVW5pdHM9InVzZXJTcGFjZU9uVXNlIgogICAgICAgaWQ9ImNsaXBQYXRoMjAiPgogICAgICA8cGF0aAogICAgICAgICBpZD0icGF0aDIwIgogICAgICAgICBzdHlsZT0iZGlzcGxheTpub25lO2ZpbGw6I2ZmMDAwMDtmaWxsLW9wYWNpdHk6MTtzdHJva2U6I2ZmZmZmZjtzdHJva2Utd2lkdGg6MDtzdHJva2UtbGluZWNhcDpyb3VuZDtzdHJva2UtbGluZWpvaW46cm91bmQ7c3Ryb2tlLW1pdGVybGltaXQ6MDtzdHJva2UtZGFzaGFycmF5Om5vbmU7c3Ryb2tlLW9wYWNpdHk6MTtwYWludC1vcmRlcjptYXJrZXJzIHN0cm9rZSBmaWxsIgogICAgICAgICBkPSJtIDEwOS4wMDAwNywxMjUuMDAwMTIgYyAtMC41NTQsMCAtMC45OTk5NCwwLjQ0NTk0IC0wLjk5OTk0LDAuOTk5OTQgViAxNDQgYyAwLDAuNTU0IDAuNDQ1OTQsMC45OTk5MyAwLjk5OTk0LDAuOTk5OTMgMC41NTQsMCAwLjk5OTkzLC0wLjQ0NTkzIDAuOTk5OTMsLTAuOTk5OTMgdiAtMTcuOTk5OTQgYyAwLC0wLjU1NCAtMC40NDU5MywtMC45OTk5NCAtMC45OTk5MywtMC45OTk5NCB6IG0gNi4wMDAxNSwwIGMgLTAuNTU0LDAgLTEuMDAwNDYsMC40NDU5NCAtMS4wMDA0NiwwLjk5OTk0IFYgMTQ0IGMgMCwwLjU1NCAwLjQ0NjQ2LDAuOTk5OTMgMS4wMDA0NiwwLjk5OTkzIDAuNTU0LDAgMC45OTk5MywtMC40NDU5MyAwLjk5OTkzLC0wLjk5OTkzIHYgLTE3Ljk5OTk0IGMgMCwtMC41NTQgLTAuNDQ1OTMsLTAuOTk5OTQgLTAuOTk5OTMsLTAuOTk5OTQgeiBtIDUuOTk5NjMsMCBjIC0wLjU1NCwwIC0wLjk5OTk0LDAuNDQ1OTQgLTAuOTk5OTQsMC45OTk5NCBWIDE0NCBjIDAsMC41NTQgMC40NDU5NCwwLjk5OTkzIDAuOTk5OTQsMC45OTk5MyAwLjU1NCwwIDAuOTk5OTQsLTAuNDQ1OTMgMC45OTk5NCwtMC45OTk5MyB2IC0xNy45OTk5NCBjIDAsLTAuNTU0IC0wLjQ0NTk0LC0wLjk5OTk0IC0wLjk5OTk0LC0wLjk5OTk0IHoiIC8+CiAgICAgIDxwYXRoCiAgICAgICAgIGlkPSJscGVfcGF0aC1lZmZlY3QyMCIKICAgICAgICAgc3R5bGU9ImZpbGw6I2ZmMDAwMDtmaWxsLW9wYWNpdHk6MTtzdHJva2U6I2ZmZmZmZjtzdHJva2Utd2lkdGg6MDtzdHJva2UtbGluZWNhcDpyb3VuZDtzdHJva2UtbGluZWpvaW46cm91bmQ7c3Ryb2tlLW1pdGVybGltaXQ6MDtzdHJva2UtZGFzaGFycmF5Om5vbmU7c3Ryb2tlLW9wYWNpdHk6MTtwYWludC1vcmRlcjptYXJrZXJzIHN0cm9rZSBmaWxsIgogICAgICAgICBjbGFzcz0icG93ZXJjbGlwIgogICAgICAgICBkPSJtIDk1LDExNSBoIDQwIHYgNDAgSCA5NSBaIG0gMTQuMDAwMDcsMTAuMDAwMTIgYyAtMC41NTQsMCAtMC45OTk5NCwwLjQ0NTk0IC0wLjk5OTk0LDAuOTk5OTQgViAxNDQgYyAwLDAuNTU0IDAuNDQ1OTQsMC45OTk5MyAwLjk5OTk0LDAuOTk5OTMgMC41NTQsMCAwLjk5OTkzLC0wLjQ0NTkzIDAuOTk5OTMsLTAuOTk5OTMgdiAtMTcuOTk5OTQgYyAwLC0wLjU1NCAtMC40NDU5MywtMC45OTk5NCAtMC45OTk5MywtMC45OTk5NCB6IG0gNi4wMDAxNSwwIGMgLTAuNTU0LDAgLTEuMDAwNDYsMC40NDU5NCAtMS4wMDA0NiwwLjk5OTk0IFYgMTQ0IGMgMCwwLjU1NCAwLjQ0NjQ2LDAuOTk5OTMgMS4wMDA0NiwwLjk5OTkzIDAuNTU0LDAgMC45OTk5MywtMC40NDU5MyAwLjk5OTkzLC0wLjk5OTkzIHYgLTE3Ljk5OTk0IGMgMCwtMC41NTQgLTAuNDQ1OTMsLTAuOTk5OTQgLTAuOTk5OTMsLTAuOTk5OTQgeiBtIDUuOTk5NjMsMCBjIC0wLjU1NCwwIC0wLjk5OTk0LDAuNDQ1OTQgLTAuOTk5OTQsMC45OTk5NCBWIDE0NCBjIDAsMC41NTQgMC40NDU5NCwwLjk5OTkzIDAuOTk5OTQsMC45OTk5MyAwLjU1NCwwIDAuOTk5OTQsLTAuNDQ1OTMgMC45OTk5NCwtMC45OTk5MyB2IC0xNy45OTk5NCBjIDAsLTAuNTU0IC0wLjQ0NTk0LC0wLjk5OTk0IC0wLjk5OTk0LC0wLjk5OTk0IHoiIC8+CiAgICA8L2NsaXBQYXRoPgogIDwvZGVmcz4KICA8ZwogICAgIGlkPSJsYXllcjEiCiAgICAgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTk5Ljk5OTk5NywtMTA1KSI+CiAgICA8cmVjdAogICAgICAgc3R5bGU9ImZpbGw6I2ZmZmZmZjtmaWxsLW9wYWNpdHk6MTtzdHJva2U6I2ZmZmZmZjtzdHJva2Utd2lkdGg6MDtzdHJva2UtbGluZWNhcDpzcXVhcmU7c3Ryb2tlLW1pdGVybGltaXQ6MDtzdHJva2UtZGFzaGFycmF5Om5vbmU7c3Ryb2tlLW9wYWNpdHk6MTtwYWludC1vcmRlcjptYXJrZXJzIHN0cm9rZSBmaWxsIgogICAgICAgaWQ9InJlY3QyIgogICAgICAgd2lkdGg9IjMwIgogICAgICAgaGVpZ2h0PSI1IgogICAgICAgeD0iMTAwIgogICAgICAgeT0iMTEzIiAvPgogICAgPHBhdGgKICAgICAgIHN0eWxlPSJmaWxsOiNmZmZmZmY7ZmlsbC1vcGFjaXR5OjE7c3Ryb2tlOiNmZmZmZmY7c3Ryb2tlLXdpZHRoOjA7c3Ryb2tlLWxpbmVjYXA6c3F1YXJlO3N0cm9rZS1taXRlcmxpbWl0OjA7c3Ryb2tlLWRhc2hhcnJheTpub25lO3N0cm9rZS1vcGFjaXR5OjE7cGFpbnQtb3JkZXI6bWFya2VycyBzdHJva2UgZmlsbCIKICAgICAgIGQ9Im0gMTAwLDEyMCBoIDMwIGwgLTMsMzAgaCAtMjQgeiIKICAgICAgIGlkPSJwYXRoMiIKICAgICAgIGNsaXAtcGF0aD0idXJsKCNjbGlwUGF0aDIwKSIgLz4KICAgIDxwYXRoCiAgICAgICBzdHlsZT0iZmlsbDojZmYwMDAwO2ZpbGwtb3BhY2l0eTowO3N0cm9rZTojZmZmZmZmO3N0cm9rZS13aWR0aDo0O3N0cm9rZS1saW5lY2FwOnNxdWFyZTtzdHJva2UtbGluZWpvaW46cm91bmQ7c3Ryb2tlLW1pdGVybGltaXQ6MDtzdHJva2UtZGFzaGFycmF5Om5vbmU7c3Ryb2tlLW9wYWNpdHk6MTtwYWludC1vcmRlcjptYXJrZXJzIHN0cm9rZSBmaWxsIgogICAgICAgZD0ibSAxMDcsMTExIHYgLTQgaCAxNiB2IDQiCiAgICAgICBpZD0icGF0aDE5IiAvPgogIDwvZz4KPC9zdmc+Cg==";
+  const addHotkeyIcon = new OffscreenCanvas(50, 50);
+  const addHotkeyCtx = addHotkeyIcon.getContext("2d");
+  if (!isNil(addHotkeyCtx)) {
+    addHotkeyCtx.strokeStyle = "white";
+    addHotkeyCtx.lineWidth = 10;
+    addHotkeyCtx.beginPath();
+    addHotkeyCtx.moveTo(0, 25);
+    addHotkeyCtx.lineTo(50, 25);
+    addHotkeyCtx.moveTo(25, 0);
+    addHotkeyCtx.lineTo(25, 50);
+    addHotkeyCtx.stroke();
+    addHotkeyCtx.closePath();
+  }
+  const exportIcon = new OffscreenCanvas(50, 50);
+  const exportIconCtx = exportIcon.getContext("2d");
+  if (!isNil(exportIconCtx)) {
+    exportIconCtx.strokeStyle = "white";
+    exportIconCtx.lineWidth = 10;
+    exportIconCtx.beginPath();
+    exportIconCtx.moveTo(0, 30);
+    exportIconCtx.lineTo(0, 50);
+    exportIconCtx.lineTo(50, 50);
+    exportIconCtx.lineTo(50, 30);
+    exportIconCtx.stroke();
+    exportIconCtx.closePath();
+    exportIconCtx.lineWidth = 5;
+    exportIconCtx.beginPath();
+    exportIconCtx.moveTo(25, 0);
+    exportIconCtx.lineTo(25, 35);
+    exportIconCtx.moveTo(25, 0);
+    exportIconCtx.lineTo(10, 15);
+    exportIconCtx.moveTo(25, 0);
+    exportIconCtx.lineTo(40, 15);
+    exportIconCtx.stroke();
+    exportIconCtx.closePath();
+  }
+  const importIcon = new OffscreenCanvas(50, 50);
+  const importIconCtx = importIcon.getContext("2d");
+  if (!isNil(importIconCtx)) {
+    importIconCtx.strokeStyle = "white";
+    importIconCtx.lineWidth = 10;
+    importIconCtx.beginPath();
+    importIconCtx.moveTo(0, 30);
+    importIconCtx.lineTo(0, 50);
+    importIconCtx.lineTo(50, 50);
+    importIconCtx.lineTo(50, 30);
+    importIconCtx.stroke();
+    importIconCtx.closePath();
+    importIconCtx.lineWidth = 5;
+    importIconCtx.beginPath();
+    importIconCtx.moveTo(25, 35);
+    importIconCtx.lineTo(25, 0);
+    importIconCtx.moveTo(25, 35);
+    importIconCtx.lineTo(10, 20);
+    importIconCtx.moveTo(25, 35);
+    importIconCtx.lineTo(40, 20);
+    importIconCtx.stroke();
+    importIconCtx.closePath();
+  }
+  const SEPARATOR_1 = 550;
+  const SEPARATOR_2 = 750;
+  class HotkeysEditor extends AbstractSettingsMenu {
+    /**
+     * The parent settings menu that this editor belongs to.
+     */
+    parentMenu;
+    /**
+     * The hotkeys currently set by this editor.
+     */
+    state;
+    constructor(parentMenu) {
+      super();
+      this.h = 9.6 * SETTINGS_OPTION_HEIGHT;
+      this.w = 850;
+      this.parentMenu = parentMenu;
+      this.state = settings.get("chatHotkeys");
+      if (!isChatHotkeysArray(this.state)) {
+        console.warn("Saved hotkeys are corrupted!", this.state);
+      }
+      this.options = [new TableHeading(
+        ["Chat Messages", "Keybinds", "Delete"],
+        [SEPARATOR_1, SEPARATOR_2]
+      )];
+      for (let hotkey of this.state) {
+        this.options.push(new HotkeysOption(hotkey, this));
+      }
+      this.options.push(new CustomOption(
+        "Add New Hotkey",
+        addHotkeyIcon,
+        () => {
+          const newOption = new HotkeysOption({
+            chatMsg: "<Enter chat message here...>",
+            keybind: KEYBIND_DELETED
+          }, this);
+          this.options.splice(
+            this.firstCustomOptionIndex,
+            0,
+            newOption
+          );
+          this.updateState();
+          newOption.changeTime = time;
+          this.scroll += SETTINGS_OPTION_HEIGHT;
+        }
+      ));
+      this.options.push(new CustomOption(
+        "Export Hotkeys to Clipboard",
+        exportIcon,
+        () => {
+          send({ attack: false });
+          navigator.clipboard.writeText(JSON.stringify(this.state));
+          alert("Successfully exported your current hotkeys to your clipboard.");
+        }
+      ));
+      this.options.push(new CustomOption(
+        "Import Hotkeys as Text",
+        importIcon,
+        () => {
+          try {
+            send({ attack: false });
+            const response = prompt(
+              "Please enter the hotkeys you wish to import:"
+            );
+            const hotkeys = JSON.parse(response ?? "null");
+            this.importHotkeys(hotkeys, "your inputted hotkeys");
+          } catch (_e) {
+            alert(
+              "Error: The inputted hotkeys are not formatted correctly! Import aborted."
+            );
+          }
+        },
+        void 0,
+        void 0,
+        'The imported hotkeys require a very specific format, and it is meant to support importing hotkeys that you exported from another device using the "Export Hotkeys" button. It is strongly recommended not to attempt manually formatting hotkeys by yourself.'
+      ));
+      this.options.push(new CustomOption(
+        "Import Flowrscript's Default Hotkeys",
+        importIcon,
+        () => {
+          send({ attack: false });
+          this.importHotkeys(
+            FLOWRSCRIPT_HOTKEYS,
+            "Flowrscript's default hotkeys"
+          );
+        }
+      ));
+      addKeybindInstruction({ type: "always", fn: (e) => {
+        if (settings.get("useChatHotkeys")) {
+          for (let hotkey of this.state) {
+            if (e.code === hotkey.keybind) {
+              send(["c", hotkey.chatMsg]);
+            }
+          }
+        }
+      } });
+    }
+    /**
+     * The first index in {@linkcode options} that contains a custom option
+     * instead of a hotkey item.
+     */
+    get firstCustomOptionIndex() {
+      return this.options.findIndex(
+        (option) => !option.isSectionHeading() && option.isCustomOption()
+      );
+    }
+    toggle() {
+      super.toggle();
+      if (this.active) {
+        this.parentMenu.cancelColourOption();
+      }
+    }
+    draw() {
+      this.x = this.parentMenu.x + this.parentMenu.w + 20;
+      super.draw();
+    }
+    /**
+     * Updates {@linkcode state} based on the {@linkcode HotkeysOption} items
+     * currently stored in this editor.
+     * 
+     * This function also handles saving the new state in the settings and
+     * telling the parent menu to recount keybinds.
+     */
+    updateState() {
+      this.state = [];
+      for (let option of this.options) {
+        if (!option.isSectionHeading() && option.isHotkeysOption()) {
+          this.state.push(option.state);
+        }
+      }
+      settings.set("chatHotkeys", this.state);
+      this.parentMenu.recountKeybinds();
+    }
+    /**
+     * Validates whether or not the given hotkeys are a valid set of hotkeys and
+     * then imports the given hotkeys.
+     * 
+     * This function also prompts the user on whether or not they want to
+     * overwrite their current keybinds.
+     * 
+     * @param hotkeys The array of hotkeys being imported.
+     * @param name The name to call the imported set of hotkeys.
+     */
+    importHotkeys(hotkeys, name) {
+      if (!isChatHotkeysArray(hotkeys)) {
+        alert(
+          "Error: The inputted hotkeys are not formatted correctly! Import aborted."
+        );
+        return;
+      }
+      const response = prompt(
+        `Caution: You are about to import ${name}, which will OVERWRITE ALL of your currently saved hotkeys! Type "Yes" to confirm.`
+      );
+      if (response?.toLowerCase() === "yes") {
+        const heading = this.options[0];
+        this.options.splice(0, this.firstCustomOptionIndex);
+        for (let i = hotkeys.length - 1; i >= 0; i--) {
+          this.options.unshift(new HotkeysOption(hotkeys[i], this));
+        }
+        this.options.unshift(heading);
+        this.updateState();
+        alert(`Successfully imported ${name}.`);
+      } else {
+        alert("Import aborted.");
+      }
+    }
+  }
+  class HotkeysOption extends AbstractKeybindOption {
+    /**
+     * The hotkeys editor that this hotkey item belongs to.
+     */
+    parentMenu;
+    /**
+     * This item's currently saved state, consisting of a keybind and its
+     * corresponding chat message.
+     */
+    state;
+    /**
+     * The position of the button that lets the user edit this item's saved chat
+     * message.
+     */
+    editChatMsgButton;
+    /**
+     * The position of the button that lets the user edit this item's saved
+     * keybind.
+     */
+    editKeybindButton;
+    /**
+     * The position of the button that lets the user delete this item.
+     */
+    deleteButton;
+    constructor(state, parentMenu) {
+      super("");
+      this.state = state;
+      this.parentMenu = parentMenu;
+      this.editChatMsgButton = { x: 0, y: 0, w: 0, h: 0 };
+      this.editKeybindButton = { x: 0, y: 0, w: 0, h: 0 };
+      this.deleteButton = { x: 0, y: 0, w: 0, h: 0 };
+    }
+    isHotkeysOption() {
+      return true;
+    }
+    draw(menu) {
+      this.editChatMsgButton = {
+        x: 15 + menu.x,
+        y: menu.midHeight - SETTINGS_BUTTON_SIZE / 2 + menu.y,
+        w: SETTINGS_BUTTON_SIZE,
+        h: SETTINGS_BUTTON_SIZE
+      };
+      ctx.fillStyle = "#9f9f9f";
+      ctx.strokeStyle = "#5f5f5f";
+      ctx.lineWidth = 4.5;
+      ctx.beginPath();
+      ctx.rect(
+        this.editChatMsgButton.x - menu.x,
+        this.editChatMsgButton.y - menu.y,
+        this.editChatMsgButton.w,
+        this.editChatMsgButton.h
+      );
+      ctx.fill();
+      ctx.stroke();
+      ctx.closePath();
+      ctx.drawImage(
+        editIcon,
+        this.editChatMsgButton.x - menu.x + SETTINGS_BUTTON_SIZE / 2 - EDIT_ICON_SIZE / 2,
+        menu.midHeight - EDIT_ICON_SIZE / 2,
+        EDIT_ICON_SIZE,
+        EDIT_ICON_SIZE
+      );
+      this.editKeybindButton = {
+        x: 15 + SEPARATOR_1 + menu.x,
+        y: menu.midHeight - SETTINGS_BUTTON_SIZE / 2 + menu.y,
+        w: SETTINGS_BUTTON_SIZE,
+        h: SETTINGS_BUTTON_SIZE
+      };
+      ctx.beginPath();
+      ctx.rect(
+        this.editKeybindButton.x - menu.x,
+        this.editKeybindButton.y - menu.y,
+        this.editKeybindButton.w,
+        this.editKeybindButton.h
+      );
+      ctx.fill();
+      ctx.stroke();
+      ctx.closePath();
+      ctx.drawImage(
+        editIcon,
+        this.editKeybindButton.x - menu.x + SETTINGS_BUTTON_SIZE / 2 - EDIT_ICON_SIZE / 2,
+        menu.midHeight - EDIT_ICON_SIZE / 2,
+        EDIT_ICON_SIZE,
+        EDIT_ICON_SIZE
+      );
+      this.deleteButton = {
+        // Placed midway between separator 2 and the scrollbar
+        x: menu.x + SEPARATOR_2 + (menu.w - SEPARATOR_2 - 16 - SETTINGS_BUTTON_SIZE) / 2,
+        y: menu.midHeight - SETTINGS_BUTTON_SIZE / 2 + menu.y,
+        w: SETTINGS_BUTTON_SIZE,
+        h: SETTINGS_BUTTON_SIZE
+      };
+      ctx.fillStyle = X_BUTTON_FILL;
+      ctx.strokeStyle = X_BUTTON_STROKE;
+      ctx.beginPath();
+      ctx.rect(
+        this.deleteButton.x - menu.x,
+        this.deleteButton.y - menu.y,
+        this.deleteButton.w,
+        this.deleteButton.h
+      );
+      ctx.fill();
+      ctx.stroke();
+      ctx.closePath();
+      ctx.drawImage(
+        deleteIcon,
+        this.deleteButton.x - menu.x + SETTINGS_BUTTON_SIZE / 2 - DELETE_ICON_WIDTH / 2,
+        menu.midHeight - EDIT_ICON_SIZE / 2,
+        DELETE_ICON_WIDTH,
+        EDIT_ICON_SIZE
+      );
+      ctx.font = "900 17px Ubuntu";
+      let currentX = this.editChatMsgButton.x - menu.x + SETTINGS_BUTTON_SIZE + SETTINGS_BUTTON_PADDING;
+      let maxWidth = SEPARATOR_1 - currentX - SETTINGS_BUTTON_PADDING;
+      let drawnMsg = this.state.chatMsg;
+      if (ctx.measureText(drawnMsg).width > maxWidth) {
+        drawnMsg = "";
+        let index = 0;
+        while (ctx.measureText(
+          drawnMsg + this.state.chatMsg.charAt(index) + "..."
+        ).width < maxWidth) {
+          drawnMsg += this.state.chatMsg.charAt(index);
+          index++;
+          if (index >= this.state.chatMsg.length) {
+            break;
+          }
+        }
+        drawnMsg += "...";
+      }
+      ctx.font = "900 17px Ubuntu";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = this.getFlashColour(SETTINGS_GREEN);
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 2;
+      ctxDrawText(drawnMsg, currentX, menu.midHeight);
+      currentX = this.editKeybindButton.x - menu.x + SETTINGS_BUTTON_SIZE + SETTINGS_BUTTON_PADDING;
+      let text = "";
+      if (this.editingKeybind) {
+        ctx.fillStyle = CINDER_COLOUR;
+        text = "(Editing...)";
+      } else {
+        ctx.fillStyle = this.getKeybindColour(
+          this.state.keybind,
+          this.parentMenu.parentMenu
+        );
+        text = this.state.keybind;
+      }
+      ctxDrawText(text, currentX, menu.midHeight);
+      ctx.strokeStyle = "#7f7f7f";
+      ctx.lineWidth = 5;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(SEPARATOR_1, menu.currentHeight);
+      ctx.lineTo(SEPARATOR_1, menu.currentHeight + SETTINGS_OPTION_HEIGHT);
+      ctx.stroke();
+      ctx.closePath();
+      ctx.beginPath();
+      ctx.moveTo(SEPARATOR_2, menu.currentHeight);
+      ctx.lineTo(SEPARATOR_2, menu.currentHeight + SETTINGS_OPTION_HEIGHT);
+      ctx.stroke();
+      ctx.closePath();
+      menu.currentHeight += SETTINGS_OPTION_HEIGHT;
+    }
+    /**
+     * Determines whether the given mouse coordinates are inside the "Edit Chat
+     * Message" button.
+     */
+    mouseInEditChatMsgButton(e) {
+      return mouseInBox(e, this.editChatMsgButton);
+    }
+    /**
+     * Determines whether the given mouse coordinates are inside the "Edit
+     * Keybind" button.
+     */
+    mouseInEditKeybindButton(e) {
+      return mouseInBox(e, this.editKeybindButton);
+    }
+    /**
+     * Determines whether the given mouse coordinates are inside the "Delete"
+     * button.
+     */
+    mouseInDeleteButton(e) {
+      return mouseInBox(e, this.deleteButton);
+    }
+    mouseInButton(e) {
+      return this.mouseInEditChatMsgButton(e) || this.mouseInEditKeybindButton(e) || this.mouseInDeleteButton(e);
+    }
+    onClick(_menu, e) {
+      if (this.mouseInEditChatMsgButton(e)) {
+        send({ attack: false });
+        const chatMsg = prompt(
+          `Please enter the new chat message you wish to use. The currently saved chat message for this hotkey is:
+
+"${this.state.chatMsg}"`
+        ) ?? "";
+        if (chatMsg.length > 0) {
+          this.state.chatMsg = chatMsg;
+          this.parentMenu.updateState();
+          this.changeTime = performance.now();
+        } else {
+          alert("No new chat message detected. Edit aborted.");
+        }
+      } else if (this.mouseInEditKeybindButton(e)) {
+        super.onClick(this.parentMenu.parentMenu, e);
+      } else if (this.mouseInDeleteButton(e)) {
+        send({ attack: false });
+        if (confirm(
+          `Are you sure you want to delete this hotkey? The currently saved chat message for this hotkey is:
+
+"${this.state.chatMsg}"`
+        )) {
+          alert(
+            `Deleted the hotkey for the following chat message:
+
+"${this.state.chatMsg}"`
+          );
+          this.parentMenu.options.splice(
+            this.parentMenu.options.findIndex((option) => option === this),
+            1
+          );
+          this.parentMenu.updateState();
+        } else {
+          alert("Deletion aborted.");
+        }
+      }
+    }
+    finishEdit(newKeybind) {
+      super.finishEdit(newKeybind);
+      if (!isNil(newKeybind)) {
+        this.changeTime = performance.now();
+        this.state.keybind = newKeybind;
+        this.parentMenu.updateState();
+      }
+    }
   }
   class RGBColour {
     /**
@@ -1238,11 +2863,11 @@
         this.importButton.x + this.importButton.w / 2,
         this.importButton.y + this.importButton.h / 2
       );
-      ctx.fillStyle = "#c1565e";
-      ctx.strokeStyle = "#90464b";
+      ctx.fillStyle = X_BUTTON_FILL;
+      ctx.strokeStyle = X_BUTTON_STROKE;
       ctx.lineWidth = 5;
       if (this.hoveringOverElement(this.closeButton)) {
-        ctx.fillStyle = "#c16666";
+        ctx.fillStyle = X_BUTTON_FILL_HOVERED;
         setCursor("pointer");
       }
       ctx.beginPath();
@@ -1375,654 +3000,10 @@
   function initOptions(options) {
     settingsMap = Object.freeze(options);
   }
-  class TooltipBox {
-    w;
-    h;
-    text;
+  class CinderSettingsMenu extends AbstractSettingsMenu {
     /**
-     * The alpha-value (i.e., opacity) of the drawn tooltip box.
-     */
-    alpha;
-    /**
-     * The full text for this tooltip is split into an array of lines, and each
-     * line is split further into an array of words/tokens.
-     */
-    lines;
-    constructor(text) {
-      this.w = 20;
-      this.h = 20 - (TOOLTIP_TEXT_HEIGHT - 15);
-      this.alpha = 0;
-      this.lines = [];
-      this.text = text;
-      this.generateDesc();
-      if (typeof text === "object") {
-        for (let key of text.dependentKeys) {
-          settings.addListener(key, () => this.generateDesc());
-        }
-      }
-    }
-    /**
-     * Draws this tooltip at the given location.
-     * @param x The horizontal position for the *middle* of this tooltip box.
-     * @param y The vertical position for the *top* of this tooltip box.
-     * @param isHovered Whether or not the mouse is hovering over this setting's
-     * tooltip icon.
-     */
-    draw(x, y, isHovered) {
-      if (!isHovered && this.alpha < 0.1) {
-        return;
-      }
-      if (isHovered) {
-        this.alpha += dt / 150;
-        if (this.alpha > 1) {
-          this.alpha = 1;
-        }
-      } else {
-        this.alpha -= dt / 150;
-        if (this.alpha < 0) {
-          this.alpha = 0;
-        }
-      }
-      ctx.save();
-      ctx.globalAlpha = this.alpha;
-      ctx.fillStyle = TOOLTIP_BLUE;
-      ctx.lineWidth = 10;
-      ctx.beginPath();
-      ctx.rect(x - this.w / 2, y, this.w, this.h);
-      ctx.fill();
-      ctx.closePath();
-      ctx.font = "900 15px Ubuntu";
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = "black";
-      ctx.fillStyle = "white";
-      ctx.textAlign = "left";
-      ctx.textBaseline = "top";
-      let currentHeight = y + 10;
-      for (let line of this.lines) {
-        let currentX = x - this.w / 2 + 10;
-        for (let token of line) {
-          if (token[0] === "$") {
-            if (token[1] === "c") {
-              ctx.fillStyle = token.substring(2).trim();
-            }
-          } else {
-            ctx.strokeText(token, currentX, currentHeight);
-            ctx.fillText(token, currentX, currentHeight);
-            currentX += ctx.measureText(token).width;
-          }
-        }
-        currentHeight += TOOLTIP_TEXT_HEIGHT;
-      }
-      ctx.restore();
-    }
-    /**
-     * Regenerates this tooltip's entire description. Also updates this box's
-     * dimensions based on the dimensions of the text.
-     */
-    generateDesc() {
-      this.w = 20;
-      this.h = 20 - (TOOLTIP_TEXT_HEIGHT - 15);
-      this.alpha = 0;
-      ctx.font = "900 15px Ubuntu";
-      const text = typeof this.text === "string" ? this.text : this.text.fn();
-      const splitText = text.split(" ").map((token) => token + " ");
-      this.lines = [];
-      let currentLine = [];
-      let currentWidth = 0;
-      const addLine = () => {
-        this.lines.push(currentLine);
-        this.w = Math.max(this.w, currentWidth + 20);
-        this.h += TOOLTIP_TEXT_HEIGHT;
-        currentLine = [];
-        currentWidth = 0;
-      };
-      for (let i = 0; i < splitText.length; i++) {
-        const newText = splitText[i];
-        if (newText.trim() === "$n") {
-          addLine();
-          continue;
-        }
-        const newWidth = newText[0] === "$" ? 0 : ctx.measureText(newText).width;
-        if (currentWidth + newWidth > TOOLTIP_WIDTH_CAP) {
-          addLine();
-        }
-        currentLine.push(newText);
-        currentWidth += newWidth;
-      }
-      addLine();
-    }
-  }
-  class TooltipIcon {
-    /**
-     * The {@linkcode TooltipBox} that gets displayed when the user hovers over
-     * this tooltip icon.
-     */
-    tooltipBox;
-    constructor(text) {
-      this.tooltipBox = new TooltipBox(text);
-    }
-    /**
-     * Draws the (?) icon centred at the given coordinates.
-     */
-    drawIcon(pos) {
-      const { x, y } = pos;
-      ctx.strokeStyle = TOOLTIP_BORDER_BLUE;
-      ctx.fillStyle = TOOLTIP_BLUE;
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.arc(x, y, TOOLTIP_ICON_SIZE / 2, 0, 2 * Math.PI);
-      ctx.stroke();
-      ctx.fill();
-      ctx.closePath();
-      ctx.font = "900 17px Ubuntu";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillStyle = "white";
-      ctx.strokeStyle = "black";
-      ctx.lineWidth = 2;
-      ctx.strokeText("?", x, y + 1);
-      ctx.fillText("?", x, y + 1);
-    }
-    /**
-     * Draws the text box for this tooltip. Also handles fading it in/out
-     * depending on whether the user is currently hovering over the (?) icon.
-     * @param pos The position of the *tooltip icon* (not the tooltip box itself).
-     * @param e The position of the mouse.
-     */
-    drawText(pos, e) {
-      const { x, y } = pos;
-      const isHovered = mouseInBox(
-        e,
-        // We intentionally make the tooltip icon's "hitbox" larger
-        {
-          x: x - SETTINGS_BUTTON_SIZE / 2,
-          y: y - SETTINGS_BUTTON_SIZE / 2,
-          w: SETTINGS_BUTTON_SIZE,
-          h: SETTINGS_BUTTON_SIZE
-        }
-      );
-      this.tooltipBox.draw(x, y + TOOLTIP_ICON_SIZE / 2 + 10, isHovered);
-    }
-  }
-  const editIcon = new Image();
-  editIcon.src = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgoKPHN2ZwogICB3aWR0aD0iMTAwLjAwMDA1bW0iCiAgIGhlaWdodD0iMTAwLjAwMDA2bW0iCiAgIHZpZXdCb3g9IjAgMCAxMDAuMDAwMDUgMTAwLjAwMDA2IgogICB2ZXJzaW9uPSIxLjEiCiAgIGlkPSJzdmcxIgogICB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciCiAgIHhtbG5zOnN2Zz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxkZWZzCiAgICAgaWQ9ImRlZnMxIiAvPgogIDxnCiAgICAgaWQ9ImxheWVyMSIKICAgICB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtODkuNTI0OTc3LC0zNS42MzI2MDUpIj4KICAgIDxyZWN0CiAgICAgICBzdHlsZT0iZmlsbDojZmZmZmZmO2ZpbGwtb3BhY2l0eToxO3N0cm9rZTojZmZmZmZmO3N0cm9rZS13aWR0aDowLjI4MjEzNztzdHJva2UtZGFzaGFycmF5Om5vbmU7c3Ryb2tlLW9wYWNpdHk6MSIKICAgICAgIGlkPSJyZWN0MS04IgogICAgICAgd2lkdGg9IjMxLjEyMTQyOSIKICAgICAgIGhlaWdodD0iMTguNTYwMDA3IgogICAgICAgeD0iLTE3NC43NzIyMyIKICAgICAgIHk9Ijc0LjQxNzAyMyIKICAgICAgIHRyYW5zZm9ybT0ibWF0cml4KC0wLjcwNzEwMDA4LC0wLjcwNzExMzQ5LDAuNzA3MTAwMDgsLTAuNzA3MTEzNDksMCwwKSIgLz4KICAgIDxyZWN0CiAgICAgICBzdHlsZT0iZmlsbDojZmZmZmZmO2ZpbGwtb3BhY2l0eToxO3N0cm9rZTojZmZmZmZmO3N0cm9rZS13aWR0aDowLjUxNDk0NTtzdHJva2UtZGFzaGFycmF5Om5vbmU7c3Ryb2tlLW9wYWNpdHk6MSIKICAgICAgIGlkPSJyZWN0MS04LTEiCiAgICAgICB3aWR0aD0iMzAuODg4NjI4IgogICAgICAgaGVpZ2h0PSI2Mi4yOTIxOTQiCiAgICAgICB4PSItMTc0LjY1NTg3IgogICAgICAgeT0iNS40NDUxNTA0IgogICAgICAgdHJhbnNmb3JtPSJtYXRyaXgoLTAuNzA3MTAwMDgsLTAuNzA3MTEzNDksMC43MDcxMDAwOCwtMC43MDcxMTM0OSwwLDApIiAvPgogICAgPHBhdGgKICAgICAgIHN0eWxlPSJmaWxsOiNmZmZmZmY7ZmlsbC1vcGFjaXR5OjE7c3Ryb2tlOiNmZmZmZmY7c3Ryb2tlLXdpZHRoOjAuMDE7c3Ryb2tlLWxpbmVjYXA6c3F1YXJlO3N0cm9rZS1taXRlcmxpbWl0OjA7c3Ryb2tlLWRhc2hhcnJheTpub25lO3N0cm9rZS1vcGFjaXR5OjE7cGFpbnQtb3JkZXI6bWFya2VycyBzdHJva2UgZmlsbCIKICAgICAgIGlkPSJwYXRoNCIKICAgICAgIGQ9Im0gNzQuMzU4OTk5LDEzMy44ODE1OSAtMS4yNzY3NzUsMCAwLjYzODM4OCwtMS4xMDU3MiB6IgogICAgICAgdHJhbnNmb3JtPSJtYXRyaXgoLTE3LjI0NDI0MiwtMTcuMjQ0NTcsMTkuODY3Mjg2LC0xOS44Njc2NjMsLTEyNzYuOTkwOCw0MDQ0LjczNDgpIiAvPgogIDwvZz4KPC9zdmc+Cg==";
-  class SettingsOption {
-    name;
-    state;
-    changeTime;
-    screenPosition;
-    _tooltipIcon;
-    /**
-     * A legacy field that is used for the settings menu to handle
-     * {@linkcode BooleanOption BooleanOptions}.
-     */
-    toggleFn;
-    constructor(name, tooltip) {
-      this.name = name;
-      if (!isNil(tooltip)) {
-        this._tooltipIcon = new TooltipIcon(tooltip);
-      }
-      this.changeTime = 0;
-      this.screenPosition = { x: 0, y: 0, w: 0, h: 0 };
-      this.state = void 0;
-      this.toggleFn = () => {
-      };
-    }
-    get tooltipIcon() {
-      return settings.get("settingsTooltips") ? this._tooltipIcon : void 0;
-    }
-    /**
-     * The position of the centre of the ? tooltip icon for this option.
-     */
-    get tooltipPos() {
-      ctx.font = "900 17px Ubuntu";
-      return {
-        x: this.screenPosition.x + SETTINGS_BUTTON_SIZE + SETTINGS_BUTTON_PADDING * 2 + ctx.measureText(this.name).width + TOOLTIP_ICON_SIZE / 2,
-        y: this.screenPosition.y + SETTINGS_BUTTON_SIZE / 2
-      };
-    }
-    /**
-     * @returns `true` iff this is a {@linkcode SettingsSectionHeading}.
-     */
-    isSectionHeading() {
-      return false;
-    }
-    /**
-     * @returns `true` iff this is a {@linkcode BooleanOption}.
-     */
-    isBooleanOption() {
-      return false;
-    }
-    /**
-     * @returns `true` iff this is a {@linkcode DisplayValueOption}.
-     */
-    isDisplayValueOption() {
-      return false;
-    }
-    /**
-     * Determines whether or not the given mouse coordinates are inside this
-     * option's button.
-     */
-    mouseInButton(e) {
-      return mouseInBox(e, this.screenPosition);
-    }
-    /**
-     * Draws this option's tooltip icon.
-     */
-    drawTooltipIcon() {
-      this.tooltipIcon?.drawIcon(this.tooltipPos);
-    }
-    /**
-     * Draws this option's tooltip box.
-     */
-    drawTooltipBox(e) {
-      this.tooltipIcon?.drawText(this.tooltipPos, e);
-    }
-    /**
-     * Updates the text for this setting's tooltip.
-     */
-    updateTooltip() {
-      this._tooltipIcon?.tooltipBox?.generateDesc();
-    }
-  }
-  class BooleanOption extends SettingsOption {
-    state;
-    constructor(name, settingsKey, tooltip) {
-      super(name, tooltip);
-      this.state = settings.get(settingsKey);
-      this.toggleFn = (state) => {
-        settings.set(settingsKey, state);
-      };
-    }
-    isBooleanOption() {
-      return true;
-    }
-  }
-  class DisplayValueOption extends SettingsOption {
-    constructor(name, tooltip) {
-      super(name + ": ", tooltip);
-    }
-    get tooltipPos() {
-      let { x, y } = super.tooltipPos;
-      for (let text of this.getDisplayedValues()) {
-        x += ctx.measureText(text).width;
-      }
-      return { x, y };
-    }
-    /**
-     * Returns this setting's name without any ": " formatting.
-     */
-    get simpleName() {
-      return this.name.replaceAll(": ", "");
-    }
-    isDisplayValueOption() {
-      return true;
-    }
-    /**
-     * @returns `true` iff this is a {@linkcode ColourOption}.
-     */
-    isColourOption() {
-      return false;
-    }
-    /**
-     * Processes `originalColour` to make it flash white if the user has edited
-     * this setting within the past 1.5s.
-     */
-    getFlashColour(originalColour) {
-      if (this.changeTime > 0 && time - this.changeTime < 1500) {
-        const ratio = (time - this.changeTime) / 1500;
-        return blendColor("#ffffff", originalColour, ratio);
-      } else {
-        return originalColour;
-      }
-    }
-    /**
-     * Determines the colours that the values should be displayed in.
-     */
-    getValueFillStyles() {
-      return [this.getFlashColour(SETTINGS_GREEN)];
-    }
-    /**
-     * Determines the displayed values, with formatting if necessary.
-     */
-    getDisplayedValues() {
-      return ["" + this.state];
-    }
-    /**
-     * Draws this option inside the given settings menu.
-     * 
-     * This code is largely adapted from Flowr's base code.
-     */
-    draw(menu) {
-      this.screenPosition = {
-        x: 15 + menu.x,
-        y: menu.midHeight - SETTINGS_BUTTON_SIZE / 2 + menu.y,
-        w: SETTINGS_BUTTON_SIZE,
-        h: SETTINGS_BUTTON_SIZE
-      };
-      ctx.fillStyle = "#9f9f9f";
-      ctx.strokeStyle = "#5f5f5f";
-      ctx.lineWidth = 4.5;
-      ctx.beginPath();
-      ctx.rect(
-        this.screenPosition.x - menu.x,
-        this.screenPosition.y - menu.y,
-        this.screenPosition.w,
-        this.screenPosition.h
-      );
-      ctx.fill();
-      ctx.stroke();
-      ctx.closePath();
-      ctx.drawImage(
-        editIcon,
-        15 + SETTINGS_BUTTON_SIZE / 2 - EDIT_ICON_SIZE / 2,
-        menu.midHeight - EDIT_ICON_SIZE / 2,
-        EDIT_ICON_SIZE,
-        EDIT_ICON_SIZE
-      );
-      ctx.font = "900 17px Ubuntu";
-      ctx.textAlign = "left";
-      ctx.textBaseline = "middle";
-      ctx.fillStyle = "white";
-      ctx.strokeStyle = "black";
-      ctx.lineWidth = 2;
-      ctx.strokeText(
-        this.name,
-        15 + SETTINGS_BUTTON_SIZE + SETTINGS_BUTTON_PADDING,
-        menu.midHeight
-      );
-      ctx.fillText(
-        this.name,
-        15 + SETTINGS_BUTTON_SIZE + SETTINGS_BUTTON_PADDING,
-        menu.midHeight
-      );
-      const prevTextWidth = ctx.measureText(this.name).width;
-      let currentX = 15 + SETTINGS_BUTTON_SIZE + SETTINGS_BUTTON_PADDING + prevTextWidth;
-      for (let i = 0; i < this.getDisplayedValues().length; i++) {
-        const text = this.getDisplayedValues()[i];
-        ctx.fillStyle = this.getValueFillStyles()[i];
-        ctx.strokeText(text, currentX, menu.midHeight);
-        ctx.fillText(text, currentX, menu.midHeight);
-        currentX += ctx.measureText(text).width;
-      }
-      if (this.isColourOption() && !this.editingState) {
-        ctx.strokeStyle = "black";
-        ctx.fillStyle = this.state;
-        ctx.lineWidth = 2;
-        currentX += 10;
-        ctx.fillRect(currentX, menu.midHeight - 10, 20, 20);
-        ctx.strokeRect(currentX, menu.midHeight - 10, 20, 20);
-      }
-      menu.currentHeight += SETTINGS_OPTION_HEIGHT;
-    }
-  }
-  class ColourOption extends DisplayValueOption {
-    state;
-    settingsKey;
-    /**
-     * Whether or not the player is currently editing this setting.
-     */
-    editingState;
-    constructor(name, settingsKey, tooltip) {
-      super(name, tooltip);
-      this.state = settings.get(settingsKey);
-      this.settingsKey = settingsKey;
-      this.editingState = false;
-    }
-    isColourOption() {
-      return true;
-    }
-    getDisplayedValues() {
-      if (this.editingState) {
-        return [this.state, " (Editing...)"];
-      } else {
-        return [this.state];
-      }
-    }
-    getValueFillStyles() {
-      const colour1 = this.getFlashColour(SETTINGS_GREEN);
-      if (this.editingState) {
-        return [colour1, CINDER_COLOUR];
-      } else {
-        return [colour1];
-      }
-    }
-    onClick(menu) {
-      if (!this.editingState) {
-        menu.setCurrentColourOption(this);
-        this.editingState = true;
-      } else {
-        menu.cancelColourOption();
-      }
-    }
-    /**
-     * Saves the given colour to the settings.
-     */
-    saveColour(newColour) {
-      if (!isHexCode(newColour)) {
-        console.warn(newColour + " is not a valid hex code!");
-        return;
-      }
-      this.changeTime = performance.now();
-      this.state = newColour;
-      settings.set(this.settingsKey, newColour);
-    }
-    /**
-     * Ends this option's editing state.
-     */
-    finishEdit() {
-      this.editingState = false;
-    }
-  }
-  class NumberOption extends DisplayValueOption {
-    state;
-    settingsKey;
-    minValue;
-    maxValue;
-    /**
-     * The number of decimal digits that this setting's value is rounded to.
-     */
-    decimalDigits;
-    constructor(name, settingsKey, minValue, maxValue, decimalDigits, tooltip) {
-      super(name, tooltip);
-      this.minValue = minValue;
-      this.maxValue = maxValue;
-      this.decimalDigits = decimalDigits;
-      this.state = settings.get(settingsKey);
-      this.settingsKey = settingsKey;
-    }
-    onClick() {
-      send({ attack: false });
-      const rawValue = parseFloat(prompt(
-        `You are editing the setting "${this.simpleName}".
-
-Please enter a number between ${this.minValue} and ${this.maxValue}.`
-      ) ?? "");
-      if (rawValue >= this.minValue && rawValue <= this.maxValue) {
-        const value = parseFloat(rawValue.toFixed(this.decimalDigits));
-        this.changeTime = performance.now();
-        this.state = value;
-        settings.set(this.settingsKey, value);
-      } else {
-        alert(
-          `Error: ${rawValue} is not a number between ${this.minValue} and ${this.maxValue}!`
-        );
-      }
-    }
-  }
-  class RarityOption extends DisplayValueOption {
-    state;
-    settingsKey;
-    constructor(name, settingsKey, tooltip) {
-      super(name, tooltip);
-      this.state = settings.get(settingsKey);
-      this.settingsKey = settingsKey;
-    }
-    getValueFillStyles() {
-      return [
-        this.getFlashColour(Colors.rarities[this.state].color),
-        this.getFlashColour(SETTINGS_GREEN)
-      ];
-    }
-    getDisplayedValues() {
-      return [Colors.rarities[this.state].name, ` (${this.state})`];
-    }
-    onClick() {
-      send({ attack: false });
-      const response = prompt(
-        `You are editing the setting "${this.simpleName}".
-
-Please enter a Rarity.`
-      ) ?? "";
-      const rarity = rarityToIndex(response);
-      if (!isNil(rarity)) {
-        this.changeTime = performance.now();
-        this.state = rarity;
-        settings.set(this.settingsKey, rarity);
-      } else {
-        alert(
-          `Error: "${response}" is not a valid Rarity!`
-        );
-      }
-    }
-  }
-  class KeybindOption extends DisplayValueOption {
-    state;
-    settingsKey;
-    /**
-     * Whether or not the player is currently editing this setting.
-     */
-    editingState;
-    /**
-     * A timeout for cancelling an edit for this setting.
-     */
-    editingStateTimeout;
-    constructor(name, settingsKey, tooltip) {
-      super(name, tooltip);
-      this.state = settings.get(settingsKey);
-      this.settingsKey = settingsKey;
-      this.editingState = false;
-    }
-    getDisplayedValues() {
-      if (this.editingState) {
-        return [this.state, " (Editing...)"];
-      } else {
-        return [this.state];
-      }
-    }
-    getValueFillStyles() {
-      const colour1 = this.getFlashColour(
-        this.state === KEYBIND_DELETED ? "#afafaf" : SETTINGS_GREEN
-      );
-      if (this.editingState) {
-        return [colour1, CINDER_COLOUR];
-      } else {
-        return [colour1];
-      }
-    }
-    onClick(menu) {
-      if (!this.editingState) {
-        menu.setCurrentKeybindOption(this);
-        this.editingState = true;
-        this.editingStateTimeout = setTimeout(() => {
-          menu.cancelKeybind();
-        }, 3e3);
-      } else {
-        menu.cancelKeybind();
-      }
-    }
-    /**
-     * Ends this option's editing state, and sets the setting to the new keybind
-     * if given.
-     */
-    finishEdit(newKeybind) {
-      clearTimeout(this.editingStateTimeout);
-      this.editingState = false;
-      this.editingStateTimeout = void 0;
-      if (!isNil(newKeybind)) {
-        this.changeTime = performance.now();
-        this.state = newKeybind;
-        settings.set(this.settingsKey, newKeybind);
-      }
-    }
-  }
-  class SettingsSectionHeading {
-    text;
-    tooltipPos;
-    _tooltipIcon;
-    constructor(text, tooltip) {
-      this.text = text;
-      if (!isNil(tooltip)) {
-        this._tooltipIcon = new TooltipIcon(tooltip);
-      }
-      this.tooltipPos = { x: 0, y: 0 };
-    }
-    get tooltipIcon() {
-      return settings.get("settingsTooltips") ? this._tooltipIcon : void 0;
-    }
-    /**
-     * @returns `true` iff this is a {@linkcode SettingsSectionHeading}.
-     */
-    isSectionHeading() {
-      return true;
-    }
-    /**
-     * Draws this header inside the given settings menu.
-     * 
-     * This code is adapted from the Flowr changelog's horizontal dividers.
-     */
-    draw(menu) {
-      ctx.font = "900 17px Ubuntu";
-      const textWidth = ctx.measureText(this.text).width;
-      let textLeftPos = menu.w / 2 - textWidth / 2;
-      let textRightPos = menu.w / 2 + textWidth / 2;
-      if (!isNil(this.tooltipIcon)) {
-        const extraSpace = TOOLTIP_ICON_SIZE + SETTINGS_BUTTON_PADDING;
-        textLeftPos -= extraSpace / 2;
-        textRightPos += extraSpace / 2;
-        this.tooltipPos = {
-          x: menu.x + textRightPos - TOOLTIP_ICON_SIZE / 2,
-          y: menu.y + menu.midHeight
-        };
-      }
-      ctx.textAlign = "left";
-      ctx.textBaseline = "middle";
-      ctx.fillStyle = "white";
-      ctx.strokeStyle = "black";
-      ctx.lineWidth = 2;
-      ctx.strokeText(this.text, textLeftPos, menu.midHeight);
-      ctx.fillText(this.text, textLeftPos, menu.midHeight);
-      ctx.strokeStyle = "#7f7f7f";
-      ctx.lineWidth = 8;
-      ctx.lineCap = "round";
-      ctx.beginPath();
-      ctx.moveTo(SETTINGS_BUTTON_PADDING, menu.midHeight);
-      ctx.lineTo(textLeftPos - SETTINGS_BUTTON_PADDING, menu.midHeight);
-      ctx.stroke();
-      ctx.closePath();
-      ctx.beginPath();
-      ctx.moveTo(textRightPos + SETTINGS_BUTTON_PADDING, menu.midHeight);
-      ctx.lineTo(menu.w - SETTINGS_BUTTON_PADDING - 16, menu.midHeight);
-      ctx.stroke();
-      ctx.closePath();
-      menu.currentHeight += SETTINGS_OPTION_HEIGHT;
-    }
-    /**
-     * Draws this section's tooltip icon.
-     */
-    drawTooltipIcon() {
-      this.tooltipIcon?.drawIcon(this.tooltipPos);
-    }
-    /**
-     * Draws this section's tooltip box.
-     */
-    drawTooltipBox(e) {
-      this.tooltipIcon?.drawText(this.tooltipPos, e);
-    }
-  }
-  class CinderSettingsMenu extends SettingsMenu {
-    /**
-     * The {@linkcode KeybindOption} currently being edited, if applicable.
+     * The {@linkcode AbstractKeybindOption} currently being edited, if
+     * applicable.
      */
     currentKeybindOption;
     /**
@@ -2035,22 +3016,9 @@ Please enter a Rarity.`
      */
     colourSelectorUi;
     /**
-     * The timestamp for the most recent time that the player used a mouse wheel
-     * input to scroll this menu.
+     * The {@linkcode HotkeysEditor} that can be accessed via this settings menu.
      */
-    lastMouseWheelTime;
-    _scroll;
-    /**
-     * The vertical offset of the mouse from the scrollbar's centre if the user
-     * is currently dragging the scrollbar, or `undefined` if the user is not
-     * dragging the scrollbar.
-     */
-    draggingScrollbarOffset;
-    /**
-     * The total height of this menu's contents, equal to
-     * {@linkcode SETTINGS_OPTION_HEIGHT} times `this.options.length`.
-     */
-    totalHeight;
+    hotkeysEditor;
     /**
      * The position of the in-game settings button outside the main menu.
      * 
@@ -2062,11 +3030,15 @@ Please enter a Rarity.`
      * The gear icon for the in-run settings menu button.
      */
     settingsImage;
+    /**
+     * A record that tracks how many times each key is being used as a keybind.
+     * This is mainly used for detecting any keybind conflicts.
+     */
+    keybindsCounter;
     constructor() {
       super();
-      this.lastMouseWheelTime = time - 1e4;
-      this._scroll = 0;
-      this.draggingScrollbarOffset = void 0;
+      this.h = 11.7 * SETTINGS_OPTION_HEIGHT;
+      this.w = 480;
       initOptions({
         invertAttack: new BooleanOption("Invert Attack", "invertAttack"),
         invertDefend: new BooleanOption("Invert Defend", "invertDefend"),
@@ -2253,46 +3225,55 @@ Please enter a Rarity.`
         ),
         keybindInvertAttack: new KeybindOption(
           "Invert Attack",
-          "keybindInvertAttack"
+          "keybindInvertAttack",
+          this
         ),
         keybindInvertDefend: new KeybindOption(
           "Invert Defend",
-          "keybindInvertDefend"
+          "keybindInvertDefend",
+          this
         ),
         keybindMinimap: new KeybindOption(
           "Toggle Minimap",
-          "keybindMinimap"
+          "keybindMinimap",
+          this
         ),
         keybindStatsBox: new KeybindOption(
           "Quick Stats Box",
           "keybindStatsBox",
+          this,
           "This hotkey toggles the stats box of the highest-rarity mob currently alive in your room."
         ),
         keybindLockSlot: new KeybindOption(
           "Lock Petal Slot",
           "keybindLockSlot",
+          this,
           "While holding down this key, you can press a petal slot's number key to cycle its lock state in the following order: $n Unlocked > Soft Lock > $c#ff0000 Hard Lock $c#ffffff > Unlocked. $n $n When a slot is soft locked, it does not get swapped by the [R] hotkey, but you can still swap the petal using all other methods. (i.e., Flowrscript's system) $n $n When a slot is $c#ff0000 hard locked $c#ffffff , you cannot swap it with its bottom petal at all. $n $n By default, you cannot $c#ff0000 hard lock $c#ffffff slots 1 to 5. You can change this behaviour at (Settings > General Gameplay > Allow Hard Locking Petal Slots 1 to 5)."
         ),
-        // Currently unused, will hopefully be added to the next update
         useChatHotkeys: new BooleanOption(
           "Use Chat Hotkeys",
           "useChatHotkeys",
-          "This setting enables the chat hotkeys set using the menu opened by the next setting. These hotkeys let you instantly send set chat messages by pressing certain keys. $n $n To get you started, the chat hotkeys editing menu will let you import Flowrscript's default set of hotkeys. $n $n CAUTION: If this is turned on, it will override ALL chat hotkeys used by other scripts!"
+          "This setting enables the chat hotkeys configured using the menu opened by the next setting. These hotkeys let you configure certain keys on your keyboard to instantly send certain chat messages. $n $n To get you started, the chat hotkeys editing menu will let you import Flowrscript's default set of hotkeys. $n $n CAUTION: If this is turned on, it will override ALL chat hotkeys used by other scripts! Due to technical limitations, it may also disable sending chat messages for the first few seconds of each run."
+        ),
+        chatHotkeys: new CustomOption(
+          "Chat Hotkeys Editor: ",
+          editIcon,
+          () => this.hotkeysEditor.toggle(),
+          () => [SETTINGS_GREEN],
+          () => [this.hotkeysEditor.active ? "Open" : "Closed"]
         ),
         disableWelcomeMessage: new BooleanOption(
           "Disable Welcome Message",
           "disableWelcomeMessage"
         )
       });
-      this.h = 11.7 * SETTINGS_OPTION_HEIGHT;
-      this.w = 480;
       this.inRunSettingsButton = {
         x: isNil(flowrMod) ? 75 : 140,
         y: 10,
         w: 45,
         h: 45
       };
-      this.options = Object.freeze([
+      this.options = [
         new SettingsSectionHeading("General Gameplay"),
         settingsMap.invertAttack,
         settingsMap.invertDefend,
@@ -2335,168 +3316,39 @@ Please enter a Rarity.`
         settingsMap.petalRenderQualityThreshold,
         new SettingsSectionHeading(
           "Keybinds",
-          "To edit a keybind, click its 'Edit' button and then enter a new key to bind it to. You can also delete a keybind by pressing the 'Delete' key on your keyboard. $n $n Caution: If you set multiple keybinds to the same key, all of your keybinds will still remain active!"
+          `To edit a keybind, click its 'Edit' button and then press the new key you wish to use. You can also delete a keybind by pressing the 'Delete' key on your keyboard. $n $n A displayed keybind will turn $c${SETTINGS_RED} RED $cwhite if it conflicts with another keybind, or if you set it to one of the following keys: W, A, S, D, Q, E, R, 0-9, '-', '=', '[', or ';'.`
         ),
         settingsMap.keybindInvertAttack,
         settingsMap.keybindInvertDefend,
         settingsMap.keybindMinimap,
         settingsMap.keybindStatsBox,
         settingsMap.keybindLockSlot,
+        settingsMap.useChatHotkeys,
+        settingsMap.chatHotkeys,
         new SettingsSectionHeading("Welcome"),
         settingsMap.disableWelcomeMessage
-      ]);
-      this.totalHeight = SETTINGS_OPTION_HEIGHT * this.options.length;
-      const originalOnMouseDown = _unsafeWindow.onmousedown;
-      _unsafeWindow.onmousedown = (e) => {
-        originalOnMouseDown?.apply(_unsafeWindow, [e]);
-        if (_unsafeWindow.connected === true) {
-          this.mouseDown({ x: mouse.canvasX, y: mouse.canvasY });
-        }
-      };
-      const originalOnMouseUp = _unsafeWindow.onmouseup;
-      _unsafeWindow.onmouseup = (e) => {
-        originalOnMouseUp?.apply(_unsafeWindow, [e]);
-        if (_unsafeWindow.connected === true) {
-          this.mouseUp();
-        }
-      };
+      ];
+      Object.freeze(this.options);
       this.settingsImage = new Image(35, 35);
       this.settingsImage.src = `gfx/gear.png?v=${ver}`;
       this.settingsImage.draggable = false;
-      const originalRenderMenu = renderMenu;
-      renderMenu = (dt2) => {
-        originalRenderMenu(dt2);
-        this.x = 110;
-        this.draw();
-      };
-      const originalRenderGame = renderGame;
-      renderGame = (dt2) => {
-        originalRenderGame(dt2);
-        if (_unsafeWindow.state === "game" && !settings.get("hideSettingsDuringRuns")) {
-          this.drawInRunButton();
-          this.draw();
-        }
-      };
-      document.addEventListener("wheel", (e) => {
-        this.mouseScroll(e);
-      });
       this.colourSelectorUi = new ColourSelectorUi(this);
+      this.hotkeysEditor = new HotkeysEditor(this);
+      this.keybindsCounter = {};
+      this.recountKeybinds();
     }
-    /**
-     * The y-position at the midpoint of the option currently being rendered.
-     */
-    get midHeight() {
-      return this.currentHeight + SETTINGS_OPTION_HEIGHT / 2;
-    }
-    /**
-     * How much the menu's contents are currently shifted due to scrolling.
-     */
-    get scroll() {
-      return this._scroll;
-    }
-    set scroll(val) {
-      this._scroll = Math.min(Math.max(val, 0), this.totalHeight + 10 - this.h);
-    }
-    /**
-     * The ratio of scrollbar movement to actual content movement.
-     */
-    get scrollbarRatio() {
-      return (this.h - 2 * SETTINGS_SCROLLBAR_MIN_POS) / (this.totalHeight + 10 - this.h);
-    }
-    /**
-     * The vertical position of the centre of this menu's scrollbar.
-     */
-    get scrollbarPos() {
-      return this.scroll * this.scrollbarRatio + SETTINGS_SCROLLBAR_MIN_POS;
-    }
-    set scrollbarPos(pos) {
-      if (!isNil(this.draggingScrollbarOffset)) {
-        this.scroll = (pos - SETTINGS_SCROLLBAR_MIN_POS - this.y - this.offset) / this.scrollbarRatio;
-      }
-    }
-    // TODO: Make the scroll translation code less spaghetti
     /**
      * The main function to draw this menu.
      */
     draw() {
-      this.offset = interpolate(this.offset, this.targetOffset, 0.3);
-      if (!isNil(this.draggingScrollbarOffset)) {
-        this.scrollbarPos = mouse.canvasY - this.draggingScrollbarOffset;
+      if (_unsafeWindow.state === "menu") {
+        this.x = 110;
       }
-      ctx.save();
-      ctx.translate(this.x, this.renderY);
-      ctx.beginPath();
-      ctx.roundRect(0, 0, this.w, this.h, 3);
-      ctx.clip();
-      ctx.closePath();
-      ctx.fillStyle = SETTINGS_GRAY;
-      ctx.beginPath();
-      ctx.roundRect(0, 0, this.w, this.h, 3);
-      ctx.fill();
-      ctx.closePath();
-      ctx.strokeStyle = "#7f7f7f";
-      ctx.lineWidth = 8;
-      ctx.lineCap = "round";
-      ctx.beginPath();
-      ctx.moveTo(this.w - 16, this.scrollbarPos - SCROLLBAR_LENGTH / 2);
-      ctx.lineTo(this.w - 16, this.scrollbarPos + SCROLLBAR_LENGTH / 2);
-      ctx.stroke();
-      ctx.closePath();
-      if (this.active && (this.mouseOnScrollbar() || !isNil(this.draggingScrollbarOffset))) {
-        setCursor("pointer");
+      if (_unsafeWindow.state === "game" && !settings.get("hideSettingsDuringRuns")) {
+        this.drawInRunButton();
       }
-      ctx.beginPath();
-      ctx.roundRect(0, 0, this.w, this.h, 3);
-      ctx.clip();
-      ctx.closePath();
-      ctx.translate(0, -this.scroll);
-      const e = { x: mouse.canvasX, y: mouse.canvasY + this.scroll };
-      if (!this.active || !this.mouseInMenu()) {
-        e.x = e.y = -Infinity;
-      }
-      this.currentHeight = 5;
-      for (let option of this.options) {
-        this.renderOption(option);
-      }
-      ctx.translate(-this.x, -this.y);
-      for (let option of this.options) {
-        option.drawTooltipIcon();
-      }
-      if (this.active && this.mouseInMenu()) {
-        for (let option of this.options) {
-          if (!option.isSectionHeading()) {
-            if (option.mouseInButton(e)) {
-              setCursor("pointer");
-            }
-          }
-        }
-      }
-      ctx.restore();
-      ctx.strokeStyle = SETTINGS_GRAY_BORDER;
-      ctx.lineWidth = 8;
-      ctx.beginPath();
-      ctx.roundRect(this.x, this.renderY, this.w, this.h, 3);
-      ctx.stroke();
-      ctx.closePath();
-      ctx.translate(0, -this.scroll);
-      for (let option of this.options) {
-        option.drawTooltipBox(e);
-      }
-      ctx.translate(0, this.scroll);
+      super.draw();
       this.colourSelectorUi.draw();
-    }
-    /**
-     * Renders the given {@linkcode SettingsOption}. Each type of option is
-     * rendered differently.
-     */
-    renderOption(option) {
-      if (option.isSectionHeading()) {
-        option.draw(this);
-      } else if (option.isBooleanOption()) {
-        this.renderToggle(option);
-      } else if (option.isDisplayValueOption()) {
-        option.draw(this);
-      }
     }
     /**
      * Draws this menu's in-run settings menu button during runs.
@@ -2532,19 +3384,12 @@ Please enter a Rarity.`
       );
       this.x = this.inRunSettingsButton.x + 65;
     }
-    /**
-     * Processes the user clicking on the settings menu. Each type of option is
-     * processed differently. This code is adapted from Flowr's client code.
-     */
     mouseDown(e) {
       if (this.mouseOnInRunButton()) {
         this.toggle();
       }
-      if (!this.mouseInMenu()) {
-        if (this.active && _unsafeWindow.state !== "menu" && !this.mouseOnInRunButton()) {
-          this.toggle();
-        }
-        return;
+      if (!this.mouseInMenu() && this.active && _unsafeWindow.state !== "menu" && !this.mouseOnInRunButton()) {
+        this.toggle();
       }
       if (!this.active) {
         return;
@@ -2553,53 +3398,20 @@ Please enter a Rarity.`
         return;
       }
       this.colourSelectorUi.mouseDown();
-      if (this.mouseOnScrollbar()) {
-        this.draggingScrollbarOffset = mouse.canvasY - (this.renderY + this.scrollbarPos);
-      }
-      e.y += this.scroll;
-      for (let option of this.options) {
-        if (!option.isSectionHeading()) {
-          if (option.mouseInButton(e)) {
-            if (option.isBooleanOption()) {
-              this.processToggle(option, e);
-            } else if (option.isDisplayValueOption()) {
-              option.onClick(this);
-            }
-          }
-        }
-      }
+      super.mouseDown(e);
     }
-    /**
-     * Precesses the user releasing a mouse click.
-     */
     mouseUp() {
-      this.draggingScrollbarOffset = void 0;
+      super.mouseUp();
       this.colourSelectorUi.mouseUp();
-    }
-    /**
-     * Scrolls this menu up/down in response to a mouse wheel input.
-     * 
-     * This does not handle the player dragging the scrollbar.
-     */
-    mouseScroll(e) {
-      if (this.active && this.mouseInPrimaryMenu()) {
-        this.scroll += e.deltaY / 2;
-        this.lastMouseWheelTime = time;
-      }
-    }
-    /**
-     * Returns `true` iff this menu received a mouse wheel scroll input within
-     * the past 250ms.
-     */
-    hasRecentMouseScroll() {
-      return performance.now() - this.lastMouseWheelTime < 250;
     }
     toggle() {
       super.toggle();
       if (!this.active) {
         this.cancelKeybind();
         this.cancelColourOption();
-        this.mouseUp();
+        if (this.hotkeysEditor.active) {
+          this.hotkeysEditor.toggle();
+        }
       }
     }
     /**
@@ -2623,6 +3435,9 @@ Please enter a Rarity.`
         this.colourSelectorUi.setDefaultColour(
           settings.getDefault(this.currentColourOption.settingsKey)
         );
+        if (this.hotkeysEditor.active) {
+          this.hotkeysEditor.toggle();
+        }
       } else {
         this.colourSelectorUi.active = false;
       }
@@ -2640,8 +3455,8 @@ Please enter a Rarity.`
       this.currentColourOption?.saveColour(colour);
     }
     /**
-     * Sets a {@linkcode KeybindOption} to be edited, and cancel the previous
-     * keybind option if applicable.
+     * Sets a {@linkcode AbstractKeybindOption} to be edited, and cancel the
+     * previous keybind option if applicable.
      */
     setCurrentKeybindOption(option) {
       if (!isNil(this.currentKeybindOption)) {
@@ -2656,35 +3471,32 @@ Please enter a Rarity.`
       this.setCurrentKeybindOption(void 0);
     }
     /**
-     * Checks whether the mouse is inside this menu, excluding its colour
-     * selector UI.
+     * Performs a full recount to update {@linkcode keybindsCounter}.
      */
-    mouseInPrimaryMenu() {
-      return mouseInBox(
-        { x: mouse.canvasX, y: mouse.canvasY },
-        { x: this.x + 4, y: this.renderY + 4, w: this.w - 8, h: this.h - 8 }
-      );
+    recountKeybinds() {
+      this.keybindsCounter = {};
+      for (let keybind of BASE_GAME_HOTKEYS) {
+        this.keybindsCounter[keybind] = 1;
+      }
+      for (let option of this.options) {
+        if (!option.isSectionHeading() && option.isKeybindOption()) {
+          const key = option.state;
+          this.keybindsCounter[key] = (this.keybindsCounter[key] ?? 0) + 1;
+        }
+      }
+      for (let option of this.hotkeysEditor.options) {
+        if (!option.isSectionHeading() && option.isHotkeysOption()) {
+          const key = option.state.keybind;
+          this.keybindsCounter[key] = (this.keybindsCounter[key] ?? 0) + 1;
+        }
+      }
     }
     /**
      * Checks whether the mouse is inside this menu (including its colour
-     * selector UI), excluding its borders.
+     * selector UI or its hotkeys editor), excluding its borders.
      */
     mouseInMenu() {
-      return this.mouseInPrimaryMenu() || this.colourSelectorUi.mouseInMenu();
-    }
-    /**
-     * Checks whether the mouse is hovering over this menu's scrollbar.
-     */
-    mouseOnScrollbar() {
-      return mouseInBox(
-        { x: mouse.canvasX, y: mouse.canvasY },
-        {
-          x: this.x + this.w - 24,
-          y: this.renderY + this.scrollbarPos - SCROLLBAR_LENGTH / 2,
-          w: 16,
-          h: SCROLLBAR_LENGTH
-        }
-      );
+      return super.mouseInMenu() || this.colourSelectorUi.mouseInMenu() || this.hotkeysEditor.mouseInMenu();
     }
     /**
      * Checks whether the mouse is on the in-run settings menu button.
@@ -2697,6 +3509,9 @@ Please enter a Rarity.`
         { x: mouse.canvasX, y: mouse.canvasY },
         this.inRunSettingsButton
       );
+    }
+    hasRecentMouseScroll() {
+      return super.hasRecentMouseScroll() || this.hotkeysEditor.hasRecentMouseScroll();
     }
   }
   let cinderSettingsMenu;
@@ -2750,7 +3565,8 @@ Please enter a Rarity.`
     }
   }
   let MENU_LIST;
-  function initMenuList() {
+  let SUB_MENU_LIST;
+  function initMenuLists() {
     const rawList = [
       settingsMenu,
       changelog,
@@ -2768,6 +3584,7 @@ Please enter a Rarity.`
       );
     }
     MENU_LIST = Object.freeze(rawList);
+    SUB_MENU_LIST = Object.freeze([cinderSettingsMenu.hotkeysEditor]);
   }
   function isNil(arg) {
     return arg === void 0 || arg === null;
@@ -2868,6 +3685,122 @@ Please enter a Rarity.`
   function isHexCode(str) {
     return !isNil(str.match(new RegExp("^#[0-9a-fA-F]{6}$")));
   }
+  const wsDataEditing = [];
+  function allowWsDataEditing() {
+    function injectWsSend() {
+      const originalSend = ws.send;
+      ws.send = function(data) {
+        let rawData = msgpackr.unpack(data);
+        for (let fn of wsDataEditing) {
+          rawData = fn(rawData);
+          if (isNil(rawData)) {
+            return;
+          }
+        }
+        originalSend.apply(ws, [msgpackr.pack(rawData)]);
+      };
+    }
+    const originalInitWS = initWS;
+    initWS = function() {
+      originalInitWS();
+      injectWsSend();
+    };
+    if (!isNil(ws)) {
+      injectWsSend();
+    }
+  }
+  function addWsDataEditing(fn) {
+    wsDataEditing.push(fn);
+  }
+  function deleteQueuedChatMsgs() {
+    wsMsgQueue = wsMsgQueue.filter(isNotChatMessage);
+  }
+  function isNotChatMessage(data) {
+    return !(Array.isArray(data) && data[0] === "c");
+  }
+  const keybinds = [];
+  function initKeybindHandling() {
+    let chatDisabled = false;
+    addWsDataEditing((data) => {
+      if (chatDisabled && !isNotChatMessage(data)) {
+        return void 0;
+      } else {
+        return data;
+      }
+    });
+    const originalHandleKey = inputHandler.handleKey;
+    inputHandler.handleKey = function(e) {
+      for (let keybind of keybinds) {
+        if (checkInstruction(keybind, e, true)) {
+          if (keybind.fn(e)) {
+            return;
+          }
+        }
+      }
+      if (settings.get("useChatHotkeys") && e.code !== "Enter") {
+        chatDisabled = true;
+      }
+      originalHandleKey.apply(inputHandler, [e]);
+      if (chatDisabled) {
+        deleteQueuedChatMsgs();
+      }
+      chatDisabled = false;
+      for (let keybind of keybinds) {
+        if (checkInstruction(keybind, e, false)) {
+          if (keybind.fn(e)) {
+            return;
+          }
+        }
+      }
+    };
+  }
+  function addKeybindInstruction(keybind) {
+    keybinds.push({
+      ...keybind,
+      keyType: keybind.keyType ?? "keydown",
+      inGame: keybind.inGame ?? true,
+      inMenu: keybind.inMenu ?? false,
+      beforeOriginal: keybind.beforeOriginal ?? false
+    });
+  }
+  function isInGameInput() {
+    return _unsafeWindow.state === "game" && !inputHandler.chatOpen;
+  }
+  function isInMenuInput() {
+    return _unsafeWindow.state === "menu" && document.activeElement?.tagName !== "INPUT";
+  }
+  function checkInstruction(keybind, e, beforeOriginal) {
+    if (e.repeat) {
+      return false;
+    }
+    if (e.code === KEYBIND_DELETED) {
+      console.warn(`Keypress code somehow equal to ${KEYBIND_DELETED}!`);
+      console.warn(e);
+      return false;
+    }
+    if (!(keybind.inGame && isInGameInput()) && !(keybind.inMenu && isInMenuInput())) {
+      return false;
+    }
+    if (keybind.beforeOriginal !== beforeOriginal) {
+      return false;
+    }
+    if (keybind.keyType !== e.type) {
+      return false;
+    }
+    if (keybind.type === "always") {
+      return true;
+    } else if (keybind.type === "settings") {
+      return e.code === settings.get(keybind.settingsKey);
+    } else if (keybind.type === "rawValue") {
+      return e.code === keybind.value;
+    } else if (keybind.type === "localStorage") {
+      return e.code === localStorage.getItem(keybind.storageKey) && e.code.length > 0;
+    } else if (keybind.type === "digit") {
+      return e.code.startsWith("Digit");
+    } else {
+      return false;
+    }
+  }
   function addScreenshotMode() {
     const originalRenderGame = renderGame;
     const originalOnMessage = ws.onmessage;
@@ -2928,10 +3861,11 @@ Please enter a Rarity.`
       fn: toggleScreenshotMode
     });
   }
-  const version = "1.8.3";
+  const version = "1.9.0";
   function addScriptVersionToDebugInfo() {
     const originalRenderDebug = renderDebug;
     renderDebug = () => {
+      ctx.letterSpacing = "0px";
       let baseDebugText = "";
       let baseDebugX = 0;
       let baseDebugY = 0;
@@ -4332,33 +5266,6 @@ Please enter a Rarity.`
       originalDrawStatsBox.apply(this, [drawBelow, rarityOverride]);
     };
   }
-  const wsDataEditing = [];
-  function allowWsDataEditing() {
-    function injectWsSend() {
-      const originalSend = ws.send;
-      ws.send = function(data) {
-        let rawData = msgpackr.unpack(data);
-        for (let fn of wsDataEditing) {
-          rawData = fn(rawData);
-        }
-        if (isNil(rawData)) {
-          return;
-        }
-        originalSend.apply(ws, [msgpackr.pack(rawData)]);
-      };
-    }
-    const originalInitWS = initWS;
-    initWS = function() {
-      originalInitWS();
-      injectWsSend();
-    };
-    if (!isNil(ws)) {
-      injectWsSend();
-    }
-  }
-  function addWsDataEditing(fn) {
-    wsDataEditing.push(fn);
-  }
   function enableInvertAttackAndDefend() {
     let rawAttacking = false;
     let rawDefending = false;
@@ -5440,7 +6347,7 @@ Please enter a Rarity.`
     };
   }
   function handleMenuTranslations() {
-    for (let menu of MENU_LIST) {
+    for (let menu of [...MENU_LIST, ...SUB_MENU_LIST]) {
       if (isTopMenu(menu)) {
         Object.defineProperty(menu, "renderY", {
           get: function() {
@@ -5472,7 +6379,7 @@ Please enter a Rarity.`
     initSettingsMenu();
     initChangelog();
     initMobCounters();
-    initMenuList();
+    initMenuLists();
   }
   function initTheoryCraft() {
     if (theoryCraft.length > 0) {
@@ -5832,6 +6739,7 @@ Please enter a Rarity.`
     if (isNil(settingsMenu) && isNil(craftingMenu)) {
       return;
     }
+    initSettingsManager();
     await new Promise((resolve2) => {
       const interval = setInterval(() => {
         const petals = _unsafeWindow?.flowrMod?.petalGallery?.petalContainers;

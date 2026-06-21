@@ -1,4 +1,4 @@
-import { LIGHT_SETTINGS_GRAY, SETTINGS_GRAY, SETTINGS_GRAY_BORDER, SETTINGS_GREEN } from "../constants/constants";
+import { LIGHT_SETTINGS_GRAY, SETTINGS_GRAY, SETTINGS_GRAY_BORDER, SETTINGS_GREEN, X_BUTTON_FILL, X_BUTTON_FILL_HOVERED, X_BUTTON_STROKE } from "../constants/constants";
 import type { CinderSettingsMenu } from "../settings/settingsMenu";
 import { ctxDrawText, isHexCode, isNil } from "../utils";
 
@@ -618,11 +618,11 @@ export class ColourSelectorUi {
 
     // Draw the "Close" button (this is basically copied from Flowr's base code
     // to maintain a consistent style)
-    ctx.fillStyle = "#c1565e";
-    ctx.strokeStyle = "#90464b";
+    ctx.fillStyle = X_BUTTON_FILL;
+    ctx.strokeStyle = X_BUTTON_STROKE;
     ctx.lineWidth = 5;
     if (this.hoveringOverElement(this.closeButton)) {
-      ctx.fillStyle = "#c16666";
+      ctx.fillStyle = X_BUTTON_FILL_HOVERED;
       setCursor("pointer");
     }
     ctx.beginPath();

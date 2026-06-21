@@ -1163,7 +1163,7 @@ declare global {
   class SettingsMenu extends TopMenu {
     targetOffset: number;
     currentHeight: number;
-    options: readonly (SettingsOption | SettingsSectionHeading)[];
+    options: (SettingsOption | SettingsSectionHeading)[];
 
     draw();
     
@@ -1267,6 +1267,13 @@ declare global {
   const ws: WebSocket;
 
   let initWS: () => void;
+
+  /**
+   * A queue of messages to be sent to the server individually over the next
+   * few seconds. This system prevents the server from being overloaded with
+   * messages during the first few seconds of each run.
+   */
+  let wsMsgQueue: unknown[];
 
   const msgpackr: {
     pack(msg: any): any;

@@ -8,6 +8,8 @@ import { LIGHT_CINDER_COLOUR } from "../constants/constants";
 export function addScriptVersionToDebugInfo() {
   const originalRenderDebug = renderDebug;
   renderDebug = () => {
+    ctx.letterSpacing = "0px";
+
     // Note down the base game's debug text
     let baseDebugText = "";
     let baseDebugX = 0;

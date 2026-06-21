@@ -1,12 +1,14 @@
-import { CINDER_COLOUR, EDIT_ICON_SIZE, KEYBIND_DELETED, SETTINGS_BUTTON_PADDING, SETTINGS_BUTTON_SIZE, SETTINGS_GREEN, SETTINGS_OPTION_HEIGHT, TOOLTIP_ICON_SIZE } from "../constants/constants";
+import { CINDER_COLOUR, EDIT_ICON_SIZE, KEYBIND_DELETED, SETTINGS_BUTTON_PADDING, SETTINGS_BUTTON_SIZE, SETTINGS_GREEN, SETTINGS_OPTION_HEIGHT, SETTINGS_RED, SETTINGS_VALUE_GRAY, TOOLTIP_ICON_SIZE } from "../constants/constants";
 import type { Rarity } from "../enums";
-import { isHexCode, isNil, rarityToIndex } from "../utils";
+import { ctxDrawText, isHexCode, isNil, rarityToIndex } from "../utils";
+import type { AbstractSettingsMenu } from "./abstractSettingsMenu";
+import type { HotkeysOption } from "./chatHotkeysEditor";
 import { settings, type BooleanSettingsKey, type ColourSettingsKey, type KeybindSettingsKey, type NumberSettingsKey, type RaritySettingsKey } from "./settingsManager";
 import { type CinderSettingsMenu } from "./settingsMenu";
 import { TooltipIcon, type Tooltip } from "./tooltips";
 
 // icons/settings-edit.svg
-const editIcon = new Image();
+export const editIcon = new Image();
 editIcon.src = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgoKPHN2ZwogICB3aWR0aD0iMTAwLjAwMDA1bW0iCiAgIGhlaWdodD0iMTAwLjAwMDA2bW0iCiAgIHZpZXdCb3g9IjAgMCAxMDAuMDAwMDUgMTAwLjAwMDA2IgogICB2ZXJzaW9uPSIxLjEiCiAgIGlkPSJzdmcxIgogICB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciCiAgIHhtbG5zOnN2Zz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxkZWZzCiAgICAgaWQ9ImRlZnMxIiAvPgogIDxnCiAgICAgaWQ9ImxheWVyMSIKICAgICB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtODkuNTI0OTc3LC0zNS42MzI2MDUpIj4KICAgIDxyZWN0CiAgICAgICBzdHlsZT0iZmlsbDojZmZmZmZmO2ZpbGwtb3BhY2l0eToxO3N0cm9rZTojZmZmZmZmO3N0cm9rZS13aWR0aDowLjI4MjEzNztzdHJva2UtZGFzaGFycmF5Om5vbmU7c3Ryb2tlLW9wYWNpdHk6MSIKICAgICAgIGlkPSJyZWN0MS04IgogICAgICAgd2lkdGg9IjMxLjEyMTQyOSIKICAgICAgIGhlaWdodD0iMTguNTYwMDA3IgogICAgICAgeD0iLTE3NC43NzIyMyIKICAgICAgIHk9Ijc0LjQxNzAyMyIKICAgICAgIHRyYW5zZm9ybT0ibWF0cml4KC0wLjcwNzEwMDA4LC0wLjcwNzExMzQ5LDAuNzA3MTAwMDgsLTAuNzA3MTEzNDksMCwwKSIgLz4KICAgIDxyZWN0CiAgICAgICBzdHlsZT0iZmlsbDojZmZmZmZmO2ZpbGwtb3BhY2l0eToxO3N0cm9rZTojZmZmZmZmO3N0cm9rZS13aWR0aDowLjUxNDk0NTtzdHJva2UtZGFzaGFycmF5Om5vbmU7c3Ryb2tlLW9wYWNpdHk6MSIKICAgICAgIGlkPSJyZWN0MS04LTEiCiAgICAgICB3aWR0aD0iMzAuODg4NjI4IgogICAgICAgaGVpZ2h0PSI2Mi4yOTIxOTQiCiAgICAgICB4PSItMTc0LjY1NTg3IgogICAgICAgeT0iNS40NDUxNTA0IgogICAgICAgdHJhbnNmb3JtPSJtYXRyaXgoLTAuNzA3MTAwMDgsLTAuNzA3MTEzNDksMC43MDcxMDAwOCwtMC43MDcxMTM0OSwwLDApIiAvPgogICAgPHBhdGgKICAgICAgIHN0eWxlPSJmaWxsOiNmZmZmZmY7ZmlsbC1vcGFjaXR5OjE7c3Ryb2tlOiNmZmZmZmY7c3Ryb2tlLXdpZHRoOjAuMDE7c3Ryb2tlLWxpbmVjYXA6c3F1YXJlO3N0cm9rZS1taXRlcmxpbWl0OjA7c3Ryb2tlLWRhc2hhcnJheTpub25lO3N0cm9rZS1vcGFjaXR5OjE7cGFpbnQtb3JkZXI6bWFya2VycyBzdHJva2UgZmlsbCIKICAgICAgIGlkPSJwYXRoNCIKICAgICAgIGQ9Im0gNzQuMzU4OTk5LDEzMy44ODE1OSAtMS4yNzY3NzUsMCAwLjYzODM4OCwtMS4xMDU3MiB6IgogICAgICAgdHJhbnNmb3JtPSJtYXRyaXgoLTE3LjI0NDI0MiwtMTcuMjQ0NTcsMTkuODY3Mjg2LC0xOS44Njc2NjMsLTEyNzYuOTkwOCw0MDQ0LjczNDgpIiAvPgogIDwvZz4KPC9zdmc+Cg==";
 
 /**
@@ -75,6 +77,29 @@ export abstract class SettingsOption {
    * @returns `true` iff this is a {@linkcode DisplayValueOption}.
    */
   isDisplayValueOption(): this is DisplayValueOption {
+    return false;
+  }
+
+  /**
+   * @returns `true` iff this is a {@linkcode KeybindOption}.
+   * 
+   * (Note that other {@linkcode AbstractKeybindOption} items do not count.)
+   */
+  isKeybindOption(): this is KeybindOption {
+    return false;
+  }
+
+  /**
+   * @returns `true` iff this is a {@linkcode HotkeysOption}.
+   */
+  isHotkeysOption(): this is HotkeysOption {
+    return false;
+  }
+
+  /**
+   * @returns `true` iff this is a {@linkcode CustomOption}.
+   */
+  isCustomOption(): this is CustomOption {
     return false;
   }
 
@@ -202,7 +227,7 @@ export abstract class DisplayValueOption extends SettingsOption {
    * 
    * This code is largely adapted from Flowr's base code.
    */
-  draw(menu: CinderSettingsMenu) {
+  draw(menu: AbstractSettingsMenu) {
     // Display the edit button
     this.screenPosition = {
       x: 15 + menu.x,
@@ -281,9 +306,12 @@ export abstract class DisplayValueOption extends SettingsOption {
    * Handles letting the player edit this setting when the player clicks the
    * edit button.
    */
-  abstract onClick(menu: CinderSettingsMenu): void;
+  abstract onClick(menu: AbstractSettingsMenu, e: CanvasMouseData): void;
 }
 
+/**
+ * A setting that lets the user pick a colour using the colour selector UI.
+ */
 export class ColourOption extends DisplayValueOption {
   state: string;
   settingsKey: ColourSettingsKey;
@@ -359,6 +387,9 @@ export class ColourOption extends DisplayValueOption {
   }
 }
 
+/**
+ * A setting that lets the user pick a numerical option.
+ */
 export class NumberOption extends DisplayValueOption {
   state: number;
   settingsKey: NumberSettingsKey;
@@ -411,6 +442,9 @@ export class NumberOption extends DisplayValueOption {
   }
 }
 
+/**
+ * A setting that lets the user pick a Rarity.
+ */
 export class RarityOption extends DisplayValueOption {
   state: Rarity;
   settingsKey: RaritySettingsKey;
@@ -461,60 +495,52 @@ export class RarityOption extends DisplayValueOption {
   }
 }
 
-export class KeybindOption extends DisplayValueOption {
-  state: string;
-  settingsKey: KeybindSettingsKey;
-  
+/**
+ * A class for settings that involve editing a keybind in some way.
+ */
+export abstract class AbstractKeybindOption extends DisplayValueOption {
   /**
-   * Whether or not the player is currently editing this setting.
+   * Whether or not the player is currently editing this setting's keybind.
    */
-  editingState: boolean;
+  editingKeybind: boolean;
 
   /**
    * A timeout for cancelling an edit for this setting.
    */
-  editingStateTimeout?: number;
+  editingKeybindTimeout?: number;
 
   constructor(
     name: string,
-    settingsKey: KeybindSettingsKey,
     tooltip?: Tooltip,
   ) {
     super(name, tooltip);
 
-    this.state = settings.get(settingsKey);
-    this.settingsKey = settingsKey;
-    this.editingState = false;
+    this.editingKeybind = false;
   }
 
-  getDisplayedValues(): string[] {
-    // Also display an "Editing..." status if this is being edited
-    if (this.editingState) {
-      return [this.state, " (Editing...)"];
+  /**
+   * A helper function to determine the right colour to draw the keybind's
+   * text, according to the following rules:
+   * 1. If the keybind is set to "<None>" (i.e., deleted by user), it is gray.
+   * 2. If the keybind conflicts with another keybind, it is red.
+   * 3. If none of the above apply, it is green.
+   */
+  getKeybindColour(keybind: string, parentMenu: CinderSettingsMenu): string {
+    if (keybind === KEYBIND_DELETED) {
+      return this.getFlashColour(SETTINGS_VALUE_GRAY);
+    } else if ((parentMenu.keybindsCounter[keybind] ?? 0) >= 2) {
+      return this.getFlashColour(SETTINGS_RED);
     } else {
-      return [this.state];
+      return this.getFlashColour(SETTINGS_GREEN);
     }
   }
 
-  getValueFillStyles(): string[] {
-    // Gray out this setting if it is set to "<None>" (i.e., deleted by user).
-    // Also display an "Editing..." status if this is being edited.
-    const colour1 = this.getFlashColour(
-      this.state === KEYBIND_DELETED ? "#afafaf" : SETTINGS_GREEN
-    );
-    if (this.editingState) {
-      return [colour1, CINDER_COLOUR];
-    } else {
-      return [colour1];
-    }
-  }
-
-  onClick(menu: CinderSettingsMenu): void {
-    if (!this.editingState) {
+  onClick(menu: CinderSettingsMenu, _e: CanvasMouseData): void {
+    if (!this.editingKeybind) {
       menu.setCurrentKeybindOption(this);
-      this.editingState = true;
+      this.editingKeybind = true;
       // Automatically cancel the edit after 3 seconds
-      this.editingStateTimeout = setTimeout(() => {
+      this.editingKeybindTimeout = setTimeout(() => {
         menu.cancelKeybind();
       }, 3000);
     } else {
@@ -527,16 +553,178 @@ export class KeybindOption extends DisplayValueOption {
    * Ends this option's editing state, and sets the setting to the new keybind
    * if given.
    */
+  finishEdit(_newKeybind?: string): void {
+    clearTimeout(this.editingKeybindTimeout);
+    this.editingKeybind = false;
+    this.editingKeybindTimeout = undefined;
+  }
+}
+
+/**
+ * A setting that lets the user edit a keybind for a script feature.
+ */
+export class KeybindOption extends AbstractKeybindOption {
+  state: string;
+  settingsKey: KeybindSettingsKey;
+
+  /**
+   * The settings menu that this option belongs to.
+   */
+  parentMenu: CinderSettingsMenu;
+
+  constructor(
+    name: string,
+    settingsKey: KeybindSettingsKey,
+    parentMenu: CinderSettingsMenu,
+    tooltip?: Tooltip,
+  ) {
+    super(name, tooltip);
+
+    this.state = settings.get(settingsKey);
+    this.settingsKey = settingsKey;
+    this.parentMenu = parentMenu;
+  }
+
+  isKeybindOption(): this is this {
+    return true;
+  }
+
+  getDisplayedValues(): string[] {
+    // Also display an "Editing..." status if this is being edited
+    if (this.editingKeybind) {
+      return [this.state, " (Editing...)"];
+    } else {
+      return [this.state];
+    }
+  }
+
+  getValueFillStyles(): string[] {
+    const colour1 = this.getKeybindColour(this.state, this.parentMenu);
+
+    // Also display an "Editing..." status if this is being edited
+    if (this.editingKeybind) {
+      return [colour1, CINDER_COLOUR];
+    } else {
+      return [colour1];
+    }
+  }
+
   finishEdit(newKeybind?: string): void {
-    clearTimeout(this.editingStateTimeout);
-    this.editingState = false;
-    this.editingStateTimeout = undefined;
+    super.finishEdit(newKeybind);
 
     if (!isNil(newKeybind)) {
       this.changeTime = performance.now();
       this.state = newKeybind;
       settings.set(this.settingsKey, newKeybind);
+
+      // Tell parent menu to recount keybinds whenever this setting gets edited
+      this.parentMenu.recountKeybinds();
     }
+  }
+}
+
+/**
+ * A setting that has a custom icon and a custom action that it performs when
+ * the user clicks its button.
+ */
+export class CustomOption extends DisplayValueOption {
+  /**
+   * This option's custom icon to be displayed on its button.
+   */
+  icon: CanvasImageSource;
+
+  /**
+   * This option's custom action that it performs when the user clicks its
+   * button.
+   */
+  _onClick: (menu: AbstractSettingsMenu, e: CanvasMouseData) => void;
+
+  /**
+   * A function to determine the colours of this option's custom displyed
+   * values, if applicable.
+   */
+  _getValueFillStyles?: () => string[];
+
+  /**
+   * A function to determine this option's custom displayed values, if
+   * applicable.
+   */
+  _getDisplayedValues?: () => string[];
+
+  constructor(
+    text: string,
+    icon: CanvasImageSource,
+    onClick: (menu: AbstractSettingsMenu, e: CanvasMouseData) => void,
+    getValueFillStyles?: () => string[],
+    getDisplayedValues?: () => string[],
+    tooltip?: Tooltip,
+  ) {
+    super(text, tooltip);
+
+    this.icon = icon;
+    this._onClick = onClick;
+    this._getValueFillStyles = getValueFillStyles;
+    this._getDisplayedValues = getDisplayedValues;
+    
+    // Re-initialize the name since the superclass adds a ": " to the name
+    this.name = text;
+  }
+
+  isCustomOption(): this is this {
+    return true;
+  }
+
+  getValueFillStyles(): string[] {
+    if (isNil(this._getValueFillStyles)) {
+      return [];
+    } else {
+      return this._getValueFillStyles();
+    }
+  }
+
+  getDisplayedValues(): string[] {
+    if (isNil(this._getDisplayedValues)) {
+      return [];
+    } else {
+      return this._getDisplayedValues();
+    }
+  }
+
+  onClick(menu: AbstractSettingsMenu, e: CanvasMouseData): void {
+    this._onClick(menu, e);
+  }
+
+  // This code is largely copied from `DisplayValueOption.draw()`, but we have
+  // to copy here in order to change the button's icon.
+  draw(menu: AbstractSettingsMenu) {
+    super.draw(menu);
+
+    // Redraw the "Edit" button in order to draw its custom icon
+    menu.currentHeight -= SETTINGS_OPTION_HEIGHT;
+    ctx.fillStyle = "#9f9f9f";
+    ctx.strokeStyle = "#5f5f5f";
+    ctx.lineWidth = 4.5;
+    ctx.beginPath();
+    ctx.rect(
+      this.screenPosition.x - menu.x,
+      this.screenPosition.y - menu.y,
+      this.screenPosition.w,
+      this.screenPosition.h
+    );
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
+
+    // Display this option's custom icon
+    ctx.drawImage(
+      this.icon,
+      15 + SETTINGS_BUTTON_SIZE / 2 - EDIT_ICON_SIZE / 2,
+      menu.midHeight - EDIT_ICON_SIZE / 2,
+      EDIT_ICON_SIZE,
+      EDIT_ICON_SIZE,
+    );
+
+    menu.currentHeight += SETTINGS_OPTION_HEIGHT;
   }
 }
 
@@ -573,7 +761,7 @@ export class SettingsSectionHeading {
    * 
    * This code is adapted from the Flowr changelog's horizontal dividers.
    */
-  draw(menu: CinderSettingsMenu) {
+  draw(menu: AbstractSettingsMenu) {
     // Determine the locations to draw each item
     ctx.font = "900 17px Ubuntu";
     const textWidth = ctx.measureText(this.text).width;
@@ -633,5 +821,71 @@ export class SettingsSectionHeading {
    */
   drawTooltipBox(e: CanvasMouseData): void {
     this.tooltipIcon?.drawText(this.tooltipPos, e);
+  }
+}
+
+/**
+ * The top row of a table, containing the labels for the table's columns.
+ */
+export class TableHeading extends SettingsSectionHeading {
+  /**
+   * The text labels for the table's columns.
+   */
+  labels: string[];
+  
+  /**
+   * The x-coordinates of the table's vertical separators.
+   */
+  separators: number[];
+
+  constructor(labels: string[], separators: number[]) {
+    super("");
+
+    this.labels = labels;
+    this.separators = separators;
+  }
+
+  draw(menu: AbstractSettingsMenu): void {
+    // Draw the labels in order
+    const numLabels = Math.min(this.labels.length, this.separators.length + 1);
+    const textBorders = [
+      SETTINGS_BUTTON_PADDING,
+      ...this.separators,
+      menu.w - SETTINGS_BUTTON_PADDING,
+    ];
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "white";
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 2;
+    for (let i = 0; i < numLabels; i++) {
+      const midX = (textBorders[i] + textBorders[i + 1]) / 2;
+      ctxDrawText(this.labels[i], midX, menu.midHeight);
+    }
+
+    // Draw the vertical separators in order
+    ctx.strokeStyle = "#7f7f7f";
+    ctx.lineWidth = 5;
+    ctx.lineCap = "round";
+    for (let i = 0; i < numLabels - 1; i++) {
+      ctx.beginPath();
+      ctx.moveTo(
+        this.separators[i], menu.currentHeight + SETTINGS_BUTTON_PADDING,
+      );
+      ctx.lineTo(
+        this.separators[i], menu.currentHeight + SETTINGS_OPTION_HEIGHT,
+      );
+      ctx.stroke();
+      ctx.closePath();
+    }
+    
+    // Draw horizontal separator between this heading and the basic items below
+    menu.currentHeight += SETTINGS_OPTION_HEIGHT;
+    ctx.beginPath();
+    ctx.moveTo(SETTINGS_BUTTON_PADDING, menu.currentHeight);
+    // The extra -16 is to make room for the scrollbar
+    ctx.lineTo(menu.w - SETTINGS_BUTTON_PADDING - 16, menu.currentHeight);
+    ctx.stroke();
+    ctx.closePath();
   }
 }

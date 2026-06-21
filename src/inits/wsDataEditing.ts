@@ -21,11 +21,11 @@ export function allowWsDataEditing(): void {
       let rawData = msgpackr.unpack(data) as unknown;
       for (let fn of wsDataEditing) {
         rawData = fn(rawData);
-      }
 
-      // If the data got deleted, return immediately
-      if (isNil(rawData)) {
-        return;
+        // If the data got deleted, return immediately
+        if (isNil(rawData)) {
+          return;
+        }
       }
       
       // Finally, send the edited data to the server
@@ -52,6 +52,25 @@ export function allowWsDataEditing(): void {
  * Adds another function to edit data that the client is sending to the server.
  * @param fn A function that returns `data`, with or without modifications.
  */
-export function addWsDataEditing(fn: (data: any) => any) {
+export function addWsDataEditing(fn: (data: unknown) => any): void {
   wsDataEditing.push(fn);
+}
+
+/**
+ * Deletes all queued chat messages in {@linkcode wsMsgQueue}. This function is
+ * meant to help with disabling certain chat messages in the first few seconds
+ * of each run.
+ */
+export function deleteQueuedChatMsgs(): void {
+  wsMsgQueue = wsMsgQueue.filter(isNotChatMessage);
+}
+
+/**
+ * A helper function to determine whether or not the given message (to be
+ * delivered to the server) is a chat message from the player.
+ * 
+ * Chat messages have the following format: `["c", "<Chat message>"]`.
+ */
+export function isNotChatMessage(data: unknown): boolean {
+  return !(Array.isArray(data) && data[0] === "c");
 }

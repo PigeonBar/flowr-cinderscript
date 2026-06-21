@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="30.000002mm"
+   height="45mm"
+   viewBox="0 0 30.000002 45"
+   version="1.1"
+   id="svg1"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1">
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath20">
+      <path
+         id="path20"
+         style="display:none;fill:#ff0000;fill-opacity:1;stroke:#ffffff;stroke-width:0;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:0;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+         d="m 109.00007,125.00012 c -0.554,0 -0.99994,0.44594 -0.99994,0.99994 V 144 c 0,0.554 0.44594,0.99993 0.99994,0.99993 0.554,0 0.99993,-0.44593 0.99993,-0.99993 v -17.99994 c 0,-0.554 -0.44593,-0.99994 -0.99993,-0.99994 z m 6.00015,0 c -0.554,0 -1.00046,0.44594 -1.00046,0.99994 V 144 c 0,0.554 0.44646,0.99993 1.00046,0.99993 0.554,0 0.99993,-0.44593 0.99993,-0.99993 v -17.99994 c 0,-0.554 -0.44593,-0.99994 -0.99993,-0.99994 z m 5.99963,0 c -0.554,0 -0.99994,0.44594 -0.99994,0.99994 V 144 c 0,0.554 0.44594,0.99993 0.99994,0.99993 0.554,0 0.99994,-0.44593 0.99994,-0.99993 v -17.99994 c 0,-0.554 -0.44594,-0.99994 -0.99994,-0.99994 z" />
+      <path
+         id="lpe_path-effect20"
+         style="fill:#ff0000;fill-opacity:1;stroke:#ffffff;stroke-width:0;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:0;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+         class="powerclip"
+         d="m 95,115 h 40 v 40 H 95 Z m 14.00007,10.00012 c -0.554,0 -0.99994,0.44594 -0.99994,0.99994 V 144 c 0,0.554 0.44594,0.99993 0.99994,0.99993 0.554,0 0.99993,-0.44593 0.99993,-0.99993 v -17.99994 c 0,-0.554 -0.44593,-0.99994 -0.99993,-0.99994 z m 6.00015,0 c -0.554,0 -1.00046,0.44594 -1.00046,0.99994 V 144 c 0,0.554 0.44646,0.99993 1.00046,0.99993 0.554,0 0.99993,-0.44593 0.99993,-0.99993 v -17.99994 c 0,-0.554 -0.44593,-0.99994 -0.99993,-0.99994 z m 5.99963,0 c -0.554,0 -0.99994,0.44594 -0.99994,0.99994 V 144 c 0,0.554 0.44594,0.99993 0.99994,0.99993 0.554,0 0.99994,-0.44593 0.99994,-0.99993 v -17.99994 c 0,-0.554 -0.44594,-0.99994 -0.99994,-0.99994 z" />
+    </clipPath>
+  </defs>
+  <g
+     id="layer1"
+     transform="translate(-99.999997,-105)">
+    <rect
+       style="fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:0;stroke-linecap:square;stroke-miterlimit:0;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+       id="rect2"
+       width="30"
+       height="5"
+       x="100"
+       y="113" />
+    <path
+       style="fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:0;stroke-linecap:square;stroke-miterlimit:0;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+       d="m 100,120 h 30 l -3,30 h -24 z"
+       id="path2"
+       clip-path="url(#clipPath20)" />
+    <path
+       style="fill:#ff0000;fill-opacity:0;stroke:#ffffff;stroke-width:4;stroke-linecap:square;stroke-linejoin:round;stroke-miterlimit:0;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+       d="m 107,111 v -4 h 16 v 4"
+       id="path19" />
+  </g>
+</svg>

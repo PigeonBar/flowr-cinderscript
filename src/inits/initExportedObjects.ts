@@ -1,5 +1,5 @@
 import { initChangelog } from "../changelog";
-import { initMenuList } from "../constants/menuLists";
+import { initMenuLists } from "../constants/menuLists";
 import { initMobCounters } from "../features/mobGalleryKillCounter";
 import { initSettingsMenu } from "../settings/settingsMenu";
 
@@ -12,5 +12,5 @@ export function initExportedObjects(): void {
   initSettingsMenu();
   initChangelog();
   initMobCounters();
-  initMenuList();
+  initMenuLists();
 }
