@@ -621,7 +621,13 @@ declare global {
 
     mouseDown({ mouseX, mouseY }: CanvasMouseData2, inv: Inventory);
 
-    swapPetals(index: number, toSend?: boolean);
+    /**
+     * @param index The petal slot number to swap.
+     * @param toSend Whether or not to send this swap input to the server.
+     * @param bypassLock Whether or not to bypass Cinderscript's petal locks
+     * (default: `false`).
+     */
+    swapPetals(index: number, toSend?: boolean, bypassLock?: boolean);
 
     /**
      * If the given petal is close enough to any loadout petal, return the
@@ -863,6 +869,11 @@ declare global {
     getRotation(): number;
   }
 
+  /**
+   * Data for displaying a single stat in a {@linkcode StatsBox}.
+   */
+  type StatsBoxEntry = { key: string, value: any, color: string };
+
   class StatsBox {
     x: number;
     y: number;
@@ -872,6 +883,18 @@ declare global {
     image?: OffscreenCanvas;
     name: string;
     rarity: Rarity;
+    type: PetalType | EnemyType;
+  
+    /**
+     * Stats to be displayed in the top right corner (e.g., reload times, EXP).
+     */
+    topstats: StatsBoxEntry[];
+
+    /**
+     * Main stats to be displayed below this stats box's description (e.g.,
+     * health, damage, droprates).
+     */
+    bottomstats: StatsBoxEntry[];
 
     /**
      * A list of rows of text for this stats box's description. Each row may be
@@ -887,6 +910,14 @@ declare global {
     isGallery: boolean;
 
     draw();
+
+    /**
+     * Populates {@linkcode topstats} and {@linkcode bottomstats} with the
+     * required stats.
+     */
+    generateData(
+      mode: "petals" | "enemies", type: PetalType | EnemyType, stats: any,
+    ): void;
 
     /**
      * Generates and returns the stats box's image.
@@ -911,6 +942,12 @@ declare global {
      * required dimensions to contain the text.
      */
     generateDesc(min: number, max: number): { width: number, height: number };
+
+    /**
+     * Returns a copy of the given name, converted from camelCase to
+     * Capitalized Case.
+     */
+    formatName(name: string): string;
   }
 
   const draggingPetalContainer: PetalContainer | null;
@@ -926,7 +963,7 @@ declare global {
    */
   const petalReloadData: Record<number, any>;
 
-  // Yeah the Flowr devs actually skissued and forgot to capitalize 1st letter
+  // Yeah the 1st letter is not capitalized
   class enemyBox {
     type: EnemyType;
     amount: number;
@@ -937,6 +974,11 @@ declare global {
     w: number;
     h: number;
     ec?: PetalContainer;
+
+    /**
+     * Updates this icon's position and size based on its spawn/despawn anims.
+     */
+    update(): void;
   }
 
   class Room {
@@ -944,6 +986,16 @@ declare global {
     enemies: Record<number, Enemy>;
     enemyBoxes: enemyBox[];
     flowers: Record<number, Flower>;
+
+    /**
+     * The current wave number.
+     */
+    wave: number;
+
+    /**
+     * The number of ticks that have elapsed so far this wave (at 30 tps).
+     */
+    waveTimer: number;
 
     /**
      * The number of "lucky" stacks applied to the current wave, if it is
@@ -955,6 +1007,11 @@ declare global {
      * A list of petal drops that are currently on the ground.
      */
     petalContainers: Record<number, PetalContainer>;
+
+    /**
+     * Updates the room client-side based on data sent from the server.
+     */
+    processUpdate(data: any): void;
   }
 
   let room: Room;
@@ -963,6 +1020,21 @@ declare global {
    * A list of all boss mobs that are currently alive.
    */
   const bosses: Enemy[];
+
+  /**
+   * The length of the main spawning portion of the given wave, in seconds.
+   */
+  function waveLengthFunc(wave: number): number;
+
+  /**
+   * A gui for showing some useful petal info (egg hatch timers, sponge damage,
+   * etc.)
+   */
+  class InfoGui {
+    draw(): void;
+  }
+
+  const infoGui: InfoGui;
 
   class BiomeManager {
     mouseDown({ mouseX, mouseY }: CanvasMouseData2);
@@ -1003,6 +1075,27 @@ declare global {
   }
 
   const inputHandler: InputHandler;
+
+  /**
+   * Data for the user's current movement inputs.
+   */
+  let latestInput: number[];
+
+  /**
+   * Data for the user's previous movement inputs.
+   */
+  let previousInput: number[];
+
+  /**
+   * An object that maps keyboard inputs (specifically, `e.code`) to movement
+   * directions.
+   */
+  const keyCodes: Partial<Record<string, "up" | "left" | "down" | "right">>;
+
+  /**
+   * An object that maps movement directions to numerical ID's.
+   */
+  const directionToIdMap: Record<"up" | "left" | "down" | "right", number>;
 
   let ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
@@ -1063,6 +1156,14 @@ declare global {
    */
   function formatAmount(amount: number): string;
 
+  /**
+   * Returns a string representing the given amount after formatting it using
+   * abbreviations (e.g., 6700 = 6.7k).
+   * 
+   * This function also uses more decimal digits for numbers below 1000.
+   */
+  function formatAmountHighPrecision(amount: number): string;
+
   function setCursor(state: string);
 
   let draw: () => void;
@@ -1080,6 +1181,18 @@ declare global {
       enemies: Partial<Record<string, StatsBox>>;
     }
   }
+
+  /**
+   * A cached record of petal and enemy stats.
+   */
+  const cachedStats: {
+    enemies: Record<EnemyType, Record<Rarity, any>>;
+  }
+
+  /**
+   * The colours used for displaying each stat type in a {@linkcode StatsBox}.
+   */
+  const statColors: Record<string, string>;
 
   type HpBarData = {
     x: number;
@@ -1179,6 +1292,11 @@ declare global {
   }
 
   const settingsMenu: SettingsMenu;
+
+  /**
+   * Whether or not the player is using mouse movement controls.
+   */
+  let mouseMovement: boolean;
 
   class Changelog extends TopMenu {
     hoveringOverX: boolean;

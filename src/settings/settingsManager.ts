@@ -23,7 +23,9 @@ export type BooleanSettingsKey =
   "minimapAlwaysShowRareMobs" |
   "minimapRareMobAura" |
   "disableWelcomeMessage" |
-  "useChatHotkeys";
+  "useChatHotkeys" |
+  "autoUnequipGrace" |
+  "missileStatsInStatsBoxes";
 
 /**
  * Settings keys for settings that take a numerical value.
@@ -66,7 +68,8 @@ export type KeybindSettingsKey =
   "keybindInvertAttack" |
   "keybindInvertDefend" |
   "keybindLockSlot" |
-  "keybindMinimap";
+  "keybindMinimap" |
+  "keybindToggleMouseMovement";
 
 /**
  * The settings key for the setting that opens the chat hotkeys editor.
@@ -133,6 +136,8 @@ export class SettingsManager {
       minimapRareMobAura: [],
       disableWelcomeMessage: [],
       useChatHotkeys: [],
+      autoUnequipGrace: [],
+      missileStatsInStatsBoxes: [],
       baseReciprocalOfFOV: [],
       playerHpBarScale: [],
       specialDropsScale: [],
@@ -156,6 +161,7 @@ export class SettingsManager {
       keybindInvertDefend: [],
       keybindLockSlot: [],
       keybindMinimap: [],
+      keybindToggleMouseMovement: [],
       chatHotkeys: [],
     };
   }
@@ -228,6 +234,8 @@ export function initSettingsManager(): void {
     minimapRareMobAura: true,
     disableWelcomeMessage: false,
     useChatHotkeys: false,
+    autoUnequipGrace: true,
+    missileStatsInStatsBoxes: true,
     baseReciprocalOfFOV: 3,
     playerHpBarScale: 2.5,
     specialDropsScale: 2.5,
@@ -251,6 +259,7 @@ export function initSettingsManager(): void {
     keybindInvertDefend: "Period",
     keybindLockSlot: "KeyL",
     keybindMinimap: "KeyM",
+    keybindToggleMouseMovement: "KeyK",
     chatHotkeys: [{
       chatMsg: "Remember to enable the setting \"Use Chat Hotkeys\"!",
       keybind: KEYBIND_DELETED,

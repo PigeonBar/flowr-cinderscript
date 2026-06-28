@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Flowr - Cinderscript
 // @namespace    npm/vite-plugin-monkey
-// @version      1.9.0
+// @version      1.9.1 (06-27-2026)
 // @author       Applepie (Ideas + bugfixes), PigeonBar (some technical stuff)
 // @description  A free, publicly available collection of QoL features for flowr.fun players.
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=flowr.fun
@@ -399,6 +399,20 @@
       keybind: "KeyM"
     }
   ]);
+  const MOB_MISSILES = {
+    "Hornet": "Missile",
+    "Grasshopper": "GrasshopperMissile",
+    "Bumble Bee": "PollenMissile",
+    "Queen Fire Ant": "FireMissile",
+    "Sea Urchin": "UrchinMissile",
+    "Scorpion": "ScorpionMissile",
+    "Dandelion": "DandelionMissile",
+    "Dauber": "DauberMissile",
+    "Mushroom": "MushroomMissile",
+    "Rock Tank": "RockMissile",
+    "Queen Hornet": "Missile",
+    "Queen Dauber": "DauberMissile"
+  };
   let defaultSettings;
   class SettingsManager {
     /**
@@ -436,6 +450,8 @@
         minimapRareMobAura: [],
         disableWelcomeMessage: [],
         useChatHotkeys: [],
+        autoUnequipGrace: [],
+        missileStatsInStatsBoxes: [],
         baseReciprocalOfFOV: [],
         playerHpBarScale: [],
         specialDropsScale: [],
@@ -459,6 +475,7 @@
         keybindInvertDefend: [],
         keybindLockSlot: [],
         keybindMinimap: [],
+        keybindToggleMouseMovement: [],
         chatHotkeys: []
       };
     }
@@ -517,6 +534,8 @@
       minimapRareMobAura: true,
       disableWelcomeMessage: false,
       useChatHotkeys: false,
+      autoUnequipGrace: true,
+      missileStatsInStatsBoxes: true,
       baseReciprocalOfFOV: 3,
       playerHpBarScale: 2.5,
       specialDropsScale: 2.5,
@@ -540,6 +559,7 @@
       keybindInvertDefend: "Period",
       keybindLockSlot: "KeyL",
       keybindMinimap: "KeyM",
+      keybindToggleMouseMovement: "KeyK",
       chatHotkeys: [{
         chatMsg: 'Remember to enable the setting "Use Chat Hotkeys"!',
         keybind: KEYBIND_DELETED
@@ -548,6 +568,14 @@
     settings = new SettingsManager();
   }
   const cinderChangelogList = [
+    {
+      text: `- You now auto-unequip Amulet of Grace if it would clear less than 10 seconds of the wave timer (PR #42)
+- New keybind to toggle between mouse movement and keyboard movement (default: [K]) (PR #42)
+- Enemy stat boxes now also display missile stats (PR #42)
+- Fixed enemyBox deletions potentially freezing the game (PR #42)
+- Version number now includes the version's release date (PR #42)`,
+      date: "Version 1.9.1"
+    },
     {
       text: `- Added a chat hotkeys editor (PR #41):
   - Editor is accessible at (Settings > Keybinds > Chat Hotkeys Editor)
@@ -3046,6 +3074,11 @@ Please enter a Rarity.`
           "Hide Settings Menu During Runs",
           "hideSettingsDuringRuns"
         ),
+        autoUnequipGrace: new BooleanOption(
+          "Auto Unequip Grace",
+          "autoUnequipGrace",
+          "If this is turned on, you will automatically unequip Amulet of Grace if it would clear less than 10 seconds of the wave timer."
+        ),
         craftingSearchBar: new BooleanOption(
           "Crafting Search Bar",
           "craftingSearchBar"
@@ -3100,6 +3133,10 @@ Please enter a Rarity.`
             },
             dependentKeys: []
           }
+        ),
+        missileStatsInStatsBoxes: new BooleanOption(
+          "Missile Stats in Enemy Stat Boxes",
+          "missileStatsInStatsBoxes"
         ),
         minimapNumberOfMobs: new NumberOption(
           "Number of Mobs",
@@ -3250,6 +3287,12 @@ Please enter a Rarity.`
           this,
           "While holding down this key, you can press a petal slot's number key to cycle its lock state in the following order: $n Unlocked > Soft Lock > $c#ff0000 Hard Lock $c#ffffff > Unlocked. $n $n When a slot is soft locked, it does not get swapped by the [R] hotkey, but you can still swap the petal using all other methods. (i.e., Flowrscript's system) $n $n When a slot is $c#ff0000 hard locked $c#ffffff , you cannot swap it with its bottom petal at all. $n $n By default, you cannot $c#ff0000 hard lock $c#ffffff slots 1 to 5. You can change this behaviour at (Settings > General Gameplay > Allow Hard Locking Petal Slots 1 to 5)."
         ),
+        keybindToggleMouseMovement: new KeybindOption(
+          "Toggle Mouse Movement",
+          "keybindToggleMouseMovement",
+          this,
+          "This keybind toggles your controls between using mouse movement and using keyboard movement. $n $n CAUTION: Rapidly switching between mouse movement and keyboard movement may cause the server to reject your inputs, leading to bugs."
+        ),
         useChatHotkeys: new BooleanOption(
           "Use Chat Hotkeys",
           "useChatHotkeys",
@@ -3278,6 +3321,7 @@ Please enter a Rarity.`
         settingsMap.invertAttack,
         settingsMap.invertDefend,
         settingsMap.hideSettingsDuringRuns,
+        settingsMap.autoUnequipGrace,
         settingsMap.craftingSearchBar,
         settingsMap.craftAnimationLength,
         settingsMap.autoCopyCodes,
@@ -3288,6 +3332,7 @@ Please enter a Rarity.`
         settingsMap.inventoryExpandButton,
         settingsMap.petalLockShakeIntensity,
         settingsMap.missileDrawPriority,
+        settingsMap.missileStatsInStatsBoxes,
         new SettingsSectionHeading("Minimap Options"),
         settingsMap.minimapNumberOfMobs,
         settingsMap.minimapAlwaysShowBosses,
@@ -3323,6 +3368,7 @@ Please enter a Rarity.`
         settingsMap.keybindMinimap,
         settingsMap.keybindStatsBox,
         settingsMap.keybindLockSlot,
+        settingsMap.keybindToggleMouseMovement,
         settingsMap.useChatHotkeys,
         settingsMap.chatHotkeys,
         new SettingsSectionHeading("Welcome"),
@@ -3861,7 +3907,7 @@ Please enter a Rarity.`
       fn: toggleScreenshotMode
     });
   }
-  const version = "1.9.0";
+  const version = "1.9.1 (06-27-2026)";
   function addScriptVersionToDebugInfo() {
     const originalRenderDebug = renderDebug;
     renderDebug = () => {
@@ -4314,6 +4360,19 @@ Please enter a Rarity.`
   function exceededThreshold() {
     const threshold = settings.get("petalRenderQualityThreshold");
     return threshold >= 0 && renderCounter > threshold;
+  }
+  function autoUnequipGrace() {
+    const originalUpdateRoom = Room.prototype.processUpdate;
+    Room.prototype.processUpdate = function(data) {
+      originalUpdateRoom.apply(this, [data]);
+      if (settings.get("autoUnequipGrace") && room.waveTimer < 30 * (waveLengthFunc(room.wave) + 10)) {
+        for (let i = 0; i < 10; i++) {
+          if (inventory.topPetalContainers[i]?.type === "Amulet of Grace" && inventory.bottomPetalContainers[i]?.type !== "Amulet of Grace") {
+            inventory.swapPetals(i, true, true);
+          }
+        }
+      }
+    };
   }
   function handleBackgroundColourSettings() {
     Colors.biomes.garden.background = settings.get("gardenBackground");
@@ -4882,12 +4941,24 @@ Please enter a Rarity.`
       originalSimulateDragging(x, y);
     };
   }
-  function fixNegativeRadiusFreeze() {
+  function fixSpecificRenderingFreezes() {
     const originalArc = ctx.arc;
     ctx.arc = function(...args) {
       if (args[2] > 0) {
         originalArc.apply(this, args);
       }
+    };
+    const originalUpdate = enemyBox.prototype.update;
+    enemyBox.prototype.update = function() {
+      originalUpdate.apply(this);
+      this.w = Math.max(this.w, 0.01);
+      this.h = Math.max(this.h, 0.01);
+    };
+    const originalInfoGuiDraw = infoGui.draw;
+    infoGui.draw = function() {
+      ctx.save();
+      originalInfoGuiDraw.apply(this);
+      ctx.restore();
     };
   }
   class DropdownUI {
@@ -5348,6 +5419,72 @@ Please enter a Rarity.`
       }, 0);
     };
   }
+  const MISSILE_STATS_DIVIDER = "======= MISSILE STATS =======";
+  function addMissileStatsToStatsBoxes() {
+    const originalGenerateData = StatsBox.prototype.generateData;
+    StatsBox.prototype.generateData = function(mode, type, stats) {
+      originalGenerateData.apply(this, [mode, type, stats]);
+      if (!settings.get("missileStatsInStatsBoxes")) {
+        return;
+      }
+      const missileType = MOB_MISSILES[this.type];
+      if (mode === "enemies" && !isNil(missileType)) {
+        const missileStats = cachedStats.enemies[missileType][this.rarity];
+        let dropsIndex = this.bottomstats.findIndex((stat) => stat.key === "drops") ?? this.bottomstats.length;
+        this.bottomstats.splice(dropsIndex, 0, {
+          key: MISSILE_STATS_DIVIDER,
+          // Must be `"\0"` instead of an empty string, or else this stat gets
+          // ignored when drawing this stats box.
+          value: "\0",
+          color: "white"
+        });
+        dropsIndex++;
+        this.bottomstats.splice(dropsIndex, 0, {
+          key: "missileHealth",
+          value: missileStats.health,
+          color: statColors.health
+        });
+        dropsIndex++;
+        this.bottomstats.splice(dropsIndex, 0, {
+          key: "missileDamage",
+          value: missileStats.damage,
+          color: statColors.damage
+        });
+        dropsIndex++;
+        if (missileStats.poison) {
+          const totalPoison = formatAmountHighPrecision(missileStats.poison[0]);
+          const poisonDps = formatAmountHighPrecision(missileStats.poison[1]);
+          const poisonTime = Math.round(
+            missileStats.poison[0] / missileStats.poison[1] * 100
+          ) / 100;
+          const text = `${totalPoison} (${poisonDps}/s, total ${poisonTime}s)`;
+          this.bottomstats.splice(dropsIndex, 0, {
+            key: "missilePoison",
+            value: text,
+            color: statColors.poison
+          });
+          dropsIndex++;
+        }
+        this.bottomstats.splice(dropsIndex, 0, {
+          key: "missileMass",
+          value: missileStats.mass,
+          color: statColors.mass
+        });
+        dropsIndex++;
+      }
+    };
+    const originalFormatName = StatsBox.prototype.formatName;
+    StatsBox.prototype.formatName = function(name) {
+      if (name === MISSILE_STATS_DIVIDER) {
+        return MISSILE_STATS_DIVIDER;
+      } else {
+        return originalFormatName.apply(this, [name]);
+      }
+    };
+    settings.addListener("missileStatsInStatsBoxes", () => {
+      cachedImages.statBoxes.enemies = {};
+    });
+  }
   function addMobGalleryKillCounter() {
     mobGallery.setCountMode = function(value) {
       this.countMode = value;
@@ -5593,6 +5730,59 @@ Please enter a Rarity.`
     };
     settings.addListener("baseReciprocalOfFOV", (option) => {
       fov = 1 / option;
+    });
+  }
+  const keyboardDirections = [0, 0, 0, 0];
+  function allowTogglingMouseMovement() {
+    const movementSetting = settingsMenu.options.find(
+      (option) => option.name === "Mouse Movement"
+    );
+    addKeybindInstruction({
+      type: "always",
+      keyType: "keydown",
+      inGame: true,
+      inMenu: true,
+      fn: (e) => {
+        const direction = keyCodes[e.code];
+        if (!isNil(direction)) {
+          keyboardDirections[directionToIdMap[direction]] = 1;
+        }
+      }
+    });
+    addKeybindInstruction({
+      type: "always",
+      keyType: "keyup",
+      inGame: true,
+      inMenu: true,
+      fn: (e) => {
+        const direction = keyCodes[e.code];
+        if (!isNil(direction)) {
+          keyboardDirections[directionToIdMap[direction]] = 0;
+        }
+      }
+    });
+    addKeybindInstruction({
+      type: "settings",
+      settingsKey: "keybindToggleMouseMovement",
+      fn: () => {
+        mouseMovement = !mouseMovement;
+        localStorage.setItem("mouseMovement", `${mouseMovement}`);
+        if (!isNil(movementSetting)) {
+          movementSetting.state = mouseMovement;
+        }
+        if (mouseMovement) {
+          chatAnnounce("Now using MOUSE movement!");
+          inputHandler.handleMouse(new MouseEvent(
+            "mousemove",
+            { clientX: mouse.x, clientY: mouse.y }
+          ));
+        } else {
+          chatAnnounce("Now using KEYBOARD movement!");
+          latestInput = [...keyboardDirections];
+          previousInput = [...keyboardDirections];
+          send(keyboardDirections);
+        }
+      }
     });
   }
   function optimizeHighQualityRenders() {
@@ -5970,11 +6160,11 @@ Please enter a Rarity.`
       }
     });
     const originalSwap = Inventory.prototype.swapPetals;
-    Inventory.prototype.swapPetals = function(index, toSend) {
-      if (lockManager.toggleLock(this, index)) {
+    Inventory.prototype.swapPetals = function(index, toSend, bypassLock = false) {
+      if (!bypassLock && lockManager.toggleLock(this, index)) {
         return;
       }
-      if (!lockManager.applyLock(this, index)) {
+      if (bypassLock || !lockManager.applyLock(this, index)) {
         originalSwap.apply(this, [index, toSend]);
       }
     };
@@ -6216,15 +6406,15 @@ Please enter a Rarity.`
       PetalContainer.prototype.drawStatsBox = originalDrawStatsBox;
       if (showQuickStatsBox) {
         const totalCount = {};
-        for (let enemyBox of Object.values(room.enemyBoxes)) {
-          totalCount[enemyBox.type] ??= 0;
-          totalCount[enemyBox.type] += enemyBox.amount;
+        for (let enemyBox2 of Object.values(room.enemyBoxes)) {
+          totalCount[enemyBox2.type] ??= 0;
+          totalCount[enemyBox2.type] += enemyBox2.amount;
         }
         let highestBox = void 0;
-        for (let enemyBox of Object.values(room.enemyBoxes)) {
-          if (isNil(highestBox) || enemyBox.rarity > highestBox.rarity || enemyBox.rarity === highestBox.rarity && totalCount[enemyBox.type] <= totalCount[highestBox.type]) {
-            if (!enemyBox.isBoss) {
-              highestBox = enemyBox;
+        for (let enemyBox2 of Object.values(room.enemyBoxes)) {
+          if (isNil(highestBox) || enemyBox2.rarity > highestBox.rarity || enemyBox2.rarity === highestBox.rarity && totalCount[enemyBox2.type] <= totalCount[highestBox.type]) {
+            if (!enemyBox2.isBoss) {
+              highestBox = enemyBox2;
             }
           }
         }
@@ -6771,7 +6961,7 @@ Please enter a Rarity.`
     displayMissilesAboveEnemies();
     modifyBaseFOV();
     enlargeZoomedOutItems();
-    fixNegativeRadiusFreeze();
+    fixSpecificRenderingFreezes();
     enableInvertAttackAndDefend();
     prioritizeRenderingStatsBoxes();
     preventClickingBehindMenus();
@@ -6788,10 +6978,13 @@ Please enter a Rarity.`
     handleBackgroundColourSettings();
     addMinimap();
     fadeCraftingMenuFadingPetals();
-    displayWelcomeMessage();
+    autoUnequipGrace();
+    allowTogglingMouseMovement();
+    addMissileStatsToStatsBoxes();
     addScreenshotMode();
     addScriptVersionToDebugInfo();
     displayMobGalleryOutsideMenu();
+    displayWelcomeMessage();
     prioritizeRenderingDragPetal();
     patchFlowrscriptPrototypes();
     refreezeObjects();

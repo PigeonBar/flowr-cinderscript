@@ -4,6 +4,7 @@ import { addScriptVersionToDebugInfo } from "./dev/displayScriptVersion";
 import { displayMobGalleryOutsideMenu } from "./dev/mobGalleryOutsideMenu";
 import { addMinimap } from "./features/addMinimap";
 import { autoReducePetalQuality } from "./features/autoReducePetalQuality";
+import { autoUnequipGrace } from "./features/autoUnequipGrace";
 import { handleBackgroundColourSettings } from "./features/backgroundColour";
 import { fadeCraftingMenuFadingPetals } from "./features/craftingMenuFadingPetals";
 import { addCraftingSearchBar } from "./features/craftingSearchBar";
@@ -13,11 +14,13 @@ import { enlargeZoomedOutItems } from "./features/enlargeZoomedOutItems";
 import { addInventoryMenuExpansion } from "./features/expandInventoryMenu";
 import { allowFastCrafting } from "./features/fastCrafting";
 import { fixDraggingPetalsOutOfBounds } from "./features/fixDraggingOutOfBounds";
-import { fixNegativeRadiusFreeze } from "./features/fixNegativeRadiusFreeze";
+import { fixSpecificRenderingFreezes } from "./features/fixRenderingFreezes";
 import { addGalleryCounterDropdownMenu } from "./features/galleryCounterDropdownMenu";
 import { enableInvertAttackAndDefend } from "./features/invertAttackDefend";
+import { addMissileStatsToStatsBoxes } from "./features/missileStatsInStatsBoxes";
 import { addMobGalleryKillCounter } from "./features/mobGalleryKillCounter";
 import { modifyBaseFOV } from "./features/modifyBaseFov";
+import { allowTogglingMouseMovement } from "./features/mouseMovementToggling";
 import { optimizeHighQualityRenders } from "./features/optimizeHqp";
 import { patchFlowrscriptPrototypes } from "./features/patchFlowrscriptPrototypes";
 import { addPetalCraftPreview } from "./features/petalCraftPreview";
@@ -100,7 +103,7 @@ const mainScriptPromise = new Promise<void>(async (resolve) => {
   displayMissilesAboveEnemies();
   modifyBaseFOV();
   enlargeZoomedOutItems();
-  fixNegativeRadiusFreeze();
+  fixSpecificRenderingFreezes();
   enableInvertAttackAndDefend();
   prioritizeRenderingStatsBoxes();
   preventClickingBehindMenus();
@@ -117,7 +120,9 @@ const mainScriptPromise = new Promise<void>(async (resolve) => {
   handleBackgroundColourSettings();
   addMinimap();
   fadeCraftingMenuFadingPetals();
-  displayWelcomeMessage();
+  autoUnequipGrace();
+  allowTogglingMouseMovement();
+  addMissileStatsToStatsBoxes();
 
   // #region Dev tools
   addScreenshotMode();
@@ -125,6 +130,7 @@ const mainScriptPromise = new Promise<void>(async (resolve) => {
   displayMobGalleryOutsideMenu();
 
   // #region Ending
+  displayWelcomeMessage();
   prioritizeRenderingDragPetal();
   patchFlowrscriptPrototypes();
   refreezeObjects();

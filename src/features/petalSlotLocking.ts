@@ -75,14 +75,16 @@ export function addPetalSlotLocking() {
   });
   
   const originalSwap = Inventory.prototype.swapPetals;
-  Inventory.prototype.swapPetals = function(index: number, toSend?: boolean) {
+  Inventory.prototype.swapPetals = function(
+    index: number, toSend?: boolean, bypassLock: boolean = false
+  ) {
     // Check for the user selecting a petal to be locked
-    if (lockManager.toggleLock(this, index)) {
+    if (!bypassLock && lockManager.toggleLock(this, index)) {
       return;
     }
 
     // Enforce the petal being locked
-    if (!lockManager.applyLock(this, index)) {
+    if (bypassLock || !lockManager.applyLock(this, index)) {
       originalSwap.apply(this, [index, toSend]);
     }
   }
