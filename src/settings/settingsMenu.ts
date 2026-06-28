@@ -68,6 +68,12 @@ export class CinderSettingsMenu extends AbstractSettingsMenu {
       hideSettingsDuringRuns: new BooleanOption(
         "Hide Settings Menu During Runs", "hideSettingsDuringRuns",
       ),
+      autoUnequipGrace: new BooleanOption(
+        "Auto Unequip Grace",
+        "autoUnequipGrace",
+        "If this is turned on, you will automatically unequip Amulet of " +
+        "Grace if it would clear less than 10 seconds of the wave timer.",
+      ),
       craftingSearchBar: new BooleanOption(
         "Crafting Search Bar", "craftingSearchBar",
       ),
@@ -126,6 +132,9 @@ export class CinderSettingsMenu extends AbstractSettingsMenu {
           },
           dependentKeys: [],
         },
+      ),
+      missileStatsInStatsBoxes: new BooleanOption(
+        "Missile Stats in Enemy Stat Boxes", "missileStatsInStatsBoxes",
       ),
       minimapNumberOfMobs: new NumberOption(
         "Number of Mobs",
@@ -291,6 +300,16 @@ export class CinderSettingsMenu extends AbstractSettingsMenu {
         "You can change this behaviour at (Settings > General Gameplay > " +
         "Allow Hard Locking Petal Slots 1 to 5).",
       ),
+      keybindToggleMouseMovement: new KeybindOption(
+        "Toggle Mouse Movement",
+        "keybindToggleMouseMovement",
+        this,
+        "This keybind toggles your controls between using mouse movement " +
+        "and using keyboard movement. $n $n " +
+        "CAUTION: Rapidly switching between mouse movement and keyboard " +
+        "movement may cause the server to reject your inputs, leading to " +
+        "bugs.",
+      ),
       useChatHotkeys: new BooleanOption(
         "Use Chat Hotkeys",
         "useChatHotkeys",
@@ -330,6 +349,7 @@ export class CinderSettingsMenu extends AbstractSettingsMenu {
       settingsMap.invertAttack,
       settingsMap.invertDefend,
       settingsMap.hideSettingsDuringRuns,
+      settingsMap.autoUnequipGrace,
       settingsMap.craftingSearchBar,
       settingsMap.craftAnimationLength,
       settingsMap.autoCopyCodes,
@@ -340,6 +360,7 @@ export class CinderSettingsMenu extends AbstractSettingsMenu {
       settingsMap.inventoryExpandButton,
       settingsMap.petalLockShakeIntensity,
       settingsMap.missileDrawPriority,
+      settingsMap.missileStatsInStatsBoxes,
       new SettingsSectionHeading("Minimap Options"),
       settingsMap.minimapNumberOfMobs,
       settingsMap.minimapAlwaysShowBosses,
@@ -380,6 +401,7 @@ export class CinderSettingsMenu extends AbstractSettingsMenu {
       settingsMap.keybindMinimap,
       settingsMap.keybindStatsBox,
       settingsMap.keybindLockSlot,
+      settingsMap.keybindToggleMouseMovement,
       settingsMap.useChatHotkeys,
       settingsMap.chatHotkeys,
       new SettingsSectionHeading("Welcome"),

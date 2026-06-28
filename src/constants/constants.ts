@@ -500,3 +500,21 @@ export const FLOWRSCRIPT_HOTKEYS = Object.freeze([
     keybind: "KeyM",
   },
 ]);
+
+/**
+ * A record of the missile types that certain mobs shoot at the player.
+ */
+export const MOB_MISSILES: Partial<Record<EnemyType, EnemyType>> = {
+  "Hornet": "Missile",
+  "Grasshopper": "GrasshopperMissile",
+  "Bumble Bee": "PollenMissile",
+  "Queen Fire Ant": "FireMissile",
+  "Sea Urchin": "UrchinMissile",
+  "Scorpion": "ScorpionMissile",
+  "Dandelion": "DandelionMissile",
+  "Dauber": "DauberMissile",
+  "Mushroom": "MushroomMissile",
+  "Rock Tank": "RockMissile",
+  "Queen Hornet": "Missile",
+  "Queen Dauber": "DauberMissile",
+};

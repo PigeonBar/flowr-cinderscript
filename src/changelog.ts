@@ -1,6 +1,12 @@
 import { unsafeWindow } from "$";
 
 const cinderChangelogList: ChangelogEntry[] = [
+  {text: `- You now auto-unequip Amulet of Grace if it would clear less than 10 seconds of the wave timer (PR #42)
+- New keybind to toggle between mouse movement and keyboard movement (default: [K]) (PR #42)
+- Enemy stat boxes now also display missile stats (PR #42)
+- Fixed enemyBox deletions potentially freezing the game (PR #42)
+- Version number now includes the version's release date (PR #42)`,
+  date: "Version 1.9.1"},
   {text: `- Added a chat hotkeys editor (PR #41):
   - Editor is accessible at (Settings > Keybinds > Chat Hotkeys Editor)
   - Conflicting keybinds are now displayed as red instead of green
