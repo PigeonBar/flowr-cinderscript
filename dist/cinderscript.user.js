@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name         Flowr - Cinderscript
 // @namespace    npm/vite-plugin-monkey
-// @version      1.9.1 (06-27-2026)
+// @version      1.9.2 (06-29-2026)
 // @author       Applepie (Ideas + bugfixes), PigeonBar (some technical stuff)
 // @description  A free, publicly available collection of QoL features for flowr.fun players.
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=flowr.fun
 // @downloadURL  https://github.com/PigeonBar/flowr-cinderscript/raw/refs/heads/main/dist/cinderscript.user.js
 // @updateURL    https://github.com/PigeonBar/flowr-cinderscript/raw/refs/heads/main/dist/cinderscript.user.js
-// @match        https://flowr.fun/
+// @match        https://flowr.fun/*
 // @grant        unsafeWindow
 // ==/UserScript==
 
@@ -568,6 +568,10 @@
     settings = new SettingsManager();
   }
   const cinderChangelogList = [
+    {
+      text: `- Hopefully fixed script not loading after Cloudflare verifications (PR #43)`,
+      date: "Version 1.9.2"
+    },
     {
       text: `- You now auto-unequip Amulet of Grace if it would clear less than 10 seconds of the wave timer (PR #42)
 - New keybind to toggle between mouse movement and keyboard movement (default: [K]) (PR #42)
@@ -3907,7 +3911,7 @@ Please enter a Rarity.`
       fn: toggleScreenshotMode
     });
   }
-  const version = "1.9.1 (06-27-2026)";
+  const version = "1.9.2 (06-29-2026)";
   function addScriptVersionToDebugInfo() {
     const originalRenderDebug = renderDebug;
     renderDebug = () => {

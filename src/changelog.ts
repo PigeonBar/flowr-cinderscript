@@ -1,6 +1,8 @@
 import { unsafeWindow } from "$";
 
 const cinderChangelogList: ChangelogEntry[] = [
+  {text: `- Hopefully fixed script not loading after Cloudflare verifications (PR #43)`,
+  date: "Version 1.9.2"},
   {text: `- You now auto-unequip Amulet of Grace if it would clear less than 10 seconds of the wave timer (PR #42)
 - New keybind to toggle between mouse movement and keyboard movement (default: [K]) (PR #42)
 - Enemy stat boxes now also display missile stats (PR #42)
